@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -396,6 +397,16 @@ export function SystemPage() {
         <Card title={t('system_info.quick_links_title')}>
           <p className={styles.sectionDescription}>{t('system_info.quick_links_desc')}</p>
           <div className={styles.quickLinks}>
+            <Link to="/ip-monitor" className={styles.linkCard}>
+              <div className={`${styles.linkIcon} ${styles.docs}`}>
+                <IconCode size={22} />
+              </div>
+              <div className={styles.linkContent}>
+                <div className={styles.linkTitle}>{t('nav.ip_monitor')}</div>
+                <div className={styles.linkDesc}>{t('ip_monitor.description')}</div>
+              </div>
+            </Link>
+
             <a
               href="https://github.com/router-for-me/CLIProxyAPI"
               target="_blank"

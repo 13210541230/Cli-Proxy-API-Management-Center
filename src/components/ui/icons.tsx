@@ -448,6 +448,19 @@ export function IconSidebarUsage({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarIpMonitor({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M4 18h16" />
+      <path d="M6 18v-4" />
+      <path d="M10 18v-7" />
+      <path d="M14 18v-10" />
+      <path d="M18 18V6" />
+      <circle cx="18" cy="6" r="1.6" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
 export function IconSidebarLogs({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>

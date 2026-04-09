@@ -16,6 +16,7 @@ import {
   IconSidebarAuthFiles,
   IconSidebarConfig,
   IconSidebarDashboard,
+  IconSidebarIpMonitor,
   IconSidebarLogs,
   IconSidebarOauth,
   IconSidebarProviders,
@@ -43,6 +44,7 @@ const sidebarIcons: Record<string, ReactNode> = {
   oauth: <IconSidebarOauth size={18} />,
   quota: <IconSidebarQuota size={18} />,
   usage: <IconSidebarUsage size={18} />,
+  ipMonitor: <IconSidebarIpMonitor size={18} />,
   config: <IconSidebarConfig size={18} />,
   logs: <IconSidebarLogs size={18} />,
   system: <IconSidebarSystem size={18} />,
@@ -426,6 +428,7 @@ export function MainLayout() {
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
     { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
     { path: '/usage', label: t('nav.usage_stats'), icon: sidebarIcons.usage },
+    { path: '/ip-monitor', label: t('nav.ip_monitor'), icon: sidebarIcons.ipMonitor },
     ...(config?.loggingToFile
       ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
       : []),
