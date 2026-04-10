@@ -140,7 +140,8 @@
     "requests": "请求数",
     "tokens": "Token",
     "failed": "失败数",
-    "api_keys": "关联 API Key"
+    "api_keys": "关联 API Key",
+    "last_hours": "最近 {{hours}} 小时"
   },
   "dashboard": {
     "title": "仪表盘",

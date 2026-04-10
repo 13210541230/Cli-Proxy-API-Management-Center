@@ -140,7 +140,8 @@
     "requests": "Requests",
     "tokens": "Tokens",
     "failed": "Failed",
-    "api_keys": "API Keys"
+    "api_keys": "API Keys",
+    "last_hours": "Last {{hours}} hours"
   },
   "dashboard": {
     "title": "Dashboard",

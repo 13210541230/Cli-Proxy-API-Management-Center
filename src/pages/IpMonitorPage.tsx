@@ -4,7 +4,7 @@ import { useAuthStore } from '@/stores';
 import { ipApi, type IPActivity } from '@/services/api';
 import styles from './IpMonitorPage.module.scss';
 
-type TimeFilter = '5' | '15' | '30' | '60' | 'all';
+type TimeFilter = '5' | '15' | '30' | '60' | '1440' | 'all';
 
 interface IPListEntry extends IPActivity {
   ip: string;
@@ -52,8 +52,11 @@ export function IpMonitorPage() {
         ipsRes = await ipApi.getActiveIPs(parseInt(timeFilter, 10));
       }
 
+      // Handle different response structures (all=true returns "ips", others return "active_ips")
+      const ipData = ipsRes.active_ips || ipsRes.ips || {};
+
       // Convert to array and sort by last_seen (most recent first)
-      const ipArray: IPListEntry[] = Object.entries(ipsRes.active_ips || {}).map(
+      const ipArray: IPListEntry[] = Object.entries(ipData).map(
         ([ip, activity]) => ({
           ...activity,
           ip,
@@ -106,7 +109,7 @@ export function IpMonitorPage() {
     return tokens.toString();
   };
 
-  const timeFilterOptions: TimeFilter[] = ['5', '15', '30', '60', 'all'];
+  const timeFilterOptions: TimeFilter[] = ['5', '15', '30', '60', '1440', 'all'];
 
   return (
     <div className={styles.container}>
@@ -147,7 +150,7 @@ export function IpMonitorPage() {
                 className={`${styles.filterButton} ${timeFilter === option ? styles.active : ''}`}
                 onClick={() => setTimeFilter(option)}
               >
-                {option === 'all' ? t('ip_monitor.all_time') : t('ip_monitor.last_minutes', { minutes: option })}
+                {option === 'all' ? t('ip_monitor.all_time') : option === '1440' ? t('ip_monitor.last_hours', { hours: '24' }) : t('ip_monitor.last_minutes', { minutes: option })}
               </button>
             ))}
           </div>

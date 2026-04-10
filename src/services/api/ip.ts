@@ -20,6 +20,7 @@ export interface ActiveIPsResponse {
   count: number;
   since?: string;
   minutes?: number;
+  ips?: Record<string, IPActivity>;
 }
 
 export interface IPStatisticsResponse {

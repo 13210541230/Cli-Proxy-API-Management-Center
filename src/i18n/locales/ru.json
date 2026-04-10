@@ -140,7 +140,8 @@
     "requests": "Запросы",
     "tokens": "Токены",
     "failed": "Ошибки",
-    "api_keys": "API-ключи"
+    "api_keys": "API-ключи",
+    "last_hours": "Последние {{hours}} часа"
   },
   "dashboard": {
     "title": "Панель управления",
