@@ -148,6 +148,12 @@ export interface UsageExportResponse {
   filename: string;
 }
 
+export interface UsageQueryParams {
+  fromMs?: number;
+  toMs?: number;
+  apiKeyHash?: string;
+}
+
 const USAGE_SERVICE_TIMEOUT_MS = 15 * 1000;
 const USAGE_SERVICE_TRANSFER_TIMEOUT_MS = 60 * 1000;
 export const USAGE_SERVICE_ID = 'cpa-manager';
@@ -330,11 +336,16 @@ export const usageServiceApi = {
     });
   },
 
-  getUsage: async (base: string, managementKey?: string): Promise<UsagePayload> => {
+  getUsage: async (
+    base: string,
+    managementKey?: string,
+    params?: UsageQueryParams
+  ): Promise<UsagePayload> => {
     return withUsageServiceError(async () => {
       const response = await axios.get<UsagePayload>(buildUrl(base, '/v0/management/usage'), {
         timeout: USAGE_SERVICE_TIMEOUT_MS,
         headers: authHeaders(managementKey),
+        params,
       });
       return response.data;
     });

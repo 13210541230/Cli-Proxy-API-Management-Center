@@ -184,6 +184,20 @@ type RealtimeLogRow = MonitoringEventRow & {
   recentPattern: boolean[];
 };
 
+type ApiKeySummaryRow = {
+  apiKeyHash: string;
+  apiKeyLabel: string;
+  requests: number;
+  success: number;
+  failed: number;
+  totalTokens: number;
+  totalCost: number;
+  lastSeenAt: number;
+};
+
+type ApiKeySummarySortKey = 'tokens' | 'cost' | 'requests';
+type ApiKeyTrendMetric = 'tokens' | 'requests' | 'cost';
+
 type AccountQuotaWindow = {
   id: string;
   label: string;
@@ -486,6 +500,125 @@ const buildRealtimeLogRows = (rows: MonitoringEventRow[]): RealtimeLogRow[] => {
       right.requestCount - left.requestCount ||
       right.id.localeCompare(left.id)
   );
+};
+
+const buildApiKeySummaryRows = (
+  rows: MonitoringEventRow[],
+  sortKey: ApiKeySummarySortKey
+): ApiKeySummaryRow[] => {
+  const map = new Map<string, ApiKeySummaryRow>();
+  rows.forEach((row) => {
+    if (!row.statsIncluded) return;
+    const key = row.apiKeyHash || `unknown:${row.apiKeyLabel}`;
+    const existing = map.get(key) ?? {
+      apiKeyHash: row.apiKeyHash,
+      apiKeyLabel: row.apiKeyLabel || '-',
+      requests: 0,
+      success: 0,
+      failed: 0,
+      totalTokens: 0,
+      totalCost: 0,
+      lastSeenAt: 0,
+    };
+    existing.requests += 1;
+    existing.success += row.failed ? 0 : 1;
+    existing.failed += row.failed ? 1 : 0;
+    existing.totalTokens += row.totalTokens;
+    existing.totalCost += row.totalCost;
+    existing.lastSeenAt = Math.max(existing.lastSeenAt, row.timestampMs);
+    map.set(key, existing);
+  });
+
+  const sorted = Array.from(map.values());
+  sorted.sort((left, right) => {
+    if (sortKey === 'cost') {
+      return (
+        right.totalCost - left.totalCost ||
+        right.totalTokens - left.totalTokens ||
+        right.requests - left.requests ||
+        right.lastSeenAt - left.lastSeenAt
+      );
+    }
+    if (sortKey === 'requests') {
+      return (
+        right.requests - left.requests ||
+        right.totalTokens - left.totalTokens ||
+        right.lastSeenAt - left.lastSeenAt
+      );
+    }
+    return (
+      right.totalTokens - left.totalTokens ||
+      right.requests - left.requests ||
+      right.lastSeenAt - left.lastSeenAt
+    );
+  });
+  return sorted;
+};
+
+const buildTrendBucketKey = (timestampMs: number, hourly: boolean) => {
+  const date = new Date(timestampMs);
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  if (!hourly) return `${y}-${m}-${d}`;
+  const h = String(date.getHours()).padStart(2, '0');
+  return `${y}-${m}-${d} ${h}:00`;
+};
+
+const buildApiKeyTrendSeries = (
+  rows: MonitoringEventRow[],
+  selectedKeys: string[],
+  metric: ApiKeyTrendMetric,
+  hourly: boolean
+) => {
+  const keySet = new Set(selectedKeys.filter(Boolean));
+  const bucketSet = new Set<string>();
+  rows.forEach((row) => {
+    if (!row.statsIncluded || !keySet.has(row.apiKeyHash)) return;
+    bucketSet.add(buildTrendBucketKey(row.timestampMs, hourly));
+  });
+  const buckets = Array.from(bucketSet).sort();
+  const bucketIndex = new Map<string, number>();
+  buckets.forEach((bucket, idx) => bucketIndex.set(bucket, idx));
+
+  const seriesMap = new Map<string, number[]>();
+  selectedKeys.forEach((key) => {
+    seriesMap.set(key, new Array(buckets.length).fill(0));
+  });
+
+  rows.forEach((row) => {
+    if (!row.statsIncluded || !keySet.has(row.apiKeyHash)) return;
+    const bucket = buildTrendBucketKey(row.timestampMs, hourly);
+    const index = bucketIndex.get(bucket);
+    if (index === undefined) return;
+    const line = seriesMap.get(row.apiKeyHash);
+    if (!line) return;
+    if (metric === 'requests') {
+      line[index] += 1;
+    } else if (metric === 'cost') {
+      line[index] += row.totalCost;
+    } else {
+      line[index] += row.totalTokens;
+    }
+  });
+
+  return { buckets, seriesMap };
+};
+
+const buildSparklinePoints = (values: number[], width = 220, height = 44) => {
+  if (values.length === 0) return '';
+  const max = Math.max(...values, 1);
+  if (values.length === 1) {
+    const y = height - (values[0] / max) * (height - 4) - 2;
+    return `0,${y} ${width},${y}`;
+  }
+  return values
+    .map((value, index) => {
+      const x = (index / (values.length - 1)) * width;
+      const y = height - (value / max) * (height - 4) - 2;
+      return `${x},${y}`;
+    })
+    .join(' ');
 };
 
 function SummaryCard({ label, value, meta, tone, variant = 'primary' }: SummaryCardProps) {
@@ -1765,6 +1898,10 @@ export function MonitoringCenterPage() {
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedChannel, setSelectedChannel] = useState('all');
   const [selectedApiKeyHash, setSelectedApiKeyHash] = useState('all');
+  const [apiKeySummarySortKey, setApiKeySummarySortKey] = useState<ApiKeySummarySortKey>('tokens');
+  const [apiKeySummaryTopN, setApiKeySummaryTopN] = useState('20');
+  const [apiKeyTrendMetric, setApiKeyTrendMetric] = useState<ApiKeyTrendMetric>('tokens');
+  const [apiKeyTrendTopN, setApiKeyTrendTopN] = useState('5');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all');
   const [expandedAccounts, setExpandedAccounts] = useState<Record<string, boolean>>({});
   const [focusedAccount, setFocusedAccount] = useState<string | null>(null);
@@ -1870,6 +2007,22 @@ export function MonitoringCenterPage() {
     loadUsage,
   } = useUsageData();
 
+  const usageQueryParams = useMemo(() => {
+    const nowMs = Date.now();
+    const bounds = getRangeBounds(timeRange, nowMs, customTimeRange);
+    if (!bounds) {
+      return undefined;
+    }
+    const params: { fromMs?: number; toMs?: number } = {};
+    if (Number.isFinite(bounds.startMs)) {
+      params.fromMs = bounds.startMs;
+    }
+    if (Number.isFinite(bounds.endMs)) {
+      params.toMs = bounds.endMs;
+    }
+    return params;
+  }, [customTimeRange, timeRange]);
+
   const {
     loading: monitoringLoading,
     error: monitoringError,
@@ -1888,8 +2041,8 @@ export function MonitoringCenterPage() {
   });
 
   const refreshAll = useCallback(async () => {
-    await Promise.all([loadUsage(), loadApiKeyAliases(), refreshMeta(false)]);
-  }, [loadApiKeyAliases, loadUsage, refreshMeta]);
+    await Promise.all([loadUsage(usageQueryParams), loadApiKeyAliases(), refreshMeta(false)]);
+  }, [loadApiKeyAliases, loadUsage, refreshMeta, usageQueryParams]);
 
   const setCurrentAccountPage = useCallback(
     (page: number) => {
@@ -1906,6 +2059,10 @@ export function MonitoringCenterPage() {
   }, [setCurrentAccountPage]);
 
   useHeaderRefresh(refreshAll);
+  useEffect(() => {
+    void loadUsage(usageQueryParams).catch(() => {});
+  }, [loadUsage, usageQueryParams]);
+
   useInterval(
     () => {
       void refreshAll().catch(() => {});
@@ -2046,7 +2203,7 @@ export function MonitoringCenterPage() {
     return map;
   }, [authFiles]);
 
-  const scopedRows = useMemo(
+  const scopedRowsByDimension = useMemo(
     () =>
       filteredRows.filter((row) => {
         if (selectedAccount !== 'all' && row.account !== selectedAccount) {
@@ -2061,9 +2218,6 @@ export function MonitoringCenterPage() {
         if (selectedChannel !== 'all' && row.channel !== selectedChannel) {
           return false;
         }
-        if (selectedApiKeyHash !== 'all' && row.apiKeyHash !== selectedApiKeyHash) {
-          return false;
-        }
         if (selectedStatus === 'success' && row.failed) {
           return false;
         }
@@ -2075,12 +2229,118 @@ export function MonitoringCenterPage() {
     [
       filteredRows,
       selectedAccount,
-      selectedApiKeyHash,
       selectedChannel,
       selectedModel,
       selectedProvider,
       selectedStatus,
     ]
+  );
+  const apiKeySummarySortOptions = useMemo(
+    () => [
+      {
+        value: 'tokens',
+        label: t('monitoring.api_key_summary_sort_tokens', { defaultValue: '按总Token' }),
+      },
+      {
+        value: 'cost',
+        label: t('monitoring.api_key_summary_sort_cost', { defaultValue: '按预估成本' }),
+      },
+      {
+        value: 'requests',
+        label: t('monitoring.api_key_summary_sort_requests', { defaultValue: '按请求数' }),
+      },
+    ],
+    [t]
+  );
+  const apiKeySummaryTopNOptions = useMemo(
+    () => [
+      { value: '10', label: 'Top 10' },
+      { value: '20', label: 'Top 20' },
+      { value: '50', label: 'Top 50' },
+      { value: '100', label: 'Top 100' },
+      { value: '0', label: t('monitoring.all', { defaultValue: '全部' }) },
+    ],
+    [t]
+  );
+  const apiKeySummaryAllRows = useMemo(
+    () => buildApiKeySummaryRows(scopedRowsByDimension, apiKeySummarySortKey),
+    [apiKeySummarySortKey, scopedRowsByDimension]
+  );
+  const apiKeySummaryRows = useMemo(() => {
+    const rows = apiKeySummaryAllRows;
+    const topN = Number.parseInt(apiKeySummaryTopN, 10);
+    if (!Number.isFinite(topN) || topN <= 0) return rows;
+    return rows.slice(0, topN);
+  }, [apiKeySummaryAllRows, apiKeySummaryTopN]);
+  const apiKeyTrendMetricOptions = useMemo(
+    () => [
+      { value: 'tokens', label: t('monitoring.total_tokens') },
+      { value: 'requests', label: t('monitoring.total_calls') },
+      { value: 'cost', label: t('monitoring.estimated_cost') },
+    ],
+    [t]
+  );
+  const apiKeyTrendTopNOptions = useMemo(
+    () => [
+      { value: '3', label: 'Top 3' },
+      { value: '5', label: 'Top 5' },
+      { value: '10', label: 'Top 10' },
+    ],
+    []
+  );
+  const apiKeyTrendHourly = useMemo(() => {
+    if (timeRange === 'today') return true;
+    if (timeRange !== 'custom' || !customTimeRange) return false;
+    const start = new Date(customTimeRange.startMs);
+    const end = new Date(customTimeRange.endMs);
+    return (
+      start.getFullYear() === end.getFullYear() &&
+      start.getMonth() === end.getMonth() &&
+      start.getDate() === end.getDate()
+    );
+  }, [customTimeRange, timeRange]);
+  const apiKeyTrendSeriesRows = useMemo(() => {
+    const topN = Math.max(1, Number.parseInt(apiKeyTrendTopN, 10) || 5);
+    const selected = apiKeySummaryAllRows
+      .slice(0, topN)
+      .map((row) => row.apiKeyHash)
+      .filter(Boolean);
+    const { buckets, seriesMap } = buildApiKeyTrendSeries(
+      scopedRowsByDimension,
+      selected,
+      apiKeyTrendMetric,
+      apiKeyTrendHourly
+    );
+    return selected
+      .map((key) => {
+        const summary = apiKeySummaryAllRows.find((row) => row.apiKeyHash === key);
+        return {
+          apiKeyHash: key,
+          label: summary?.apiKeyLabel || key,
+          values: seriesMap.get(key) || [],
+          total:
+            apiKeyTrendMetric === 'requests'
+              ? summary?.requests || 0
+              : apiKeyTrendMetric === 'cost'
+                ? summary?.totalCost || 0
+                : summary?.totalTokens || 0,
+          bucketCount: buckets.length,
+        };
+      })
+      .filter((item) => item.values.length > 0);
+  }, [
+    apiKeySummaryAllRows,
+    apiKeyTrendHourly,
+    apiKeyTrendMetric,
+    apiKeyTrendTopN,
+    scopedRowsByDimension,
+  ]);
+  const scopedRows = useMemo(
+    () =>
+      scopedRowsByDimension.filter((row) =>
+        selectedApiKeyHash === 'all' ? true : row.apiKeyHash === selectedApiKeyHash
+      ),
+    [scopedRowsByDimension, selectedApiKeyHash]
   );
   const scopedStatsRows = useMemo(
     () => scopedRows.filter((row) => row.statsIncluded),
@@ -3077,6 +3337,151 @@ export function MonitoringCenterPage() {
           ))}
         </div>
       </section>
+
+      <MonitoringPanel
+        title={t('monitoring.api_key_summary_title', { defaultValue: 'API Key 用量汇总' })}
+        subtitle={t('monitoring.api_key_summary_desc', {
+          defaultValue: '按当前时间范围与筛选条件汇总（不受下方 API Key 单选影响）',
+        })}
+        extra={
+          <div className={`${styles.inlineMetrics} ${styles.realtimeHeaderActions}`}>
+            <Select
+              value={apiKeySummarySortKey}
+              options={apiKeySummarySortOptions}
+              onChange={(value) => setApiKeySummarySortKey(value as ApiKeySummarySortKey)}
+              ariaLabel={t('monitoring.api_key_summary_sort_label', { defaultValue: '汇总排序' })}
+              fullWidth={false}
+            />
+            <Select
+              value={apiKeySummaryTopN}
+              options={apiKeySummaryTopNOptions}
+              onChange={(value) => setApiKeySummaryTopN(value)}
+              ariaLabel={t('monitoring.api_key_summary_topn_label', { defaultValue: '显示条数' })}
+              fullWidth={false}
+            />
+          </div>
+        }
+      >
+        <div className={styles.tableWrapper}>
+          <table className={`${styles.table} ${styles.realtimeTable}`}>
+            <thead>
+              <tr>
+                <th>{t('monitoring.filter_api_key')}</th>
+                <th>{t('monitoring.total_calls')}</th>
+                <th>{t('monitoring.success_calls')}</th>
+                <th>{t('monitoring.failure_calls')}</th>
+                <th>{t('monitoring.total_tokens')}</th>
+                <th>{t('monitoring.estimated_cost')}</th>
+                <th>{t('monitoring.latest_request_time')}</th>
+                <th>{t('common.actions', { defaultValue: '操作' })}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeySummaryRows.map((row) => (
+                <tr key={`${row.apiKeyHash}-${row.apiKeyLabel}`}>
+                  <td>{row.apiKeyLabel}</td>
+                  <td>{formatCompactNumber(row.requests)}</td>
+                  <td>{formatCompactNumber(row.success)}</td>
+                  <td className={row.failed > 0 ? styles.badText : undefined}>
+                    {formatCompactNumber(row.failed)}
+                  </td>
+                  <td>{formatCompactNumber(row.totalTokens)}</td>
+                  <td>{hasPrices ? formatUsd(row.totalCost) : '--'}</td>
+                  <td>{row.lastSeenAt > 0 ? new Date(row.lastSeenAt).toLocaleString(i18n.language) : '-'}</td>
+                  <td>
+                    <Button
+                      variant={selectedApiKeyHash === row.apiKeyHash ? 'primary' : 'secondary'}
+                      onClick={() => setSelectedApiKeyHash(row.apiKeyHash || 'all')}
+                      disabled={!row.apiKeyHash}
+                    >
+                      {selectedApiKeyHash === row.apiKeyHash
+                        ? t('monitoring.selected', { defaultValue: '已选中' })
+                        : t('monitoring.filter_api_key')}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+              {apiKeySummaryRows.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>{renderMonitoringEmptyState()}</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </MonitoringPanel>
+
+      <MonitoringPanel
+        title={t('monitoring.api_key_trend_title', { defaultValue: 'API Key 用量趋势' })}
+        subtitle={t('monitoring.api_key_trend_desc', {
+          defaultValue: '展示 TopN API Key 的时间趋势对比（随当前时间范围变化）',
+        })}
+        extra={
+          <div className={`${styles.inlineMetrics} ${styles.realtimeHeaderActions}`}>
+            <Select
+              value={apiKeyTrendMetric}
+              options={apiKeyTrendMetricOptions}
+              onChange={(value) => setApiKeyTrendMetric(value as ApiKeyTrendMetric)}
+              ariaLabel={t('monitoring.api_key_trend_metric_label', { defaultValue: '趋势指标' })}
+              fullWidth={false}
+            />
+            <Select
+              value={apiKeyTrendTopN}
+              options={apiKeyTrendTopNOptions}
+              onChange={(value) => setApiKeyTrendTopN(value)}
+              ariaLabel={t('monitoring.api_key_trend_topn_label', { defaultValue: '趋势TopN' })}
+              fullWidth={false}
+            />
+          </div>
+        }
+      >
+        <div className={styles.tableWrapper}>
+          <table className={`${styles.table} ${styles.realtimeTable}`}>
+            <thead>
+              <tr>
+                <th>{t('monitoring.filter_api_key')}</th>
+                <th>{t('monitoring.trend', { defaultValue: '趋势' })}</th>
+                <th>{t('monitoring.total', { defaultValue: '总计' })}</th>
+                <th>{t('monitoring.bucket_count', { defaultValue: '点位数' })}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {apiKeyTrendSeriesRows.map((row, index) => {
+                const color = `hsl(${(index * 67) % 360} 72% 48%)`;
+                const points = buildSparklinePoints(row.values);
+                const totalText =
+                  apiKeyTrendMetric === 'cost'
+                    ? formatUsd(row.total)
+                    : formatCompactNumber(row.total);
+                return (
+                  <tr key={`trend-${row.apiKeyHash}`}>
+                    <td>{row.label}</td>
+                    <td>
+                      <svg width="220" height="44" viewBox="0 0 220 44" role="img" aria-label={row.label}>
+                        <polyline
+                          fill="none"
+                          stroke={color}
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          points={points}
+                        />
+                      </svg>
+                    </td>
+                    <td>{totalText}</td>
+                    <td>{row.bucketCount}</td>
+                  </tr>
+                );
+              })}
+              {apiKeyTrendSeriesRows.length === 0 ? (
+                <tr>
+                  <td colSpan={4}>{renderMonitoringEmptyState()}</td>
+                </tr>
+              ) : null}
+            </tbody>
+          </table>
+        </div>
+      </MonitoringPanel>
 
       <MonitoringPanel
         title={

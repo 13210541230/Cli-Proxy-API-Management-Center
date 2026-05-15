@@ -711,18 +711,47 @@ func (s *Store) AddDeadLetter(ctx context.Context, payload string, parseErr erro
 }
 
 func (s *Store) RecentEvents(ctx context.Context, limit int) ([]usage.Event, error) {
+	return s.RecentEventsFiltered(ctx, limit, nil, nil, "")
+}
+
+func (s *Store) RecentEventsFiltered(
+	ctx context.Context,
+	limit int,
+	fromMS *int64,
+	toMS *int64,
+	apiKeyHash string,
+) ([]usage.Event, error) {
 	if limit <= 0 {
 		limit = 50000
 	}
-	rows, err := s.db.QueryContext(ctx, `select
+	query := `select
 		request_id, event_hash, timestamp_ms, timestamp, provider, model, endpoint, method, path,
 		auth_type, auth_index, source, source_hash, api_key_hash,
 		account_snapshot, auth_label_snapshot, auth_file_snapshot, auth_provider_snapshot, auth_snapshot_at_ms,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 		latency_ms, failed, raw_json, created_at_ms
-		from usage_events
-		order by timestamp_ms desc, id desc
-		limit ?`, limit)
+		from usage_events`
+	args := make([]any, 0, 4)
+	where := make([]string, 0, 3)
+	if fromMS != nil {
+		where = append(where, "timestamp_ms >= ?")
+		args = append(args, *fromMS)
+	}
+	if toMS != nil {
+		where = append(where, "timestamp_ms <= ?")
+		args = append(args, *toMS)
+	}
+	if strings.TrimSpace(apiKeyHash) != "" {
+		where = append(where, "lower(api_key_hash) = ?")
+		args = append(args, strings.ToLower(strings.TrimSpace(apiKeyHash)))
+	}
+	if len(where) > 0 {
+		query += " where " + strings.Join(where, " and ")
+	}
+	query += " order by timestamp_ms desc, id desc limit ?"
+	args = append(args, limit)
+
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

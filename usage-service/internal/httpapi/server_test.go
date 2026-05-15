@@ -14,6 +14,7 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/collector"
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
+	"github.com/seakee/cpa-manager/usage-service/internal/usage"
 )
 
 type observedRequest struct {
@@ -638,6 +639,82 @@ func TestModelPricesSyncFromLiteLLMFormat(t *testing.T) {
 	}
 	if price.Source != "litellm" || price.SourceModelID != "gpt-test" {
 		t.Fatalf("source metadata = %#v", price)
+	}
+}
+
+func TestUsageQueryFiltersByRangeAndAPIKeyHash(t *testing.T) {
+	cfg := config.Config{
+		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
+		Queue:       "usage",
+		PopSide:     "right",
+		CORSOrigins: []string{"*"},
+		QueryLimit:  1000,
+	}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	err = db.SaveSetup(context.Background(), store.Setup{
+		CPAUpstreamURL: "http://example.test",
+		ManagementKey:  "management-key",
+		Queue:          "usage",
+		PopSide:        "right",
+	})
+	if err != nil {
+		t.Fatalf("save setup: %v", err)
+	}
+
+	_, err = db.InsertEvents(context.Background(), []usage.Event{
+		{
+			EventHash:   "e-1",
+			TimestampMS: 1_700_000_000_000,
+			Timestamp:   "2023-11-14T22:13:20Z",
+			Model:       "gpt-a",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  "hash-a",
+			TotalTokens: 10,
+			CreatedAtMS: 1_700_000_000_001,
+		},
+		{
+			EventHash:   "e-2",
+			TimestampMS: 1_700_100_000_000,
+			Timestamp:   "2023-11-16T02:00:00Z",
+			Model:       "gpt-b",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  "hash-b",
+			TotalTokens: 20,
+			CreatedAtMS: 1_700_100_000_001,
+		},
+	})
+	if err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+
+	handler := New(cfg, db, collector.NewManager(cfg, db)).Handler()
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v0/management/usage?fromMs=1700050000000&toMs=1700200000000&apiKeyHash=hash-b",
+		nil,
+	)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	var payload struct {
+		TotalRequests int `json:"total_requests"`
+		TotalTokens   int `json:"total_tokens"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if payload.TotalRequests != 1 || payload.TotalTokens != 20 {
+		t.Fatalf("payload = %#v", payload)
 	}
 }
 

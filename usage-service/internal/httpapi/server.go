@@ -658,7 +658,18 @@ func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 			s.handleUsageExport(w, r)
 			return
 		}
-		events, err := s.store.RecentEvents(r.Context(), s.cfg.QueryLimit)
+		filters, err := readUsageFilters(r)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		events, err := s.store.RecentEventsFiltered(
+			r.Context(),
+			s.cfg.QueryLimit,
+			filters.FromMS,
+			filters.ToMS,
+			filters.APIKeyHash,
+		)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -673,6 +684,44 @@ func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 	default:
 		methodNotAllowed(w)
 	}
+}
+
+type usageFilters struct {
+	FromMS     *int64
+	ToMS       *int64
+	APIKeyHash string
+}
+
+func readUsageFilters(r *http.Request) (usageFilters, error) {
+	query := r.URL.Query()
+	fromMS, err := parseOptionalInt64Query(query.Get("fromMs"), "fromMs")
+	if err != nil {
+		return usageFilters{}, err
+	}
+	toMS, err := parseOptionalInt64Query(query.Get("toMs"), "toMs")
+	if err != nil {
+		return usageFilters{}, err
+	}
+	if fromMS != nil && toMS != nil && *fromMS > *toMS {
+		return usageFilters{}, errors.New("fromMs must be less than or equal to toMs")
+	}
+	return usageFilters{
+		FromMS:     fromMS,
+		ToMS:       toMS,
+		APIKeyHash: strings.TrimSpace(query.Get("apiKeyHash")),
+	}, nil
+}
+
+func parseOptionalInt64Query(raw string, field string) (*int64, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil, nil
+	}
+	value, err := strconv.ParseInt(trimmed, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("%s must be an integer", field)
+	}
+	return &value, nil
 }
 
 func (s *Server) handleUsageExport(w http.ResponseWriter, r *http.Request) {

@@ -7,6 +7,7 @@ import {
   type ApiKeyAliasesResponse,
   type ModelPricesResponse,
   type ModelPriceSyncResponse,
+  type UsageQueryParams,
   type UsageExportResponse,
   type UsageImportResponse,
 } from '@/services/api/usageService';
@@ -36,7 +37,7 @@ export interface UseUsageDataReturn {
   syncModelPrices: (models?: string[]) => Promise<ModelPriceSyncResponse>;
   exportUsage: () => Promise<UsageExportResponse>;
   importUsage: (file: File) => Promise<UsageImportResponse>;
-  loadUsage: () => Promise<void>;
+  loadUsage: (params?: UsageQueryParams) => Promise<void>;
 }
 
 export function useUsageData(): UseUsageDataReturn {
@@ -173,7 +174,7 @@ export function useUsageData(): UseUsageDataReturn {
     }
   }, [getApiKeyAliasesFromApi]);
 
-  const loadUsage = useCallback(async () => {
+  const loadUsage = useCallback(async (params?: UsageQueryParams) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
     setLoading(true);
@@ -188,7 +189,7 @@ export function useUsageData(): UseUsageDataReturn {
         return;
       }
       setUsageServiceAvailable(true);
-      const payload = await usageServiceApi.getUsage(serviceBase, managementKey);
+      const payload = await usageServiceApi.getUsage(serviceBase, managementKey, params);
       if (requestIdRef.current !== requestId) return;
       setUsage(payload ?? null);
       setLastRefreshedAt(new Date());

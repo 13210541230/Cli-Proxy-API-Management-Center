@@ -155,8 +155,11 @@ const buildSearchText = (...parts: Array<string | number | boolean | null | unde
     .filter(Boolean)
     .join(' ');
 
+const formatApiKeyHashSuffix = (apiKeyHash: string) =>
+  apiKeyHash ? apiKeyHash.slice(-6) : '------';
+
 const formatApiKeyHashLabel = (apiKeyHash: string) =>
-  apiKeyHash ? `sha256:${apiKeyHash.slice(0, 12)}` : '-';
+  apiKeyHash ? `未命名（${formatApiKeyHashSuffix(apiKeyHash)}）` : '-';
 
 type ApiKeyDisplayInfo = {
   label: string;
@@ -180,7 +183,7 @@ export const buildApiKeyDisplayMap = (
     if (!hash || !alias) return;
     const existing = map.get(hash);
     map.set(hash, {
-      label: alias,
+      label: `${alias}（${formatApiKeyHashSuffix(hash)}）`,
       masked: existing?.masked || existing?.label || formatApiKeyHashLabel(hash),
     });
   });
