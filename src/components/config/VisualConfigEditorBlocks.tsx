@@ -320,19 +320,37 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
 
   const normalizeAliasKey = (alias: string) => alias.trim().toLowerCase();
 
-  const isDuplicateAlias = (alias: string, currentApiKeyHash: string) => {
+  const isDuplicateAlias = (
+    alias: string,
+    currentApiKeyHash: string,
+    previousApiKeyHash: string = ''
+  ) => {
     const aliasKey = normalizeAliasKey(alias);
     const currentHash = currentApiKeyHash.trim().toLowerCase();
+    const previousHash = previousApiKeyHash.trim().toLowerCase();
     if (!aliasKey) return false;
     return apiKeyAliases.some((item) => {
       const itemHash = String(item.apiKeyHash || '')
         .trim()
         .toLowerCase();
-      return itemHash !== currentHash && normalizeAliasKey(String(item.alias || '')) === aliasKey;
+      if (normalizeAliasKey(String(item.alias || '')) !== aliasKey) {
+        return false;
+      }
+      if (itemHash === currentHash) {
+        return false;
+      }
+      if (previousHash && itemHash === previousHash) {
+        return false;
+      }
+      return true;
     });
   };
 
-  const validateAlias = (alias: string, currentApiKeyHash: string = '') => {
+  const validateAlias = (
+    alias: string,
+    currentApiKeyHash: string = '',
+    previousApiKeyHash: string = ''
+  ) => {
     const trimmed = alias.trim();
     if (!trimmed) {
       return t('config_management.visual.api_keys.alias_error_empty');
@@ -340,7 +358,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     if (Array.from(trimmed).length > 120) {
       return t('config_management.visual.api_keys.alias_error_too_long');
     }
-    if (isDuplicateAlias(trimmed, currentApiKeyHash)) {
+    if (isDuplicateAlias(trimmed, currentApiKeyHash, previousApiKeyHash)) {
       return t('config_management.visual.api_keys.alias_error_duplicate');
     }
     return '';
@@ -440,9 +458,23 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
     onChange(nextKeys.join('\n'));
   };
 
-  const handleDelete = (apiKeyId: string) => {
+  const handleDelete = async (apiKeyId: string) => {
     const index = renderApiKeyIds.findIndex((id) => id === apiKeyId);
     if (index < 0) return;
+
+    const deletingKey = apiKeys[index] ?? '';
+    const deletingHash = getApiKeyHash(deletingKey);
+    const hasAlias = deletingHash ? aliasByHash.has(deletingHash) : false;
+
+    if (hasAlias && deletingHash) {
+      try {
+        await deleteAliasForHash(deletingHash);
+      } catch (error) {
+        showNotification(getAliasErrorMessage(error), 'error');
+        return;
+      }
+    }
+
     setApiKeyIds(renderApiKeyIds.filter((id) => id !== apiKeyId));
     updateApiKeys(apiKeys.filter((_, i) => i !== index));
   };
@@ -450,6 +482,12 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
   const handleSave = async () => {
     const trimmed = inputValue.trim();
     const trimmedAlias = inputAliasValue.trim();
+    const editingIndex = editingApiKeyId
+      ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
+      : -1;
+    const previousKey = editingIndex >= 0 ? (apiKeys[editingIndex] ?? '') : '';
+    const previousHash = getApiKeyHash(previousKey);
+
     if (!trimmed) {
       setFormError(t('config_management.visual.api_keys.error_empty'));
       return;
@@ -459,7 +497,7 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       return;
     }
     if (trimmedAlias) {
-      const aliasError = validateAlias(trimmedAlias, getApiKeyHash(trimmed));
+      const aliasError = validateAlias(trimmedAlias, getApiKeyHash(trimmed), previousHash);
       if (aliasError) {
         setFormError(aliasError);
         return;
@@ -470,9 +508,21 @@ export const ApiKeysCardEditor = memo(function ApiKeysCardEditor({
       }
     }
 
-    const editingIndex = editingApiKeyId
-      ? renderApiKeyIds.findIndex((id) => id === editingApiKeyId)
-      : -1;
+    const nextHash = getApiKeyHash(trimmed);
+    const hashChanged = editingApiKeyId !== null && previousHash && nextHash && previousHash !== nextHash;
+
+    if (hashChanged && aliasByHash.has(previousHash)) {
+      try {
+        setAliasSaving(true);
+        await deleteAliasForHash(previousHash);
+      } catch (error) {
+        setFormError(getAliasErrorMessage(error));
+        setAliasSaving(false);
+        return;
+      }
+      setAliasSaving(false);
+    }
+
     const nextKeys =
       editingApiKeyId === null
         ? [...apiKeys, trimmed]
