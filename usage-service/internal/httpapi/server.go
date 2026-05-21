@@ -1355,7 +1355,7 @@ func (s *Server) writeUsageReportCSV(w http.ResponseWriter, rows []store.UsageRe
 				row.DepartmentName,
 				row.UserName,
 				row.Email,
-				row.APIKeyHash,
+				row.APIKey,
 				m.Model,
 				strconv.FormatInt(m.TotalTokens, 10),
 				strconv.FormatInt(m.Requests, 10),

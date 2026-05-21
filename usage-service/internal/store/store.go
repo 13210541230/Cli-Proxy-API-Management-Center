@@ -193,6 +193,7 @@ func (s *Store) init() error {
 		`create index if not exists idx_usage_events_model on usage_events(model)`,
 		`create index if not exists idx_usage_events_auth_index on usage_events(auth_index)`,
 		`create index if not exists idx_usage_events_endpoint on usage_events(endpoint)`,
+	`create index if not exists idx_usage_events_api_key_hash on usage_events(api_key_hash)`,
 		`create table if not exists dead_letter_events (
 			id integer primary key autoincrement,
 			payload text not null,
@@ -379,7 +380,7 @@ func (s *Store) ensureEnterpriseSchema() error {
 		return err
 	}
 	if _, err := s.db.Exec(`
-		update enterprise_key_bindings
+			update enterprise_key_bindings
 		set user_name = '', updated_at_ms = ?
 		where source = 'sync' and user_name like 'synced_%'
 	`, now); err != nil {
@@ -1332,7 +1333,7 @@ type UsageReportModel struct {
 
 // UsageReportKeyRow contains per-api-key aggregated data with nested models.
 type UsageReportKeyRow struct {
-	APIKeyHash       string             `json:"apiKeyHash"`
+	APIKey           string             `json:"apiKey"`
 	UserName         string             `json:"userName"`
 	DepartmentID     string             `json:"departmentId"`
 	DepartmentName   string             `json:"departmentName"`
@@ -1354,7 +1355,9 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 	query := `
 		select
 			ue.api_key_hash,
-			ue.model,
+
+				coalesce(ekb.api_key, ''),
+				ue.model,
 			coalesce(ekb.user_name, ''),
 			coalesce(ekb.department_id, ''),
 			coalesce(ed.name, ''),
@@ -1370,7 +1373,7 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 		left join enterprise_departments ed on ekb.department_id = ed.id
 		where ue.timestamp_ms >= ? and ue.timestamp_ms <= ?
 		  and (ue.failed = 0 or ue.total_tokens > 0)
-		group by ue.api_key_hash, ue.model, ekb.user_name, ekb.department_id, ed.name, ekb.email
+		group by ue.api_key_hash, ue.model, ekb.user_name, ekb.department_id, ed.name, ekb.email, ekb.api_key
 		order by ed.name, ekb.user_name
 	`
 	rows, err := s.db.QueryContext(ctx, query, fromMS, toMS)
@@ -1381,6 +1384,7 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 
 	type flatRow struct {
 		apiKeyHash       string
+			apiKey           string
 		model            string
 		userName         string
 		departmentID     string
@@ -1397,23 +1401,24 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 	for rows.Next() {
 		var f flatRow
 		if err := rows.Scan(
-			&f.apiKeyHash,
-			&f.model,
-			&f.userName,
-			&f.departmentID,
-			&f.departmentName,
-			&f.email,
-			&f.totalTokens,
-			&f.totalRequests,
-			&f.failedRequests,
-			&f.cachedTokens,
-			&f.totalCacheTokens,
-			&f.cacheHits,
-		); err != nil {
-			return nil, err
+				&f.apiKeyHash,
+				&f.apiKey,
+				&f.model,
+				&f.userName,
+				&f.departmentID,
+				&f.departmentName,
+				&f.email,
+				&f.totalTokens,
+				&f.totalRequests,
+				&f.failedRequests,
+				&f.cachedTokens,
+				&f.totalCacheTokens,
+				&f.cacheHits,
+			); err != nil {
+				return nil, err
+			}
+			flats = append(flats, f)
 		}
-		flats = append(flats, f)
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -1432,7 +1437,7 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 			keyIndex[f.apiKeyHash] = idx
 			accums = append(accums, keyAccum{
 				row: UsageReportKeyRow{
-					APIKeyHash:     f.apiKeyHash,
+					APIKey:         f.apiKey,
 					UserName:       f.userName,
 					DepartmentID:   f.departmentID,
 					DepartmentName: f.departmentName,

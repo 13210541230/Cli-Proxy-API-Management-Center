@@ -91,7 +91,7 @@ describe('buildApiKeyDisplayMap', () => {
     const apiKeyHash = sha256Hex(apiKey);
     const map = buildApiKeyDisplayMap([apiKey], [{ apiKeyHash, alias: 'Team A', updatedAtMs: 1 }]);
 
-    expect(map.get(apiKeyHash)?.label).toBe('Team A');
+    expect(map.get(apiKeyHash)?.label).toBe(`Team A（${apiKeyHash.slice(-6)}）`);
     expect(map.get(apiKeyHash)?.masked).toMatch(/^sk/);
   });
 });

@@ -380,24 +380,26 @@ func TestStoreUsageReport(t *testing.T) {
 	}); err != nil {
 		t.Fatalf("upsert key bindings: %v", err)
 	}
-	// Look up the generated hashes
+	// Look up the generated binding keys
 	bindings, err := db.LoadEnterpriseKeyBindings(ctx)
 	if err != nil {
 		t.Fatalf("load bindings: %v", err)
 	}
+	var keyA, keyB string
 	var hashA, hashB string
 	for _, b := range bindings {
 		switch b.UserName {
 		case "zhangsan":
+			keyA = b.APIKey
 			hashA = b.APIKeyHash
 		case "lisi":
+			keyB = b.APIKey
 			hashB = b.APIKeyHash
 		}
 	}
-	if hashA == "" || hashB == "" {
-		t.Fatalf("could not resolve key hashes: %#v", bindings)
+	if keyA == "" || keyB == "" {
+		t.Fatalf("could not resolve binding keys: %#v", bindings)
 	}
-
 	// Seed usage events — hashA has two models, hashB has one
 	if _, err := db.InsertEvents(ctx, []usage.Event{
 		{
@@ -472,8 +474,8 @@ func TestStoreUsageReport(t *testing.T) {
 			if row0.UserName != "lisi" || row0.DepartmentName != "上海总部" || row0.Email != "lis@example.com" {
 				t.Fatalf("row0 user/dept/email = %q/%q/%q", row0.UserName, row0.DepartmentName, row0.Email)
 			}
-			if row0.APIKeyHash != hashB {
-				t.Fatalf("row0 apiKeyHash = %q, want %q", row0.APIKeyHash, hashB)
+			if row0.APIKey != keyB {
+				t.Fatalf("row0 apiKeyHash = %q, want %q", row0.APIKey, hashB)
 			}
 			if len(row0.Models) != 1 {
 				t.Fatalf("row0 models = %d, want 1", len(row0.Models))
@@ -506,8 +508,8 @@ func TestStoreUsageReport(t *testing.T) {
 			if row1.UserName != "zhangsan" || row1.Email != "zs@example.com" {
 				t.Fatalf("row1 user/email = %q/%q", row1.UserName, row1.Email)
 			}
-			if row1.APIKeyHash != hashA {
-				t.Fatalf("row1 apiKeyHash = %q, want %q", row1.APIKeyHash, hashA)
+			if row1.APIKey != keyA {
+				t.Fatalf("row1 apiKey = %q, want %q", row1.APIKey, hashA)
 			}
 			if len(row1.Models) != 2 {
 				t.Fatalf("row1 models = %d, want 2", len(row1.Models))

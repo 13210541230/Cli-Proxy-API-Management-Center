@@ -1018,7 +1018,7 @@ func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
 		FromMs int64 `json:"fromMs"`
 		ToMs   int64 `json:"toMs"`
 		Items  []struct {
-			APIKeyHash       string   `json:"apiKeyHash"`
+			APIKeyHash       string   `json:"apiKey"`
 			UserName         string   `json:"userName"`
 			DepartmentName   string   `json:"departmentName"`
 			Email            string   `json:"email"`
