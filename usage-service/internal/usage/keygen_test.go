@@ -49,6 +49,9 @@ func TestKeyGenCSVPreview(t *testing.T) {
 	if !firstRE.MatchString(items[0].GeneratedKey) {
 		t.Fatalf("row1 key %q does not match /^sh-zs-[A-Za-z0-9]{30}$/", items[0].GeneratedKey)
 	}
+	if items[0].Email != "" {
+		t.Fatalf("row1 email expected empty (no email column in csv), got %q", items[0].Email)
+	}
 
 	secondRE := regexp.MustCompile(`^bj-zsf-[A-Za-z0-9]{30}$`)
 	if items[1].Status != "ok" {
@@ -57,9 +60,15 @@ func TestKeyGenCSVPreview(t *testing.T) {
 	if !secondRE.MatchString(items[1].GeneratedKey) {
 		t.Fatalf("row2 key %q does not match /^bj-zsf-[A-Za-z0-9]{30}$/", items[1].GeneratedKey)
 	}
+	if items[1].Email != "" {
+		t.Fatalf("row2 email expected empty (no email column in csv), got %q", items[1].Email)
+	}
 
 	if items[2].Status != "error" {
 		t.Fatalf("row3 status expected error for missing department, got %s", items[2].Status)
+	}
+	if items[2].Email != "" {
+		t.Fatalf("row3 email expected empty (no email column in csv), got %q", items[2].Email)
 	}
 }
 
@@ -78,6 +87,9 @@ func TestKeyGenCSVPreviewChineseHeader(t *testing.T) {
 	}
 	if items[0].Status != "ok" {
 		t.Fatalf("row1 status expected ok, got %s", items[0].Status)
+	}
+	if items[0].Email != "" {
+		t.Fatalf("row1 email expected empty (no email column in csv), got %q", items[0].Email)
 	}
 }
 
@@ -99,5 +111,8 @@ func TestKeyGenCSVPreviewExportedHeader(t *testing.T) {
 	}
 	if items[0].GeneratedKey != "sh-lisi-fk-001" {
 		t.Fatalf("row1 generated key expected sh-lisi-fk-001, got %s", items[0].GeneratedKey)
+	}
+	if items[0].Email != "" {
+		t.Fatalf("row1 email expected empty (no email column in csv), got %q", items[0].Email)
 	}
 }

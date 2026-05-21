@@ -76,6 +76,7 @@ type KeyGenPreviewItem struct {
 	UserName       string `json:"userName"`
 	DepartmentName string `json:"departmentName"`
 	DepartmentID   string `json:"departmentId"`
+	Email          string `json:"email,omitempty"`
 	GeneratedKey   string `json:"generatedKey,omitempty"`
 	Status         string `json:"status"` // ok | error | warning
 	ErrorReason    string `json:"errorReason,omitempty"`
@@ -118,6 +119,7 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 	usernameIdx := -1
 	departmentIdx := -1
 	apiKeyIdx := -1
+	emailIdx := -1
 	for i, col := range h {
 		if col == "username" || col == "用户名" {
 			usernameIdx = i
@@ -127,6 +129,9 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 		}
 		if col == "apikey" || col == "api密钥" || col == "api秘钥" {
 			apiKeyIdx = i
+		}
+		if col == "email" || col == "e-mail" || col == "邮箱" || col == "邮件" {
+			emailIdx = i
 		}
 	}
 	if usernameIdx < 0 || departmentIdx < 0 {
@@ -148,6 +153,9 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 		if apiKeyIdx > maxIdx {
 			maxIdx = apiKeyIdx
 		}
+		if emailIdx > maxIdx {
+			maxIdx = emailIdx
+		}
 		if len(row) <= maxIdx {
 			items = append(items, KeyGenPreviewItem{Status: "error", ErrorReason: fmt.Sprintf("row %d: expected username,department", i+1)})
 			continue
@@ -159,10 +167,15 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 		if apiKeyIdx >= 0 && len(row) > apiKeyIdx {
 			existingKey = strings.TrimSpace(row[apiKeyIdx])
 		}
+		email := ""
+		if emailIdx >= 0 && len(row) > emailIdx {
+			email = strings.TrimSpace(row[emailIdx])
+		}
 		if deptName == "" || (userName == "" && existingKey == "") {
 			items = append(items, KeyGenPreviewItem{
 				UserName:       userName,
 				DepartmentName: deptName,
+				Email:          email,
 				Status:         "error",
 				ErrorReason:    "username and department are required",
 			})
@@ -174,6 +187,7 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 			items = append(items, KeyGenPreviewItem{
 				UserName:       userName,
 				DepartmentName: deptName,
+				Email:          email,
 				Status:         "error",
 				ErrorReason:    fmt.Sprintf("department not found: %s", deptName),
 			})
@@ -188,6 +202,7 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 					UserName:       userName,
 					DepartmentName: deptName,
 					DepartmentID:   dept.ID,
+					Email:          email,
 					Status:         "error",
 					ErrorReason:    err.Error(),
 				})
@@ -200,6 +215,7 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 					UserName:       userName,
 					DepartmentName: deptName,
 					DepartmentID:   dept.ID,
+					Email:          email,
 					Status:         "error",
 					ErrorReason:    err.Error(),
 				})
@@ -211,6 +227,7 @@ func ParseCSVPreview(csvContent []byte, departments []DepartmentLite) ([]KeyGenP
 			UserName:       userName,
 			DepartmentName: deptName,
 			DepartmentID:   dept.ID,
+			Email:          email,
 			GeneratedKey:   key,
 			Status:         "ok",
 		})
