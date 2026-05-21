@@ -308,11 +308,22 @@ docker compose -f docker-compose.usage.yml up --build
 | `PUT /v0/management/model-prices` | 替换已保存的模型价格 |
 | `POST /v0/management/model-prices/sync` | 从 LiteLLM 价格元数据同步模型价格 |
 | `GET /models`、`GET /v1/models` | setup 后将模型列表请求反代到 CPA |
+| `GET /v0/management/enterprise/usage-report` | 企业 API Key 用量报表（支持 `format=json|csv`，需 Management Key） |
 | `/v0/management/*` | 除 usage 外反代到 CPA |
 
-setup 后，`/status`、用量、模型价格和 `/v0/management/*` 反代接口需要使用同一个 Management Key 作为 Bearer token。
+setup 后，`/status`、用量、模型价格、企业 usage-report 以及 `/v0/management/*` 反代接口需要使用同一个 Management Key 作为 Bearer token。
 
 用量导入支持两类文件：Usage Service 导出的 JSONL/NDJSON 事件文件，以及旧版 CPA `/usage/export` 生成的 JSON 快照。旧版 JSON 只有在 `usage.apis.*.models.*.details[]` 明细存在时才能转换为事件；如果文件只包含聚合总量，Usage Service 会拒绝导入，因为无法还原请求级明细。旧版导入属于迁移/恢复能力，不是与 Usage Service 新采集数据完全等价的历史延续：旧文件可能缺少 `api_key_hash`、渠道、请求 ID、method/path、延迟、缓存 token 或失败原因等元数据，账号匹配、API Key 维度分析和明细精度可能低于新采集数据。导入旧文件会影响总量、趋势图和账号/Key 拆解，准确性敏感时建议先导入测试库或备份库验证。
+
+企业 usage-report 导出示例：
+
+```bash
+curl -H "Authorization: Bearer <management-key>" \
+  "http://localhost:18317/v0/management/enterprise/usage-report?fromMs=<from>&toMs=<to>&format=json"
+
+curl -H "Authorization: Bearer <management-key>" \
+  "http://localhost:18317/v0/management/enterprise/usage-report?fromMs=<from>&toMs=<to>&format=csv"
+```
 
 ## 功能概览
 
