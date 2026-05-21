@@ -1114,14 +1114,15 @@ func (s *Store) UpsertEnterpriseKeyBindings(ctx context.Context, items []Enterpr
 	}
 	defer func() { _ = tx.Rollback() }()
 	stmt, err := tx.PrepareContext(ctx, `insert into enterprise_key_bindings (
-		api_key, api_key_hash, user_name, department_id, source, department_resolved_by, updated_by, created_at_ms, updated_at_ms
-	) values(?, ?, ?, ?, ?, ?, ?, ?, ?)
+		api_key, api_key_hash, user_name, department_id, source, department_resolved_by, email, updated_by, created_at_ms, updated_at_ms
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	on conflict(api_key) do update set
 		api_key_hash=excluded.api_key_hash,
 		user_name=excluded.user_name,
 		department_id=excluded.department_id,
 		source=excluded.source,
 		department_resolved_by=excluded.department_resolved_by,
+			email=excluded.email,
 		updated_by=excluded.updated_by,
 		updated_at_ms=excluded.updated_at_ms`)
 	if err != nil {
@@ -1164,7 +1165,7 @@ func (s *Store) UpsertEnterpriseKeyBindings(ctx context.Context, items []Enterpr
 		}
 		sum := sha256.Sum256([]byte(apiKey))
 		apiKeyHash := fmt.Sprintf("%x", sum)
-		if _, err := stmt.ExecContext(ctx, apiKey, apiKeyHash, userName, deptID, source, resolvedBy, nullString(strings.TrimSpace(item.UpdatedBy)), createdAt, updatedAt); err != nil {
+		if _, err := stmt.ExecContext(ctx, apiKey, apiKeyHash, userName, deptID, source, resolvedBy, strings.TrimSpace(item.Email), nullString(strings.TrimSpace(item.UpdatedBy)), createdAt, updatedAt); err != nil {
 			return err
 		}
 		if _, err := tx.ExecContext(ctx, `insert into api_key_aliases(api_key_hash, alias, updated_at_ms)
