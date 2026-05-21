@@ -1178,7 +1178,7 @@ func (s *Store) UpsertEnterpriseKeyBindings(ctx context.Context, items []Enterpr
 }
 
 func (s *Store) LoadEnterpriseKeyBindings(ctx context.Context) ([]EnterpriseKeyBinding, error) {
-	rows, err := s.db.QueryContext(ctx, `select api_key, api_key_hash, user_name, department_id, source, department_resolved_by, updated_by, created_at_ms, updated_at_ms
+	rows, err := s.db.QueryContext(ctx, `select api_key, api_key_hash, user_name, department_id, source, department_resolved_by, email, updated_by, created_at_ms, updated_at_ms
 		from enterprise_key_bindings order by updated_at_ms desc, api_key asc`)
 	if err != nil {
 		return nil, err
@@ -1188,7 +1188,7 @@ func (s *Store) LoadEnterpriseKeyBindings(ctx context.Context) ([]EnterpriseKeyB
 	for rows.Next() {
 		var item EnterpriseKeyBinding
 		var updatedBy sql.NullString
-		if err := rows.Scan(&item.APIKey, &item.APIKeyHash, &item.UserName, &item.DepartmentID, &item.Source, &item.DepartmentResolvedBy, &updatedBy, &item.CreatedAtMS, &item.UpdatedAtMS); err != nil {
+		if err := rows.Scan(&item.APIKey, &item.APIKeyHash, &item.UserName, &item.DepartmentID, &item.Source, &item.DepartmentResolvedBy, &item.Email, &updatedBy, &item.CreatedAtMS, &item.UpdatedAtMS); err != nil {
 			return nil, err
 		}
 		item.UpdatedBy = updatedBy.String
