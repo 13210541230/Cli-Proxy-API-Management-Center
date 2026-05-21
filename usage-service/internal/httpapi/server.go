@@ -103,6 +103,7 @@ type createEnterpriseKeyBindingRequest struct {
 	UserName     string `json:"userName"`
 	DepartmentID string `json:"departmentId"`
 	APIKey       string `json:"apiKey"`
+	Email        string `json:"email,omitempty"`
 }
 
 type deleteEnterpriseKeyBindingsRequest struct {
@@ -914,6 +915,7 @@ func (s *Server) handleCreateEnterpriseKeyBinding(w http.ResponseWriter, r *http
 		APIKey:               key,
 		UserName:             strings.TrimSpace(req.UserName),
 		DepartmentID:         strings.TrimSpace(req.DepartmentID),
+		Email:                strings.TrimSpace(req.Email),
 		Source:               "manual",
 		DepartmentResolvedBy: "manual",
 	}
@@ -1121,6 +1123,7 @@ func (s *Server) handleImportEnterpriseKeyBindings(w http.ResponseWriter, r *htt
 		toUpsert = append(toUpsert, store.EnterpriseKeyBinding{
 			APIKey:               apiKey,
 			UserName:             strings.TrimSpace(item.UserName),
+				Email:                strings.TrimSpace(item.Email),
 			DepartmentID:         strings.TrimSpace(item.DepartmentID),
 			Source:               "import",
 			DepartmentResolvedBy: "csv",
