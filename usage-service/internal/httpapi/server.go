@@ -113,6 +113,7 @@ type deleteEnterpriseKeyBindingsRequest struct {
 type updateEnterpriseKeyBindingRequest struct {
 	UserName     string `json:"userName"`
 	DepartmentID string `json:"departmentId"`
+	Email        string `json:"email,omitempty"`
 }
 
 type keyBindingGenerateRequest struct {
@@ -1018,6 +1019,7 @@ func (s *Server) handleUpdateEnterpriseKeyBinding(w http.ResponseWriter, r *http
 	updated := *current
 	updated.UserName = strings.TrimSpace(req.UserName)
 	updated.DepartmentID = strings.TrimSpace(req.DepartmentID)
+	updated.Email = strings.TrimSpace(req.Email)
 	updated.Source = "manual"
 	updated.DepartmentResolvedBy = "manual"
 	updated.UpdatedAtMS = time.Now().UnixMilli()
