@@ -251,3 +251,95 @@ func TestStoreEnterpriseMetadataPersistence(t *testing.T) {
 		t.Fatalf("history ErrorDetails = %q", history[0].ErrorDetails)
 	}
 }
+
+func TestStoreEnterpriseSchemaMigrationIsIdempotent(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	if err := db.ensureEnterpriseSchema(); err != nil {
+		t.Fatalf("ensure schema first run: %v", err)
+	}
+	if err := db.ensureEnterpriseSchema(); err != nil {
+		t.Fatalf("ensure schema second run: %v", err)
+	}
+
+	var count int
+	if err := db.db.QueryRow(`select count(*) from pragma_table_info('enterprise_key_bindings') where name = 'email'`).Scan(&count); err != nil {
+		t.Fatalf("query email column: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("email column count = %d, want 1", count)
+	}
+}
+
+func TestStoreEnterpriseKeyBindingsPersistEmail(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	ctx := context.Background()
+	if err := db.UpsertEnterpriseDepartments(ctx, []EnterpriseDepartment{{
+		ID:        "dept_sh",
+		Name:      "上海总部",
+		Prefix:    "sh",
+		SortOrder: 1,
+		Enabled:   true,
+	}}); err != nil {
+		t.Fatalf("upsert departments: %v", err)
+	}
+
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []EnterpriseKeyBinding{{
+		APIKey:               "sh-abc123",
+		UserName:             "zhangsan",
+		DepartmentID:         "dept_sh",
+		Email:                "  zs@example.com  ",
+		Source:               "manual",
+		DepartmentResolvedBy: "manual",
+	}}); err != nil {
+		t.Fatalf("create key binding: %v", err)
+	}
+
+	bindings, err := db.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		t.Fatalf("load created key bindings: %v", err)
+	}
+	if len(bindings) != 1 {
+		t.Fatalf("len(bindings) after create = %d, want 1", len(bindings))
+	}
+	if bindings[0].Email != "zs@example.com" {
+		t.Fatalf("created binding email = %q, want zs@example.com", bindings[0].Email)
+	}
+
+	createdAt := bindings[0].CreatedAtMS
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []EnterpriseKeyBinding{{
+		APIKey:               "sh-abc123",
+		UserName:             "zhangsan",
+		DepartmentID:         "dept_sh",
+		Email:                "updated@example.com",
+		Source:               "manual",
+		DepartmentResolvedBy: "manual",
+		CreatedAtMS:          createdAt,
+	}}); err != nil {
+		t.Fatalf("update key binding: %v", err)
+	}
+
+	bindings, err = db.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		t.Fatalf("load updated key bindings: %v", err)
+	}
+	if len(bindings) != 1 {
+		t.Fatalf("len(bindings) after update = %d, want 1", len(bindings))
+	}
+	if bindings[0].Email != "updated@example.com" {
+		t.Fatalf("updated binding email = %q, want updated@example.com", bindings[0].Email)
+	}
+}

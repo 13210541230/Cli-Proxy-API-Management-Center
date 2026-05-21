@@ -802,6 +802,129 @@ func TestEnterpriseKeyBindingsImportPersistsErrorDetails(t *testing.T) {
 	}
 }
 
+func TestEnterpriseKeyBindingsCreateAndUpdateEmail(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut && r.URL.Path == "/v0/management/api-keys" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok":true}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler := newTestHandler(t, upstream.URL, true)
+
+	putDepartmentsReq := httptest.NewRequest(
+		http.MethodPut,
+		"/v0/management/enterprise/departments",
+		bytes.NewBufferString(`{"items":[{"id":"dept_sh","name":"上海","prefix":"sh","sortOrder":1,"enabled":true,"system":false}]}`),
+	)
+	putDepartmentsReq.Header.Set("Authorization", "Bearer management-key")
+	putDepartmentsRR := httptest.NewRecorder()
+	handler.ServeHTTP(putDepartmentsRR, putDepartmentsReq)
+	if putDepartmentsRR.Code != http.StatusOK {
+		t.Fatalf("put departments status = %d, body = %s", putDepartmentsRR.Code, putDepartmentsRR.Body.String())
+	}
+
+	createReq := httptest.NewRequest(
+		http.MethodPost,
+		"/v0/management/enterprise/key-bindings",
+		bytes.NewBufferString(`{"userName":"张三","departmentId":"dept_sh","apiKey":"sh-zs-fixed","email":"  zs@example.com  "}`),
+	)
+	createReq.Header.Set("Authorization", "Bearer management-key")
+	createRR := httptest.NewRecorder()
+	handler.ServeHTTP(createRR, createReq)
+	if createRR.Code != http.StatusOK {
+		t.Fatalf("create status = %d, body = %s", createRR.Code, createRR.Body.String())
+	}
+
+	var created struct {
+		APIKey       string `json:"apiKey"`
+		DepartmentID string `json:"departmentId"`
+		Email        string `json:"email"`
+	}
+	if err := json.Unmarshal(createRR.Body.Bytes(), &created); err != nil {
+		t.Fatalf("decode create response: %v", err)
+	}
+	if created.APIKey != "sh-zs-fixed" || created.DepartmentID != "dept_sh" || created.Email != "zs@example.com" {
+		t.Fatalf("created binding = %#v", created)
+	}
+
+	updateReq := httptest.NewRequest(
+		http.MethodPatch,
+		"/v0/management/enterprise/key-bindings/sh-zs-fixed",
+		bytes.NewBufferString(`{"userName":"张三","departmentId":"dept_sh","email":"updated@example.com"}`),
+	)
+	updateReq.Header.Set("Authorization", "Bearer management-key")
+	updateRR := httptest.NewRecorder()
+	handler.ServeHTTP(updateRR, updateReq)
+	if updateRR.Code != http.StatusOK {
+		t.Fatalf("update status = %d, body = %s", updateRR.Code, updateRR.Body.String())
+	}
+
+	var updated struct {
+		APIKey       string `json:"apiKey"`
+		DepartmentID string `json:"departmentId"`
+		Email        string `json:"email"`
+	}
+	if err := json.Unmarshal(updateRR.Body.Bytes(), &updated); err != nil {
+		t.Fatalf("decode update response: %v", err)
+	}
+	if updated.APIKey != "sh-zs-fixed" || updated.DepartmentID != "dept_sh" || updated.Email != "updated@example.com" {
+		t.Fatalf("updated binding = %#v", updated)
+	}
+}
+
+func TestEnterpriseKeyBindingsGenerateReturnsEmail(t *testing.T) {
+	handler := newTestHandler(t, "http://example.test", true)
+
+	putDepartmentsReq := httptest.NewRequest(
+		http.MethodPut,
+		"/v0/management/enterprise/departments",
+		bytes.NewBufferString(`{"items":[{"id":"dept_sh","name":"上海","prefix":"sh","sortOrder":1,"enabled":true,"system":false}]}`),
+	)
+	putDepartmentsReq.Header.Set("Authorization", "Bearer management-key")
+	putDepartmentsRR := httptest.NewRecorder()
+	handler.ServeHTTP(putDepartmentsRR, putDepartmentsReq)
+	if putDepartmentsRR.Code != http.StatusOK {
+		t.Fatalf("put departments status = %d, body = %s", putDepartmentsRR.Code, putDepartmentsRR.Body.String())
+	}
+
+	generateReq := httptest.NewRequest(
+		http.MethodPost,
+		"/v0/management/enterprise/key-bindings/generate",
+		bytes.NewBufferString(`{"csv":"用户名,邮箱,部门\n张三,zs@example.com,上海\n","fileName":"employees.csv"}`),
+	)
+	generateReq.Header.Set("Authorization", "Bearer management-key")
+	generateReq.Header.Set("Content-Type", "application/json")
+	generateRR := httptest.NewRecorder()
+	handler.ServeHTTP(generateRR, generateReq)
+	if generateRR.Code != http.StatusOK {
+		t.Fatalf("generate status = %d, body = %s", generateRR.Code, generateRR.Body.String())
+	}
+
+	var response struct {
+		Items []struct {
+			UserName       string `json:"userName"`
+			DepartmentName string `json:"departmentName"`
+			DepartmentID   string `json:"departmentId"`
+			Email          string `json:"email"`
+			Status         string `json:"status"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(generateRR.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode generate response: %v", err)
+	}
+	if len(response.Items) != 1 {
+		t.Fatalf("generate items = %#v", response.Items)
+	}
+	item := response.Items[0]
+	if item.UserName != "张三" || item.DepartmentName != "上海" || item.DepartmentID != "dept_sh" || item.Email != "zs@example.com" || item.Status != "ok" {
+		t.Fatalf("generate item = %#v", item)
+	}
+}
+
 func closeFloat(left float64, right float64) bool {
 	return math.Abs(left-right) < 0.0000001
 }

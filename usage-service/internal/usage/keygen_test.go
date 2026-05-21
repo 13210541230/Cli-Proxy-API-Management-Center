@@ -116,3 +116,41 @@ func TestKeyGenCSVPreviewExportedHeader(t *testing.T) {
 		t.Fatalf("row1 email expected empty (no email column in csv), got %q", items[0].Email)
 	}
 }
+
+func TestKeyGenCSVPreviewChineseEmailHeader(t *testing.T) {
+	departments := []DepartmentLite{{ID: "dept-sh", Name: "上海总部", Prefix: "sh"}}
+
+	csvContent := []byte("用户名,邮箱,部门\n张三,zs@example.com,上海总部\n")
+	items, err := ParseCSVPreview(csvContent, departments)
+	if err != nil {
+		t.Fatalf("ParseCSVPreview returned error: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 preview item, got %d", len(items))
+	}
+	if items[0].Status != "ok" {
+		t.Fatalf("row1 status expected ok, got %s", items[0].Status)
+	}
+	if items[0].Email != "zs@example.com" {
+		t.Fatalf("row1 email = %q, want zs@example.com", items[0].Email)
+	}
+}
+
+func TestKeyGenCSVPreviewEnglishEmailHeader(t *testing.T) {
+	departments := []DepartmentLite{{ID: "dept-sh", Name: "上海总部", Prefix: "sh"}}
+
+	csvContent := []byte("username,email,department\n张三,zs@example.com,上海总部\n")
+	items, err := ParseCSVPreview(csvContent, departments)
+	if err != nil {
+		t.Fatalf("ParseCSVPreview returned error: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("expected 1 preview item, got %d", len(items))
+	}
+	if items[0].Status != "ok" {
+		t.Fatalf("row1 status expected ok, got %s", items[0].Status)
+	}
+	if items[0].Email != "zs@example.com" {
+		t.Fatalf("row1 email = %q, want zs@example.com", items[0].Email)
+	}
+}
