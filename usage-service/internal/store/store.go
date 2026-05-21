@@ -1318,3 +1318,157 @@ func nullPositiveInt64(value int64) any {
 func (s Setup) String() string {
 	return fmt.Sprintf("upstream=%s queue=%s popSide=%s", s.CPAUpstreamURL, s.Queue, s.PopSide)
 }
+
+// UsageReportModel contains per-model aggregated statistics.
+type UsageReportModel struct {
+	Model            string  `json:"model"`
+	TotalTokens      int64   `json:"totalTokens"`
+	Requests         int64   `json:"requests"`
+	FailedRequests   int64   `json:"failedRequests"`
+	CachedTokens     int64   `json:"cachedTokens"`
+	TotalCacheTokens int64   `json:"totalCacheTokens"`
+	CacheHitRate     float64 `json:"cacheHitRate"`
+}
+
+// UsageReportKeyRow contains per-api-key aggregated data with nested models.
+type UsageReportKeyRow struct {
+	APIKeyHash       string             `json:"apiKeyHash"`
+	UserName         string             `json:"userName"`
+	DepartmentID     string             `json:"departmentId"`
+	DepartmentName   string             `json:"departmentName"`
+	Email            string             `json:"email"`
+	TotalTokens      int64              `json:"totalTokens"`
+	TotalRequests    int64              `json:"totalRequests"`
+	FailedRequests   int64              `json:"failedRequests"`
+	CachedTokens     int64              `json:"cachedTokens"`
+	TotalCacheTokens int64              `json:"totalCacheTokens"`
+	CacheHitRate     float64            `json:"cacheHitRate"`
+	Models           []UsageReportModel `json:"models"`
+}
+
+// UsageReport aggregates usage event data by api_key_hash and model over a
+// [fromMS, toMS] timestamp range. It joins enterprise_key_bindings and
+// enterprise_departments to expose user/dept/email fields. Results are sorted
+// by department_name, user_name.
+func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageReportKeyRow, error) {
+	query := `
+		select
+			ue.api_key_hash,
+			ue.model,
+			coalesce(ekb.user_name, ''),
+			coalesce(ekb.department_id, ''),
+			coalesce(ed.name, ''),
+			coalesce(ekb.email, ''),
+			coalesce(sum(ue.total_tokens), 0),
+			count(*),
+			coalesce(sum(ue.failed), 0),
+			coalesce(sum(ue.cached_tokens), 0),
+			coalesce(sum(ue.cache_tokens), 0),
+			coalesce(sum(case when ue.cached_tokens > 0 then 1 else 0 end), 0)
+		from usage_events ue
+		left join enterprise_key_bindings ekb on ue.api_key_hash = ekb.api_key_hash
+		left join enterprise_departments ed on ekb.department_id = ed.id
+		where ue.timestamp_ms >= ? and ue.timestamp_ms <= ?
+		  and (ue.failed = 0 or ue.total_tokens > 0)
+		group by ue.api_key_hash, ue.model, ekb.user_name, ekb.department_id, ed.name, ekb.email
+		order by ed.name, ekb.user_name
+	`
+	rows, err := s.db.QueryContext(ctx, query, fromMS, toMS)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	type flatRow struct {
+		apiKeyHash       string
+		model            string
+		userName         string
+		departmentID     string
+		departmentName   string
+		email            string
+		totalTokens      int64
+		totalRequests    int64
+		failedRequests   int64
+		cachedTokens     int64
+		totalCacheTokens int64
+		cacheHits        int64
+	}
+	var flats []flatRow
+	for rows.Next() {
+		var f flatRow
+		if err := rows.Scan(
+			&f.apiKeyHash,
+			&f.model,
+			&f.userName,
+			&f.departmentID,
+			&f.departmentName,
+			&f.email,
+			&f.totalTokens,
+			&f.totalRequests,
+			&f.failedRequests,
+			&f.cachedTokens,
+			&f.totalCacheTokens,
+			&f.cacheHits,
+		); err != nil {
+			return nil, err
+		}
+		flats = append(flats, f)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Group flat rows by api_key_hash into the nested key-row structure.
+	type keyAccum struct {
+		row        UsageReportKeyRow
+		cacheHits  int64
+	}
+	keyIndex := map[string]int{}
+	accums := make([]keyAccum, 0)
+	for _, f := range flats {
+		idx, ok := keyIndex[f.apiKeyHash]
+		if !ok {
+			idx = len(accums)
+			keyIndex[f.apiKeyHash] = idx
+			accums = append(accums, keyAccum{
+				row: UsageReportKeyRow{
+					APIKeyHash:     f.apiKeyHash,
+					UserName:       f.userName,
+					DepartmentID:   f.departmentID,
+					DepartmentName: f.departmentName,
+					Email:          f.email,
+				},
+			})
+		}
+		modelCacheHitRate := 0.0
+		if f.totalRequests > 0 {
+			modelCacheHitRate = float64(f.cacheHits) / float64(f.totalRequests)
+		}
+		modelEntry := UsageReportModel{
+			Model:            f.model,
+			TotalTokens:      f.totalTokens,
+			Requests:         f.totalRequests,
+			FailedRequests:   f.failedRequests,
+			CachedTokens:     f.cachedTokens,
+			TotalCacheTokens: f.totalCacheTokens,
+			CacheHitRate:     modelCacheHitRate,
+		}
+		accums[idx].row.Models = append(accums[idx].row.Models, modelEntry)
+		accums[idx].row.TotalTokens += f.totalTokens
+		accums[idx].row.TotalRequests += f.totalRequests
+		accums[idx].row.FailedRequests += f.failedRequests
+		accums[idx].row.CachedTokens += f.cachedTokens
+		accums[idx].row.TotalCacheTokens += f.totalCacheTokens
+		accums[idx].cacheHits += f.cacheHits
+	}
+
+	// Compute per-key cache hit rate and return final rows.
+	result := make([]UsageReportKeyRow, len(accums))
+	for i, a := range accums {
+		result[i] = a.row
+		if a.row.TotalRequests > 0 {
+			result[i].CacheHitRate = float64(a.cacheHits) / float64(a.row.TotalRequests)
+		}
+	}
+	return result, nil
+}

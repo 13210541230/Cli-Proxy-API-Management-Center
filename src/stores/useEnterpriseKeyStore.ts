@@ -26,8 +26,8 @@ interface EnterpriseKeyStoreState {
   upsertDepartments: (items: EnterpriseDepartment[]) => Promise<EnterpriseDepartment[]>;
   deleteDepartment: (id: string) => Promise<EnterpriseDepartment[]>;
   fetchKeyBindings: () => Promise<EnterpriseKeyBinding[]>;
-  createKeyBinding: (userName: string, departmentId: string, apiKey?: string) => Promise<EnterpriseKeyBinding>;
-  updateKeyBinding: (apiKey: string, userName: string, departmentId: string) => Promise<EnterpriseKeyBinding>;
+  createKeyBinding: (userName: string, departmentId: string, apiKey?: string, email?: string) => Promise<EnterpriseKeyBinding>;
+  updateKeyBinding: (apiKey: string, userName: string, departmentId: string, email?: string) => Promise<EnterpriseKeyBinding>;
   deleteKeyBinding: (apiKey: string) => Promise<void>;
   deleteKeyBindings: (apiKeys: string[]) => Promise<void>;
   generatePreview: (csvContent: string) => Promise<KeyGenPreviewItem[]>;
@@ -134,10 +134,10 @@ export const useEnterpriseKeyStore = create<EnterpriseKeyStoreState>((set, get) 
     }
   },
 
-  createKeyBinding: async (userName, departmentId, apiKey) => {
+  createKeyBinding: async (userName, departmentId, apiKey, email) => {
     set({ loading: true, error: null });
     try {
-      const created = await enterpriseKeysApi.createKeyBinding({ userName, departmentId, apiKey });
+      const created = await enterpriseKeysApi.createKeyBinding({ userName, departmentId, apiKey, email });
       set((state) => ({
         keyBindings: [created, ...state.keyBindings],
         loading: false,
@@ -150,10 +150,10 @@ export const useEnterpriseKeyStore = create<EnterpriseKeyStoreState>((set, get) 
     }
   },
 
-  updateKeyBinding: async (apiKey, userName, departmentId) => {
+  updateKeyBinding: async (apiKey, userName, departmentId, email) => {
     set({ loading: true, error: null });
     try {
-      const updated = await enterpriseKeysApi.updateKeyBinding(apiKey, { userName, departmentId });
+      const updated = await enterpriseKeysApi.updateKeyBinding(apiKey, { userName, departmentId, email });
       set((state) => ({
         keyBindings: state.keyBindings.map((item) => (item.apiKey === apiKey ? updated : item)),
         loading: false,

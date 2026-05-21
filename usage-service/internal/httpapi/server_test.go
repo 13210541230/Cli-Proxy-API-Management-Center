@@ -928,3 +928,321 @@ func TestEnterpriseKeyBindingsGenerateReturnsEmail(t *testing.T) {
 func closeFloat(left float64, right float64) bool {
 	return math.Abs(left-right) < 0.0000001
 }
+
+
+func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
+	cfg := config.Config{
+		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
+		Queue:       "usage",
+		PopSide:     "right",
+		CORSOrigins: []string{"*"},
+		QueryLimit:  1000,
+	}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	ctx := context.Background()
+	if err := db.SaveSetup(ctx, store.Setup{
+		CPAUpstreamURL: "http://example.test",
+		ManagementKey:  "management-key",
+		Queue:          "usage",
+		PopSide:        "right",
+	}); err != nil {
+		t.Fatalf("save setup: %v", err)
+	}
+	if err := db.UpsertEnterpriseDepartments(ctx, []store.EnterpriseDepartment{
+		{ID: "dept_sh", Name: "上海总部", Prefix: "sh", SortOrder: 1, Enabled: true},
+	}); err != nil {
+		t.Fatalf("upsert departments: %v", err)
+	}
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []store.EnterpriseKeyBinding{
+		{
+			APIKey:               "key-zhangsan",
+			UserName:             "zhangsan",
+			DepartmentID:         "dept_sh",
+			Email:                "zs@example.com",
+			Source:               "manual",
+			DepartmentResolvedBy: "manual",
+		},
+	}); err != nil {
+		t.Fatalf("upsert key bindings: %v", err)
+	}
+	bindings, err := db.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		t.Fatalf("load bindings: %v", err)
+	}
+	var hashA string
+	for _, b := range bindings {
+		hashA = b.APIKeyHash
+		break
+	}
+	if hashA == "" {
+		t.Fatalf("could not resolve key hash")
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		{
+			EventHash:   "report-e-1",
+			TimestampMS: 1_700_000_000_000,
+			Timestamp:   "2023-11-14T22:13:20Z",
+			Model:       "gpt-4",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  hashA,
+			TotalTokens: 100,
+			CreatedAtMS: 1_700_000_000_001,
+		},
+	}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+
+	handler := New(cfg, db, collector.NewManager(cfg, db)).Handler()
+
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v0/management/enterprise/usage-report?fromMs=1600000000000&toMs=1800000000000",
+		nil,
+	)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if ct := rr.Header().Get("Content-Type"); ct != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", ct)
+	}
+	var response struct {
+		FromMs int64 `json:"fromMs"`
+		ToMs   int64 `json:"toMs"`
+		Items  []struct {
+			APIKeyHash       string   `json:"apiKeyHash"`
+			UserName         string   `json:"userName"`
+			DepartmentName   string   `json:"departmentName"`
+			Email            string   `json:"email"`
+			TotalTokens      int64    `json:"totalTokens"`
+			TotalRequests    int64    `json:"totalRequests"`
+			FailedRequests   int64    `json:"failedRequests"`
+			CachedTokens     int64    `json:"cachedTokens"`
+			TotalCacheTokens int64    `json:"totalCacheTokens"`
+			CacheHitRate     float64  `json:"cacheHitRate"`
+			Models           []struct {
+				Model            string  `json:"model"`
+				TotalTokens      int64   `json:"totalTokens"`
+				Requests         int64   `json:"requests"`
+				FailedRequests   int64   `json:"failedRequests"`
+				CachedTokens     int64   `json:"cachedTokens"`
+				TotalCacheTokens int64   `json:"totalCacheTokens"`
+				CacheHitRate     float64 `json:"cacheHitRate"`
+			} `json:"models"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if response.FromMs != 1600000000000 {
+		t.Fatalf("fromMs = %d", response.FromMs)
+	}
+	if response.ToMs != 1800000000000 {
+		t.Fatalf("toMs = %d", response.ToMs)
+	}
+	if len(response.Items) != 1 {
+		t.Fatalf("items = %d, want 1", len(response.Items))
+	}
+	item := response.Items[0]
+	if item.UserName != "zhangsan" || item.Email != "zs@example.com" {
+		t.Fatalf("user/email = %q/%q", item.UserName, item.Email)
+	}
+	if len(item.Models) != 1 || item.Models[0].Model != "gpt-4" {
+		t.Fatalf("models = %+v", item.Models)
+	}
+	m := item.Models[0]
+	if m.TotalTokens != 100 || m.Requests != 1 {
+		t.Fatalf("model stats = %+v", m)
+	}
+}
+
+func TestEnterpriseUsageReportCSVResponse(t *testing.T) {
+	cfg := config.Config{
+		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
+		Queue:       "usage",
+		PopSide:     "right",
+		CORSOrigins: []string{"*"},
+	}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	ctx := context.Background()
+	if err := db.SaveSetup(ctx, store.Setup{
+		CPAUpstreamURL: "http://example.test",
+		ManagementKey:  "management-key",
+		Queue:          "usage",
+		PopSide:        "right",
+	}); err != nil {
+		t.Fatalf("save setup: %v", err)
+	}
+	if err := db.UpsertEnterpriseDepartments(ctx, []store.EnterpriseDepartment{
+		{ID: "dept_sh", Name: "上海总部", Prefix: "sh", SortOrder: 1, Enabled: true},
+	}); err != nil {
+		t.Fatalf("upsert departments: %v", err)
+	}
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []store.EnterpriseKeyBinding{
+		{
+			APIKey:               "key-test",
+			UserName:             "testuser",
+			DepartmentID:         "dept_sh",
+			Email:                "test@example.com",
+			Source:               "manual",
+			DepartmentResolvedBy: "manual",
+		},
+	}); err != nil {
+		t.Fatalf("upsert key bindings: %v", err)
+	}
+	bindings, err := db.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		t.Fatalf("load bindings: %v", err)
+	}
+	var hash string
+	for _, b := range bindings {
+		hash = b.APIKeyHash
+		break
+	}
+	if hash == "" {
+		t.Fatalf("could not resolve key hash")
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		{
+			EventHash:   "csv-e-1",
+			TimestampMS: 1_700_000_000_000,
+			Timestamp:   "2023-11-14T22:13:20Z",
+			Model:       "gpt-4",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  hash,
+			TotalTokens: 100,
+			CreatedAtMS: 1_700_000_000_001,
+		},
+		{
+			EventHash:   "csv-e-2",
+			TimestampMS: 1_700_000_000_001,
+			Timestamp:   "2023-11-14T22:13:21Z",
+			Model:       "gpt-3.5-turbo",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  hash,
+			TotalTokens: 50,
+			CreatedAtMS: 1_700_000_000_002,
+		},
+	}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+
+	handler := New(cfg, db, collector.NewManager(cfg, db)).Handler()
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v0/management/enterprise/usage-report?fromMs=1600000000000&toMs=1800000000000&format=csv",
+		nil,
+	)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	ct := rr.Header().Get("Content-Type")
+	if !strings.Contains(ct, "text/csv") {
+		t.Fatalf("Content-Type = %q, want text/csv", ct)
+	}
+	if rr.Header().Get("Content-Disposition") == "" {
+		t.Fatalf("missing Content-Disposition header")
+	}
+	body := rr.Body.String()
+	if !strings.Contains(body, "department_name") {
+		t.Fatalf("CSV missing header row: %s", body)
+	}
+	if !strings.Contains(body, "gpt-4") || !strings.Contains(body, "gpt-3.5-turbo") {
+		t.Fatalf("CSV missing model rows: %s", body)
+	}
+	if !strings.Contains(body, "test@example.com") {
+		t.Fatalf("CSV missing email: %s", body)
+	}
+}
+
+func TestEnterpriseUsageReportValidation(t *testing.T) {
+	handler := newTestHandler(t, "http://example.test", true)
+
+	tests := []struct {
+		name       string
+		query      string
+		wantStatus int
+		wantErr    string
+	}{
+		{
+			name:       "missing fromMs",
+			query:      "toMs=1800000000000",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "fromMs is required",
+		},
+		{
+			name:       "missing toMs",
+			query:      "fromMs=1600000000000",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "toMs is required",
+		},
+		{
+			name:       "invalid fromMs",
+			query:      "fromMs=abc&toMs=1800000000000",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "fromMs must be an integer",
+		},
+		{
+			name:       "fromMs greater than toMs",
+			query:      "fromMs=1800000000000&toMs=1600000000000",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "fromMs must be less than or equal to toMs",
+		},
+		{
+			name:       "invalid format",
+			query:      "fromMs=1600000000000&toMs=1800000000000&format=pdf",
+			wantStatus: http.StatusBadRequest,
+			wantErr:    "format must be json or csv",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, "/v0/management/enterprise/usage-report?"+tt.query, nil)
+			req.Header.Set("Authorization", "Bearer management-key")
+			rr := httptest.NewRecorder()
+			handler.ServeHTTP(rr, req)
+
+			if rr.Code != tt.wantStatus {
+				t.Fatalf("status = %d, body = %s", rr.Code, rr.Body.String())
+			}
+			if !strings.Contains(rr.Body.String(), tt.wantErr) {
+				t.Fatalf("body = %s, want error containing %q", rr.Body.String(), tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestEnterpriseUsageReportAuthFailure(t *testing.T) {
+	handler := newTestHandler(t, "http://example.test", true)
+	req := httptest.NewRequest(
+		http.MethodGet,
+		"/v0/management/enterprise/usage-report?fromMs=1600000000000&toMs=1800000000000",
+		nil,
+	)
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status = %d, body = %s, want 401", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "invalid management key") {
+		t.Fatalf("body = %s, want auth error", rr.Body.String())
+	}
+}

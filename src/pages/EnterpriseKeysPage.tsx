@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -54,6 +55,7 @@ export function EnterpriseKeysPage() {
     fetchImportHistory,
   } = useEnterpriseKeyStore();
   const { showNotification, showConfirmation } = useNotificationStore();
+  const { t } = useTranslation();
 
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
@@ -64,11 +66,13 @@ export function EnterpriseKeysPage() {
   const [newDepartmentPrefix, setNewDepartmentPrefix] = useState('');
 
   const [newKeyUserName, setNewKeyUserName] = useState('');
+  const [newKeyEmail, setNewKeyEmail] = useState('');
   const [newKeyDepartmentId, setNewKeyDepartmentId] = useState('');
   const [newKeyApiKey, setNewKeyApiKey] = useState('');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [editingApiKey, setEditingApiKey] = useState('');
   const [editingUserName, setEditingUserName] = useState('');
+  const [editingEmail, setEditingEmail] = useState('');
   const [editingDepartmentId, setEditingDepartmentId] = useState('');
 
   const [previewItems, setPreviewItems] = useState<KeyGenPreviewItem[]>([]);
@@ -201,15 +205,17 @@ export function EnterpriseKeysPage() {
 
   const handleCreateKey = async () => {
     const userName = newKeyUserName.trim();
+    const email = newKeyEmail.trim();
     const customApiKey = newKeyApiKey.trim();
     if (!userName || !newKeyDepartmentId) {
       showNotification('请填写用户名并选择部门', 'error');
       return;
     }
     try {
-      await createKeyBinding(userName, newKeyDepartmentId, customApiKey || undefined);
+      await createKeyBinding(userName, newKeyDepartmentId, customApiKey || undefined, email || undefined);
       setAddKeyModalOpen(false);
       setNewKeyUserName('');
+      setNewKeyEmail('');
       setNewKeyApiKey('');
       clearSelection();
       showNotification('Key 已创建', 'success');
@@ -218,21 +224,23 @@ export function EnterpriseKeysPage() {
     }
   };
 
-  const handleOpenEditKey = (apiKey: string, userName: string, departmentId: string) => {
+  const handleOpenEditKey = (apiKey: string, userName: string, departmentId: string, email?: string) => {
     setEditingApiKey(apiKey);
     setEditingUserName(userName);
+    setEditingEmail(email ?? '');
     setEditingDepartmentId(departmentId);
     setEditModalOpen(true);
   };
 
   const handleConfirmEditKey = async () => {
     const userName = editingUserName.trim();
+    const email = editingEmail.trim();
     if (!editingApiKey || !userName || !editingDepartmentId) {
       showNotification('请填写用户名并选择部门', 'error');
       return;
     }
     try {
-      await updateKeyBinding(editingApiKey, userName, editingDepartmentId);
+      await updateKeyBinding(editingApiKey, userName, editingDepartmentId, email || undefined);
       setEditModalOpen(false);
       showNotification('Key 信息已更新', 'success');
     } catch {
@@ -317,13 +325,13 @@ export function EnterpriseKeysPage() {
       return;
     }
 
-    const header = '用户名,API Key,部门';
+    const header = '用户名,邮箱,API Key,部门';
     const body = selectedRows
       .map((item) => {
         const departmentName = item.departmentId
           ? (departmentNameMap.get(item.departmentId) ?? item.departmentId)
           : '未分组';
-        return [item.userName, item.apiKey || '', departmentName]
+        return [item.userName, item.email || '', item.apiKey || '', departmentName]
           .map((field) => `"${String(field).split('"').join('""')}"`)
           .join(',');
       })
@@ -407,6 +415,7 @@ export function EnterpriseKeysPage() {
                   />
                 </th>
                 <th>用户名</th>
+                <th>{t('enterpriseKeys.email')}</th>
                 <th>API Key</th>
                 <th>部门</th>
                 <th>操作</th>
@@ -427,6 +436,7 @@ export function EnterpriseKeysPage() {
                       />
                     </td>
                     <td>{item.userName}</td>
+                    <td>{item.email || '-'}</td>
                     <td className={styles.mono}>{item.apiKey || '-'}</td>
                     <td>{item.departmentId ? (departmentNameMap.get(item.departmentId) ?? item.departmentId) : '未分组'}</td>
                     <td>
@@ -435,7 +445,7 @@ export function EnterpriseKeysPage() {
                           <Button
                             variant="secondary"
                             size="sm"
-                            onClick={() => handleOpenEditKey(item.apiKey, item.userName, item.departmentId)}
+                            onClick={() => handleOpenEditKey(item.apiKey, item.userName, item.departmentId, item.email)}
                           >
                             编辑
                           </Button>
@@ -559,6 +569,7 @@ export function EnterpriseKeysPage() {
             {previewItems.map((item, idx) => (
               <div key={`${item.userName}-${idx}`} className={`${styles.previewItem} ${styles[`preview_${item.status}`]}`}>
                 <div>{item.userName}</div>
+                <div>{item.email || '-'}</div>
                 <div>{item.departmentName || item.departmentId || '-'}</div>
                 <div className={styles.mono}>{item.generatedKey || '-'}</div>
                 <div>{item.status}{item.errorReason ? `：${item.errorReason}` : ''}</div>
@@ -594,6 +605,11 @@ export function EnterpriseKeysPage() {
             placeholder="用户名"
           />
           <Input
+            value={newKeyEmail}
+            onChange={(e) => setNewKeyEmail(e.target.value)}
+            placeholder={t('enterpriseKeys.emailPlaceholder')}
+          />
+          <Input
             value={newKeyApiKey}
             onChange={(e) => setNewKeyApiKey(e.target.value)}
             placeholder="指定 API Key（可选，不填则自动生成）"
@@ -626,6 +642,11 @@ export function EnterpriseKeysPage() {
             value={editingUserName}
             onChange={(e) => setEditingUserName(e.target.value)}
             placeholder="用户名"
+          />
+          <Input
+            value={editingEmail}
+            onChange={(e) => setEditingEmail(e.target.value)}
+            placeholder={t('enterpriseKeys.emailPlaceholder')}
           />
           <Select
             value={editingDepartmentId}

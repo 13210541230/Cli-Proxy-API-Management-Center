@@ -21,6 +21,8 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
+
+	"encoding/csv"
 )
 
 //go:embed web/management.html
@@ -171,6 +173,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/import-history") {
 		s.withCORS(s.handleEnterpriseImportHistory)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/usage-report") {
+		s.withCORS(s.handleEnterpriseUsageReport)(w, r)
 		return
 	}
 	cleanUsagePath := strings.TrimRight(r.URL.Path, "/")
@@ -1281,6 +1287,100 @@ func parseOptionalInt64Query(raw string, field string) (*int64, error) {
 		return nil, fmt.Errorf("%s must be an integer", field)
 	}
 	return &value, nil
+}
+
+
+func (s *Server) handleEnterpriseUsageReport(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+
+	fromMs, err := parseRequiredInt64Query("fromMs", r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	toMs, err := parseRequiredInt64Query("toMs", r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if fromMs > toMs {
+		writeError(w, http.StatusBadRequest, errors.New("fromMs must be less than or equal to toMs"))
+		return
+	}
+
+	format := strings.TrimSpace(r.URL.Query().Get("format"))
+	if format == "" {
+		format = "json"
+	}
+	if format != "json" && format != "csv" {
+		writeError(w, http.StatusBadRequest, errors.New("format must be json or csv"))
+		return
+	}
+
+	rows, err := s.store.UsageReport(r.Context(), fromMs, toMs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if format == "csv" {
+		s.writeUsageReportCSV(w, rows)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"fromMs": fromMs, "toMs": toMs, "items": rows})
+}
+
+func (s *Server) writeUsageReportCSV(w http.ResponseWriter, rows []store.UsageReportKeyRow) {
+	w.Header().Set("Content-Type", "text/csv; charset=utf-8")
+	w.Header().Set("Content-Disposition", `attachment; filename="usage-report.csv"`)
+
+	writer := csv.NewWriter(w)
+	defer writer.Flush()
+
+	_ = writer.Write([]string{
+		"department_name", "user_name", "email", "api_key_hash", "model",
+		"total_tokens", "total_requests", "failed_requests",
+		"cached_tokens", "total_cache_tokens", "cache_hit_rate",
+	})
+
+	for _, row := range rows {
+		for _, m := range row.Models {
+			_ = writer.Write([]string{
+				row.DepartmentName,
+				row.UserName,
+				row.Email,
+				row.APIKeyHash,
+				m.Model,
+				strconv.FormatInt(m.TotalTokens, 10),
+				strconv.FormatInt(m.Requests, 10),
+				strconv.FormatInt(m.FailedRequests, 10),
+				strconv.FormatInt(m.CachedTokens, 10),
+				strconv.FormatInt(m.TotalCacheTokens, 10),
+				strconv.FormatFloat(m.CacheHitRate, 'f', -1, 64),
+			})
+		}
+	}
+}
+
+func parseRequiredInt64Query(field string, r *http.Request) (int64, error) {
+	raw := strings.TrimSpace(r.URL.Query().Get(field))
+	if raw == "" {
+		return 0, fmt.Errorf("%s is required", field)
+	}
+	value, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("%s must be an integer", field)
+	}
+	if value < 0 {
+		return 0, fmt.Errorf("%s must be a positive integer", field)
+	}
+	return value, nil
 }
 
 func (s *Server) handleUsageExport(w http.ResponseWriter, r *http.Request) {

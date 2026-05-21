@@ -14,6 +14,7 @@ export interface EnterpriseKeyBinding {
   apiKey: string;
   apiKeyHash: string;
   userName: string;
+  email?: string;
   departmentId: string;
   source: 'import' | 'manual';
   departmentResolvedBy: 'csv' | 'manual';
@@ -38,6 +39,7 @@ export interface EnterpriseImportHistory {
 
 export interface KeyGenPreviewItem {
   userName: string;
+  email?: string;
   departmentName: string;
   departmentId: string;
   generatedKey?: string;

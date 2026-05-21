@@ -531,7 +531,9 @@
     "import_history_total": "总行数: {{count}}",
     "import_history_pass": "通过: {{count}}",
     "import_history_warn": "警告: {{count}}",
-    "import_history_error": "错误: {{count}}"
+    "import_history_error": "错误: {{count}}",
+    "email_label": "邮箱",
+    "email_placeholder": "邮箱（可选）"
   },
   "auth_files": {
     "title": "认证文件管理",
@@ -2044,5 +2046,9 @@
     "build_date": "构建时间",
     "version": "管理中心版本",
     "author": "作者"
+  },
+  "enterpriseKeys": {
+    "email": "邮箱",
+    "emailPlaceholder": "邮箱（可选）"
   }
 }

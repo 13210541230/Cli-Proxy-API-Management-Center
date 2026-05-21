@@ -99,7 +99,7 @@
 
 .previewItem {
   display: grid;
-  grid-template-columns: 1fr 1fr 2fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr 2fr 1fr;
   gap: $spacing-sm;
   padding: 8px 10px;
   border-bottom: 1px solid var(--border-color);

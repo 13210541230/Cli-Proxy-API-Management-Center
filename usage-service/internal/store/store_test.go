@@ -343,3 +343,282 @@ func TestStoreEnterpriseKeyBindingsPersistEmail(t *testing.T) {
 		t.Fatalf("updated binding email = %q, want updated@example.com", bindings[0].Email)
 	}
 }
+
+
+func TestStoreUsageReport(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	ctx := context.Background()
+
+	// Seed departments and key bindings
+	if err := db.UpsertEnterpriseDepartments(ctx, []EnterpriseDepartment{
+		{ID: "dept_sh", Name: "上海总部", Prefix: "sh", SortOrder: 1, Enabled: true},
+	}); err != nil {
+		t.Fatalf("upsert departments: %v", err)
+	}
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []EnterpriseKeyBinding{
+		{
+			APIKey:               "key-zhangsan",
+			UserName:             "zhangsan",
+			DepartmentID:         "dept_sh",
+			Email:                "zs@example.com",
+			Source:               "manual",
+			DepartmentResolvedBy: "manual",
+		},
+		{
+			APIKey:               "key-lisi",
+			UserName:             "lisi",
+			DepartmentID:         "dept_sh",
+			Email:                "lis@example.com",
+			Source:               "manual",
+			DepartmentResolvedBy: "manual",
+		},
+	}); err != nil {
+		t.Fatalf("upsert key bindings: %v", err)
+	}
+	// Look up the generated hashes
+	bindings, err := db.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		t.Fatalf("load bindings: %v", err)
+	}
+	var hashA, hashB string
+	for _, b := range bindings {
+		switch b.UserName {
+		case "zhangsan":
+			hashA = b.APIKeyHash
+		case "lisi":
+			hashB = b.APIKeyHash
+		}
+	}
+	if hashA == "" || hashB == "" {
+		t.Fatalf("could not resolve key hashes: %#v", bindings)
+	}
+
+	// Seed usage events — hashA has two models, hashB has one
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		{
+			EventHash:    "e-a1",
+			TimestampMS:  1_700_000_000_000,
+			Timestamp:    "2023-11-14T22:13:20Z",
+			Model:        "gpt-4",
+			Endpoint:     "POST /v1/chat/completions",
+			APIKeyHash:   hashA,
+			InputTokens:  10,
+			OutputTokens: 20,
+			TotalTokens:  100,
+			CachedTokens: 10,
+			CacheTokens:  20,
+			CreatedAtMS:  1_700_000_000_001,
+		},
+		{
+			EventHash:   "e-a2",
+			TimestampMS: 1_700_100_000_000,
+			Timestamp:   "2023-11-16T02:00:00Z",
+			Model:       "gpt-4",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  hashA,
+			TotalTokens: 200,
+			Failed:      true,
+			CreatedAtMS: 1_700_100_000_001,
+		},
+		{
+			EventHash:    "e-a3",
+			TimestampMS:  1_700_050_000_000,
+			Timestamp:    "2023-11-15T12:00:00Z",
+			Model:        "gpt-3.5-turbo",
+			Endpoint:     "POST /v1/chat/completions",
+			APIKeyHash:   hashA,
+			InputTokens:  5,
+			OutputTokens: 10,
+			TotalTokens:  50,
+			CachedTokens: 5,
+			CacheTokens:  10,
+			CreatedAtMS:  1_700_050_000_001,
+		},
+		{
+			EventHash:    "e-b1",
+			TimestampMS:  1_700_200_000_000,
+			Timestamp:    "2023-11-17T12:00:00Z",
+			Model:        "gpt-4",
+			Endpoint:     "POST /v1/chat/completions",
+			APIKeyHash:   hashB,
+			InputTokens:  30,
+			OutputTokens: 40,
+			TotalTokens:  300,
+			CachedTokens: 30,
+			CacheTokens:  30,
+			CreatedAtMS:  1_700_200_000_001,
+		},
+	}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+
+		t.Run("happy path aggregates correctly", func(t *testing.T) {
+			rows, err := db.UsageReport(ctx, 1_699_000_000_000, 1_701_000_000_000)
+			if err != nil {
+				t.Fatalf("usage report: %v", err)
+			}
+			// Expect 2 rows: lisi (alphabetically first) then zhangsan
+			if len(rows) != 2 {
+				t.Fatalf("len(rows) = %d, want 2", len(rows))
+			}
+
+			// First row: lisi (department_name=上海总部, user_name=lisi)
+			row0 := rows[0]
+			if row0.UserName != "lisi" || row0.DepartmentName != "上海总部" || row0.Email != "lis@example.com" {
+				t.Fatalf("row0 user/dept/email = %q/%q/%q", row0.UserName, row0.DepartmentName, row0.Email)
+			}
+			if row0.APIKeyHash != hashB {
+				t.Fatalf("row0 apiKeyHash = %q, want %q", row0.APIKeyHash, hashB)
+			}
+			if len(row0.Models) != 1 {
+				t.Fatalf("row0 models = %d, want 1", len(row0.Models))
+			}
+			if row0.Models[0].Model != "gpt-4" {
+				t.Fatalf("row0 model[0] = %q, want gpt-4", row0.Models[0].Model)
+			}
+			m0 := row0.Models[0]
+			if m0.TotalTokens != 300 || m0.Requests != 1 || m0.FailedRequests != 0 {
+				t.Fatalf("row0 gpt-4 stats = %+v", m0)
+			}
+			if m0.CachedTokens != 30 || m0.TotalCacheTokens != 30 {
+				t.Fatalf("row0 cache stats = %+v", m0)
+			}
+			if m0.CacheHitRate != 1.0 {
+				t.Fatalf("row0 gpt-4 cacheHitRate = %f, want 1.0", m0.CacheHitRate)
+			}
+			if row0.TotalTokens != 300 || row0.TotalRequests != 1 || row0.FailedRequests != 0 {
+				t.Fatalf("row0 total aggregates = %+v", row0)
+			}
+			if row0.CachedTokens != 30 || row0.TotalCacheTokens != 30 {
+				t.Fatalf("row0 cache aggregates = %+v", row0)
+			}
+			if row0.CacheHitRate != 1.0 {
+				t.Fatalf("row0 cacheHitRate = %f, want 1.0", row0.CacheHitRate)
+			}
+
+			// Second row: zhangsan
+			row1 := rows[1]
+			if row1.UserName != "zhangsan" || row1.Email != "zs@example.com" {
+				t.Fatalf("row1 user/email = %q/%q", row1.UserName, row1.Email)
+			}
+			if row1.APIKeyHash != hashA {
+				t.Fatalf("row1 apiKeyHash = %q, want %q", row1.APIKeyHash, hashA)
+			}
+			if len(row1.Models) != 2 {
+				t.Fatalf("row1 models = %d, want 2", len(row1.Models))
+			}
+			if row1.Models[0].Model != "gpt-3.5-turbo" || row1.Models[1].Model != "gpt-4" {
+				t.Fatalf("row1 model order = %q, %q", row1.Models[0].Model, row1.Models[1].Model)
+			}
+
+			// gpt-4 model for zhangsan: 2 requests, 1 failed, totalTokens=300
+			var m1 UsageReportModel
+			for _, m := range row1.Models {
+				if m.Model == "gpt-4" {
+					m1 = m
+					break
+				}
+			}
+			if m1.Model == "" {
+				t.Fatalf("row1 missing gpt-4 model")
+			}
+			if m1.TotalTokens != 300 || m1.Requests != 2 || m1.FailedRequests != 1 {
+				t.Fatalf("row1 gpt-4 stats = %+v", m1)
+			}
+			if m1.CachedTokens != 10 || m1.TotalCacheTokens != 20 {
+				t.Fatalf("row1 gpt-4 cache stats = %+v", m1)
+			}
+			// gpt-4: e-a1 has cached_tokens>0 (cache_hit=1), e-a2 has cached_tokens=0 (cache_hit=0)
+			// cacheHitRate = 1 / 2 = 0.5
+			if m1.CacheHitRate != 0.5 {
+				t.Fatalf("row1 gpt-4 cacheHitRate = %f, want 0.5", m1.CacheHitRate)
+			}
+
+			// gpt-3.5-turbo model: 1 request, cached_tokens>0 (cache_hit=1)
+			// cacheHitRate = 1 / 1 = 1.0
+			var m2 UsageReportModel
+			for _, m := range row1.Models {
+				if m.Model == "gpt-3.5-turbo" {
+					m2 = m
+					break
+				}
+			}
+			if m2.Model == "" {
+				t.Fatalf("row1 missing gpt-3.5-turbo model")
+			}
+			if m2.TotalTokens != 50 || m2.Requests != 1 || m2.FailedRequests != 0 {
+				t.Fatalf("row1 gpt-3.5-turbo stats = %+v", m2)
+			}
+			if m2.CachedTokens != 5 || m2.TotalCacheTokens != 10 {
+				t.Fatalf("row1 gpt-3.5-turbo cache stats = %+v", m2)
+			}
+			if m2.CacheHitRate != 1.0 {
+				t.Fatalf("row1 gpt-3.5-turbo cacheHitRate = %f, want 1.0", m2.CacheHitRate)
+			}
+
+			// Per-key aggregate totals for zhangsan: gpt-4 (300,2,1,10,20) + gpt-3.5-turbo (50,1,0,5,10)
+			if row1.TotalTokens != 350 || row1.TotalRequests != 3 || row1.FailedRequests != 1 {
+				t.Fatalf("row1 total aggregates = %+v", row1)
+			}
+			if row1.CachedTokens != 15 || row1.TotalCacheTokens != 30 {
+				t.Fatalf("row1 cache aggregates = %+v", row1)
+			}
+			// Per-key cacheHitRate: totalCacheHits(2) / totalRequests(3)
+			if row1.CacheHitRate != 2.0/3.0 {
+				t.Fatalf("row1 cacheHitRate = %f, want %f", row1.CacheHitRate, 2.0/3.0)
+			}
+		})
+	t.Run("empty range returns no results", func(t *testing.T) {
+		rows, err := db.UsageReport(ctx, 1, 1)
+		if err != nil {
+			t.Fatalf("usage report empty range: %v", err)
+		}
+		if len(rows) != 0 {
+			t.Fatalf("rows = %d, want 0", len(rows))
+		}
+	})
+
+	t.Run("events outside range are excluded", func(t *testing.T) {
+		rows, err := db.UsageReport(ctx, 1_800_000_000_000, 1_900_000_000_000)
+		if err != nil {
+			t.Fatalf("usage report future range: %v", err)
+		}
+		if len(rows) != 0 {
+			t.Fatalf("rows = %d, want 0", len(rows))
+		}
+	})
+
+		t.Run("failed zero-token events are excluded by spec filter", func(t *testing.T) {
+			if _, err := db.InsertEvents(ctx, []usage.Event{{
+				EventHash:   "e-zero-token-fail",
+				TimestampMS: 1_700_000_000_000,
+				Timestamp:   "2023-11-14T22:13:20Z",
+				Model:       "gpt-zero",
+				Endpoint:    "POST /v1/chat/completions",
+				APIKeyHash:  hashA,
+				Failed:      true,
+				TotalTokens: 0,
+				CreatedAtMS: 1_700_000_000_001,
+			}}); err != nil {
+				t.Fatalf("insert zero-token event: %v", err)
+			}
+
+			rows, err := db.UsageReport(ctx, 1_699_000_000_000, 1_701_000_000_000)
+			if err != nil {
+				t.Fatalf("usage report: %v", err)
+			}
+			for _, r := range rows {
+				for _, m := range r.Models {
+					if m.Model == "gpt-zero" {
+						t.Fatalf("gpt-zero should be excluded by spec filter but was found")
+					}
+				}
+			}
+		})
+ 
+}

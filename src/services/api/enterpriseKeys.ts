@@ -47,13 +47,13 @@ export const enterpriseKeysApi = {
   listKeyBindings: () =>
     apiClient.get<EnterpriseKeyBindingsResponse>(`${BASE}/key-bindings`),
 
-  createKeyBinding: (data: { userName: string; departmentId: string; apiKey?: string }) =>
+  createKeyBinding: (data: { userName: string; departmentId: string; apiKey?: string; email?: string }) =>
     apiClient.post<EnterpriseKeyBinding>(`${BASE}/key-bindings`, data),
 
   deleteKeyBinding: (apiKey: string) =>
     apiClient.delete<{ ok: boolean }>(`${BASE}/key-bindings/${encodeURIComponent(apiKey)}`),
 
-  updateKeyBinding: (apiKey: string, data: { userName: string; departmentId: string }) =>
+  updateKeyBinding: (apiKey: string, data: { userName: string; departmentId: string; email?: string }) =>
     apiClient.patch<EnterpriseKeyBinding>(`${BASE}/key-bindings/${encodeURIComponent(apiKey)}`, data),
 
   deleteKeyBindings: (apiKeys: string[]) =>
