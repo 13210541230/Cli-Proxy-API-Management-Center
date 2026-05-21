@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -77,6 +78,46 @@ type APIKeyAlias struct {
 	APIKeyHash  string `json:"apiKeyHash"`
 	Alias       string `json:"alias"`
 	UpdatedAtMS int64  `json:"updatedAtMs"`
+}
+
+const UngroupedDepartmentID = "__ungrouped__"
+
+type EnterpriseDepartment struct {
+	ID          string `json:"id"`
+	Name        string `json:"name"`
+	Prefix      string `json:"prefix"`
+	SortOrder   int    `json:"sortOrder"`
+	Enabled     bool   `json:"enabled"`
+	System      bool   `json:"system"`
+	UpdatedBy   string `json:"updatedBy,omitempty"`
+	CreatedAtMS int64  `json:"createdAtMs"`
+	UpdatedAtMS int64  `json:"updatedAtMs"`
+}
+
+type EnterpriseKeyBinding struct {
+	APIKey               string `json:"apiKey"`
+	APIKeyHash           string `json:"apiKeyHash"`
+	UserName             string `json:"userName"`
+	DepartmentID         string `json:"departmentId"`
+	Source               string `json:"source"`
+	DepartmentResolvedBy string `json:"departmentResolvedBy"`
+	UpdatedBy            string `json:"updatedBy,omitempty"`
+	CreatedAtMS          int64  `json:"createdAtMs"`
+	UpdatedAtMS          int64  `json:"updatedAtMs"`
+}
+
+type EnterpriseImportHistory struct {
+	TaskID       string `json:"taskId"`
+	CSVFileName  string `json:"csvFileName"`
+	TotalRows    int    `json:"totalRows"`
+	PassedRows   int    `json:"passedRows"`
+	WarningRows  int    `json:"warningRows"`
+	ErrorRows    int    `json:"errorRows"`
+	ErrorDetails string `json:"errorDetails,omitempty"`
+	Status       string `json:"status"`
+	UpdatedBy    string `json:"updatedBy,omitempty"`
+	CreatedAtMS  int64  `json:"createdAtMs"`
+	UpdatedAtMS  int64  `json:"updatedAtMs"`
 }
 
 type Store struct {
@@ -178,6 +219,40 @@ func (s *Store) init() error {
 			alias text not null,
 			updated_at_ms integer not null
 		)`,
+		`create table if not exists enterprise_departments (
+			id text primary key,
+			name text not null,
+			prefix text,
+			sort_order integer not null default 0,
+			enabled integer not null default 1,
+			system integer not null default 0,
+			updated_by text,
+			created_at_ms integer not null,
+			updated_at_ms integer not null
+		)`,
+		`create table if not exists enterprise_key_bindings (
+			api_key text primary key,
+			api_key_hash text not null default '',
+			user_name text not null,
+			department_id text not null,
+			source text not null,
+			department_resolved_by text not null,
+			updated_by text,
+			created_at_ms integer not null,
+			updated_at_ms integer not null
+		)`,
+		`create index if not exists idx_enterprise_key_bindings_department_id on enterprise_key_bindings(department_id)`,
+		`create table if not exists enterprise_import_history (
+			task_id text primary key,
+			total_rows integer not null,
+			passed_rows integer not null,
+			warning_rows integer not null,
+			error_rows integer not null,
+			status text not null,
+			updated_by text,
+			created_at_ms integer not null,
+			updated_at_ms integer not null
+		)`,
 	}
 	for _, statement := range statements {
 		if _, err := s.db.Exec(statement); err != nil {
@@ -185,6 +260,9 @@ func (s *Store) init() error {
 		}
 	}
 	if err := s.ensureUsageEventSnapshotColumns(); err != nil {
+		return err
+	}
+	if err := s.ensureEnterpriseSchema(); err != nil {
 		return err
 	}
 	return nil
@@ -235,6 +313,75 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 		)); err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (s *Store) ensureEnterpriseSchema() error {
+	bindingMigrations := []string{
+		`alter table enterprise_key_bindings add column api_key_hash text not null default ''`,
+		`alter table enterprise_key_bindings add column user_name text not null default ''`,
+		`alter table enterprise_key_bindings add column department_id text not null default ''`,
+		`alter table enterprise_key_bindings add column source text not null default ''`,
+		`alter table enterprise_key_bindings add column department_resolved_by text not null default ''`,
+		`alter table enterprise_key_bindings add column updated_by text`,
+		`alter table enterprise_key_bindings add column created_at_ms integer not null default 0`,
+		`alter table enterprise_key_bindings add column updated_at_ms integer not null default 0`,
+	}
+	for _, stmt := range bindingMigrations {
+		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			return err
+		}
+	}
+	if _, err := s.db.Exec(`create index if not exists idx_enterprise_key_bindings_api_key_hash on enterprise_key_bindings(api_key_hash)`); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(`create index if not exists idx_enterprise_key_bindings_user_name on enterprise_key_bindings(user_name, updated_at_ms)`); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(`create index if not exists idx_enterprise_key_bindings_department_id on enterprise_key_bindings(department_id)`); err != nil {
+		return err
+	}
+	importHistoryMigrations := []string{
+		`alter table enterprise_import_history add column total_rows integer not null default 0`,
+		`alter table enterprise_import_history add column passed_rows integer not null default 0`,
+		`alter table enterprise_import_history add column warning_rows integer not null default 0`,
+		`alter table enterprise_import_history add column error_rows integer not null default 0`,
+		`alter table enterprise_import_history add column status text not null default ''`,
+		`alter table enterprise_import_history add column updated_by text`,
+		`alter table enterprise_import_history add column created_at_ms integer not null default 0`,
+		`alter table enterprise_import_history add column updated_at_ms integer not null default 0`,
+		`alter table enterprise_import_history add column csv_filename text not null default ''`,
+		`alter table enterprise_import_history add column error_details text not null default ''`,
+	}
+	for _, stmt := range importHistoryMigrations {
+		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			return err
+		}
+	}
+	now := time.Now().UnixMilli()
+	if _, err := s.db.Exec(`insert into enterprise_departments(
+		id, name, prefix, sort_order, enabled, system, created_at_ms, updated_at_ms
+	) values(?, ?, ?, ?, ?, ?, ?, ?)
+	on conflict(id) do update set name=excluded.name, enabled=excluded.enabled, system=excluded.system, updated_at_ms=excluded.updated_at_ms`,
+		UngroupedDepartmentID, "未分组", "", -1, 1, 1, now, now,
+	); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(`
+		update enterprise_key_bindings
+		set department_id = ?, updated_at_ms = ?
+		where department_id = ''
+		   or department_id not in (select id from enterprise_departments)
+	`, UngroupedDepartmentID, now); err != nil {
+		return err
+	}
+	if _, err := s.db.Exec(`
+		update enterprise_key_bindings
+		set user_name = '', updated_at_ms = ?
+		where source = 'sync' and user_name like 'synced_%'
+	`, now); err != nil {
+		return err
 	}
 	return nil
 }
@@ -850,6 +997,298 @@ func (s *Store) ExportJSONL(ctx context.Context) ([]byte, error) {
 		output = append(output, '\n')
 	}
 	return output, nil
+}
+
+func (s *Store) UpsertEnterpriseDepartments(ctx context.Context, items []EnterpriseDepartment) error {
+	if len(items) == 0 {
+		return nil
+	}
+	now := time.Now().UnixMilli()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = tx.Rollback()
+	}()
+	stmt, err := tx.PrepareContext(ctx, `insert into enterprise_departments (
+		id, name, prefix, sort_order, enabled, system, updated_by, created_at_ms, updated_at_ms
+	) values (?, ?, ?, ?, ?, ?, ?, ?, ?)
+	on conflict(id) do update set
+		name=excluded.name,
+		prefix=excluded.prefix,
+		sort_order=excluded.sort_order,
+		enabled=excluded.enabled,
+		system=excluded.system,
+		updated_by=excluded.updated_by,
+		updated_at_ms=excluded.updated_at_ms`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, item := range items {
+		id := strings.TrimSpace(item.ID)
+		name := strings.TrimSpace(item.Name)
+		if id == "" || name == "" {
+			return errors.New("department id and name are required")
+		}
+		createdAt := item.CreatedAtMS
+		if createdAt <= 0 {
+			createdAt = now
+		}
+		updatedAt := item.UpdatedAtMS
+		if updatedAt <= 0 {
+			updatedAt = now
+		}
+		enabled := 0
+		if item.Enabled {
+			enabled = 1
+		}
+		system := 0
+		if item.System {
+			system = 1
+		}
+		if _, err := stmt.ExecContext(ctx, id, name, strings.TrimSpace(item.Prefix), item.SortOrder, enabled, system, nullString(strings.TrimSpace(item.UpdatedBy)), createdAt, updatedAt); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *Store) LoadEnterpriseDepartments(ctx context.Context) ([]EnterpriseDepartment, error) {
+	rows, err := s.db.QueryContext(ctx, `select id, name, prefix, sort_order, enabled, system, updated_by, created_at_ms, updated_at_ms
+		from enterprise_departments order by sort_order asc, id asc`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EnterpriseDepartment, 0)
+	for rows.Next() {
+		var item EnterpriseDepartment
+		var enabled int
+		var system int
+		var prefix sql.NullString
+		var updatedBy sql.NullString
+		if err := rows.Scan(&item.ID, &item.Name, &prefix, &item.SortOrder, &enabled, &system, &updatedBy, &item.CreatedAtMS, &item.UpdatedAtMS); err != nil {
+			return nil, err
+		}
+		item.Prefix = prefix.String
+		item.Enabled = enabled != 0
+		item.System = system != 0
+		item.UpdatedBy = updatedBy.String
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) DeleteEnterpriseDepartment(ctx context.Context, id string) error {
+	departmentID := strings.TrimSpace(id)
+	if departmentID == "" {
+		return errors.New("department id is required")
+	}
+	now := time.Now().UnixMilli()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, `update enterprise_key_bindings set department_id = ?, updated_at_ms = ? where department_id = ?`, UngroupedDepartmentID, now, departmentID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `delete from enterprise_departments where id = ?`, departmentID); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) UpsertEnterpriseKeyBindings(ctx context.Context, items []EnterpriseKeyBinding) error {
+	if len(items) == 0 {
+		return nil
+	}
+	now := time.Now().UnixMilli()
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	stmt, err := tx.PrepareContext(ctx, `insert into enterprise_key_bindings (
+		api_key, api_key_hash, user_name, department_id, source, department_resolved_by, updated_by, created_at_ms, updated_at_ms
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?)
+	on conflict(api_key) do update set
+		api_key_hash=excluded.api_key_hash,
+		user_name=excluded.user_name,
+		department_id=excluded.department_id,
+		source=excluded.source,
+		department_resolved_by=excluded.department_resolved_by,
+		updated_by=excluded.updated_by,
+		updated_at_ms=excluded.updated_at_ms`)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	for _, item := range items {
+		apiKey := strings.TrimSpace(item.APIKey)
+		if apiKey == "" {
+			return errors.New("apiKey is required")
+		}
+		source := strings.TrimSpace(item.Source)
+		if source == "" {
+			source = "manual"
+		}
+		userName := strings.TrimSpace(item.UserName)
+		deptID := strings.TrimSpace(item.DepartmentID)
+		if deptID == "" {
+			if source == "manual" {
+				return errors.New("departmentId is required")
+			}
+			deptID = UngroupedDepartmentID
+		}
+		if source == "manual" {
+			if userName == "" {
+				return errors.New("userName is required")
+			}
+		}
+		resolvedBy := strings.TrimSpace(item.DepartmentResolvedBy)
+		if resolvedBy == "" {
+			resolvedBy = "manual"
+		}
+		createdAt := item.CreatedAtMS
+		if createdAt <= 0 {
+			createdAt = now
+		}
+		updatedAt := item.UpdatedAtMS
+		if updatedAt <= 0 {
+			updatedAt = now
+		}
+		sum := sha256.Sum256([]byte(apiKey))
+		apiKeyHash := fmt.Sprintf("%x", sum)
+		if _, err := stmt.ExecContext(ctx, apiKey, apiKeyHash, userName, deptID, source, resolvedBy, nullString(strings.TrimSpace(item.UpdatedBy)), createdAt, updatedAt); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `insert into api_key_aliases(api_key_hash, alias, updated_at_ms)
+			values(?, ?, ?)
+			on conflict(api_key_hash) do update set alias=excluded.alias, updated_at_ms=excluded.updated_at_ms`, apiKeyHash, userName, now); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *Store) LoadEnterpriseKeyBindings(ctx context.Context) ([]EnterpriseKeyBinding, error) {
+	rows, err := s.db.QueryContext(ctx, `select api_key, api_key_hash, user_name, department_id, source, department_resolved_by, updated_by, created_at_ms, updated_at_ms
+		from enterprise_key_bindings order by updated_at_ms desc, api_key asc`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EnterpriseKeyBinding, 0)
+	for rows.Next() {
+		var item EnterpriseKeyBinding
+		var updatedBy sql.NullString
+		if err := rows.Scan(&item.APIKey, &item.APIKeyHash, &item.UserName, &item.DepartmentID, &item.Source, &item.DepartmentResolvedBy, &updatedBy, &item.CreatedAtMS, &item.UpdatedAtMS); err != nil {
+			return nil, err
+		}
+		item.UpdatedBy = updatedBy.String
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+func (s *Store) DeleteEnterpriseKeyBinding(ctx context.Context, apiKey string) error {
+	trimmed := strings.TrimSpace(apiKey)
+	if trimmed == "" {
+		return errors.New("apiKey is required")
+	}
+	sum := sha256.Sum256([]byte(trimmed))
+	hash := fmt.Sprintf("%x", sum)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	if _, err := tx.ExecContext(ctx, `delete from enterprise_key_bindings where api_key = ?`, trimmed); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `delete from api_key_aliases where api_key_hash = ?`, hash); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (s *Store) DeleteEnterpriseKeyBindings(ctx context.Context, apiKeys []string) error {
+	if len(apiKeys) == 0 {
+		return errors.New("apiKeys are required")
+	}
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, apiKey := range apiKeys {
+		trimmed := strings.TrimSpace(apiKey)
+		if trimmed == "" {
+			return errors.New("apiKey is required")
+		}
+		sum := sha256.Sum256([]byte(trimmed))
+		hash := fmt.Sprintf("%x", sum)
+		if _, err := tx.ExecContext(ctx, `delete from enterprise_key_bindings where api_key = ?`, trimmed); err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `delete from api_key_aliases where api_key_hash = ?`, hash); err != nil {
+			return err
+		}
+	}
+	return tx.Commit()
+}
+
+func (s *Store) AppendEnterpriseImportHistory(ctx context.Context, item EnterpriseImportHistory) error {
+	now := time.Now().UnixMilli()
+	createdAt := item.CreatedAtMS
+	if createdAt <= 0 {
+		createdAt = now
+	}
+	updatedAt := item.UpdatedAtMS
+	if updatedAt <= 0 {
+		updatedAt = now
+	}
+	_, err := s.db.ExecContext(ctx, `insert into enterprise_import_history(
+		task_id, csv_filename, total_rows, passed_rows, warning_rows, error_rows, error_details, status, updated_by, created_at_ms, updated_at_ms
+	) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	on conflict(task_id) do update set
+		csv_filename=excluded.csv_filename,
+		total_rows=excluded.total_rows,
+		passed_rows=excluded.passed_rows,
+		warning_rows=excluded.warning_rows,
+		error_rows=excluded.error_rows,
+		error_details=excluded.error_details,
+		status=excluded.status,
+		updated_by=excluded.updated_by,
+		updated_at_ms=excluded.updated_at_ms`,
+		strings.TrimSpace(item.TaskID), strings.TrimSpace(item.CSVFileName), item.TotalRows, item.PassedRows, item.WarningRows, item.ErrorRows, strings.TrimSpace(item.ErrorDetails), strings.TrimSpace(item.Status), nullString(strings.TrimSpace(item.UpdatedBy)), createdAt, updatedAt)
+	return err
+}
+
+func (s *Store) LoadEnterpriseImportHistory(ctx context.Context, limit int) ([]EnterpriseImportHistory, error) {
+	if limit <= 0 {
+		limit = 100
+	}
+	rows, err := s.db.QueryContext(ctx, `select task_id, csv_filename, total_rows, passed_rows, warning_rows, error_rows, error_details, status, updated_by, created_at_ms, updated_at_ms
+		from enterprise_import_history order by updated_at_ms desc, task_id desc limit ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EnterpriseImportHistory, 0)
+	for rows.Next() {
+		var item EnterpriseImportHistory
+		var updatedBy sql.NullString
+		if err := rows.Scan(&item.TaskID, &item.CSVFileName, &item.TotalRows, &item.PassedRows, &item.WarningRows, &item.ErrorRows, &item.ErrorDetails, &item.Status, &updatedBy, &item.CreatedAtMS, &item.UpdatedAtMS); err != nil {
+			return nil, err
+		}
+		item.UpdatedBy = updatedBy.String
+		items = append(items, item)
+	}
+	return items, rows.Err()
 }
 
 func nullString(value string) any {

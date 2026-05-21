@@ -718,6 +718,90 @@ func TestUsageQueryFiltersByRangeAndAPIKeyHash(t *testing.T) {
 	}
 }
 
+func TestEnterpriseKeyBindingsImportPersistsErrorDetails(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPut && r.URL.Path == "/v0/management/api-keys" {
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"ok":true}`))
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler := newTestHandler(t, upstream.URL, true)
+
+	putDepartmentsReq := httptest.NewRequest(
+		http.MethodPut,
+		"/v0/management/enterprise/departments",
+		bytes.NewBufferString(`{"items":[{"id":"dept_sh","name":"上海","prefix":"sh","sortOrder":1,"enabled":true,"system":false}]}`),
+	)
+	putDepartmentsReq.Header.Set("Authorization", "Bearer management-key")
+	putDepartmentsRR := httptest.NewRecorder()
+	handler.ServeHTTP(putDepartmentsRR, putDepartmentsReq)
+	if putDepartmentsRR.Code != http.StatusOK {
+		t.Fatalf("put departments status = %d, body = %s", putDepartmentsRR.Code, putDepartmentsRR.Body.String())
+	}
+
+	importReq := httptest.NewRequest(
+		http.MethodPost,
+		"/v0/management/enterprise/key-bindings/import",
+		bytes.NewBufferString(`{
+			"fileName":"employees.csv",
+			"items":[
+				{"userName":"张三","departmentName":"上海","departmentId":"dept_sh","generatedKey":"sh-zs-ABCDEFGHIJKLMNOPQRSTUVWXYZ1234","status":"ok"},
+				{"userName":"李四","departmentName":"未知","departmentId":"","status":"error","errorReason":"department not found: 未知"}
+			]
+		}`),
+	)
+	importReq.Header.Set("Authorization", "Bearer management-key")
+	importRR := httptest.NewRecorder()
+	handler.ServeHTTP(importRR, importReq)
+	if importRR.Code != http.StatusOK {
+		t.Fatalf("import status = %d, body = %s", importRR.Code, importRR.Body.String())
+	}
+
+	historyReq := httptest.NewRequest(http.MethodGet, "/v0/management/enterprise/import-history?limit=1", nil)
+	historyReq.Header.Set("Authorization", "Bearer management-key")
+	historyRR := httptest.NewRecorder()
+	handler.ServeHTTP(historyRR, historyReq)
+	if historyRR.Code != http.StatusOK {
+		t.Fatalf("history status = %d, body = %s", historyRR.Code, historyRR.Body.String())
+	}
+
+	var historyResp struct {
+		Items []struct {
+			CSVFileName  string `json:"csvFileName"`
+			TotalRows    int    `json:"totalRows"`
+			PassedRows   int    `json:"passedRows"`
+			WarningRows  int    `json:"warningRows"`
+			ErrorRows    int    `json:"errorRows"`
+			ErrorDetails string `json:"errorDetails"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(historyRR.Body.Bytes(), &historyResp); err != nil {
+		t.Fatalf("decode history response: %v", err)
+	}
+	if len(historyResp.Items) != 1 {
+		t.Fatalf("history items = %#v", historyResp.Items)
+	}
+	item := historyResp.Items[0]
+	if item.CSVFileName != "employees.csv" || item.TotalRows != 2 || item.PassedRows != 1 || item.WarningRows != 0 || item.ErrorRows != 1 {
+		t.Fatalf("history summary = %#v", item)
+	}
+
+	var details []struct {
+		Row    int    `json:"row"`
+		Reason string `json:"reason"`
+	}
+	if err := json.Unmarshal([]byte(item.ErrorDetails), &details); err != nil {
+		t.Fatalf("decode error details: %v, raw=%s", err, item.ErrorDetails)
+	}
+	if len(details) != 1 || details[0].Row != 2 || details[0].Reason != "department not found: 未知" {
+		t.Fatalf("error details = %#v", details)
+	}
+}
+
 func closeFloat(left float64, right float64) bool {
 	return math.Abs(left-right) < 0.0000001
 }

@@ -21,6 +21,7 @@ import { CodexInspectionPage } from '@/pages/CodexInspectionPage';
 import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
+import { EnterpriseKeysPage } from '@/pages/EnterpriseKeysPage';
 
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -78,6 +79,7 @@ const mainRoutes = [
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
+  { path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

@@ -2,7 +2,10 @@ module github.com/seakee/cpa-manager/usage-service
 
 go 1.24.0
 
-require modernc.org/sqlite v1.34.5
+require (
+	github.com/mozillazg/go-pinyin v0.21.0
+	modernc.org/sqlite v1.34.5
+)
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect

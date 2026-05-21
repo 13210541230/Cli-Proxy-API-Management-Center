@@ -38,6 +38,7 @@ export const STORAGE_KEY_THEME = 'cli-proxy-theme';
 export const STORAGE_KEY_LANGUAGE = 'cli-proxy-language';
 export const STORAGE_KEY_SIDEBAR = 'cli-proxy-sidebar-collapsed';
 export const STORAGE_KEY_AUTH_FILES_PAGE_SIZE = 'cli-proxy-auth-files-page-size';
+export const STORAGE_KEY_ENTERPRISE_KEYS = 'cli-proxy-enterprise-keys';
 
 // 语言配置
 export const LANGUAGE_ORDER = defineLanguageOrder(['zh-CN', 'zh-TW', 'en', 'ru'] as const);

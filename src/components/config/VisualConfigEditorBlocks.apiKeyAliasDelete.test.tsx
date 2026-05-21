@@ -56,10 +56,10 @@ vi.mock('@/services/api/usageService', () => ({
   isUsageServiceId: () => true,
   normalizeUsageServiceBase: (value: string) => value,
   usageServiceApi: {
-    getInfo: (...args: unknown[]) => mocks.getInfo(...args),
-    getApiKeyAliases: (...args: unknown[]) => mocks.getApiKeyAliases(...args),
-    saveApiKeyAliases: (...args: unknown[]) => mocks.saveApiKeyAliases(...args),
-    deleteApiKeyAlias: (...args: unknown[]) => mocks.deleteApiKeyAlias(...args),
+    getInfo: mocks.getInfo,
+    getApiKeyAliases: mocks.getApiKeyAliases,
+    saveApiKeyAliases: mocks.saveApiKeyAliases,
+    deleteApiKeyAlias: mocks.deleteApiKeyAlias,
   },
 }));
 
@@ -114,7 +114,6 @@ describe('ApiKeysCardEditor alias cleanup', () => {
     const oldKey = 'sk-old-key';
     const newKey = 'sk-new-key';
     const oldHash = sha256Hex(oldKey).toLowerCase();
-    const newHash = sha256Hex(newKey).toLowerCase();
     const onChange = vi.fn();
 
     mocks.getApiKeyAliases.mockResolvedValueOnce({

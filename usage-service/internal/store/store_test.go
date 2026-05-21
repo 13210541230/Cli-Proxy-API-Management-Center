@@ -2,7 +2,10 @@ package store
 
 import (
 	"context"
+	"crypto/sha256"
+	"fmt"
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
@@ -140,5 +143,111 @@ func TestStoreAPIKeyAliases(t *testing.T) {
 	}
 	if len(aliases) != 0 {
 		t.Fatalf("aliases after delete = %#v", aliases)
+	}
+}
+
+func TestStoreEnterpriseMetadataPersistence(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() {
+		_ = db.Close()
+	})
+
+	ctx := context.Background()
+	if err := db.UpsertEnterpriseDepartments(ctx, []EnterpriseDepartment{
+		{ID: "ungrouped", Name: "未分组", SortOrder: 0, Enabled: true, System: true, UpdatedBy: "system"},
+		{ID: "dept_sh", Name: "上海总部", Prefix: "sh", SortOrder: 1, Enabled: true, UpdatedBy: "admin"},
+	}); err != nil {
+		t.Fatalf("upsert departments: %v", err)
+	}
+
+	departments, err := db.LoadEnterpriseDepartments(ctx)
+	if err != nil {
+		t.Fatalf("load departments: %v", err)
+	}
+	if len(departments) < 2 {
+		t.Fatalf("len(departments) = %d, want >= 2", len(departments))
+	}
+	var foundShanghai bool
+	for _, department := range departments {
+		if department.ID == "dept_sh" && department.Prefix == "sh" {
+			foundShanghai = true
+			break
+		}
+	}
+	if !foundShanghai {
+		t.Fatalf("departments missing dept_sh: %#v", departments)
+	}
+
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []EnterpriseKeyBinding{
+		{
+			APIKey:               "sh-abc123",
+			UserName:             "zhangsan",
+			DepartmentID:         "dept_sh",
+			Source:               "import",
+			DepartmentResolvedBy: "import",
+			UpdatedBy:            "admin",
+		},
+	}); err != nil {
+		t.Fatalf("upsert key bindings: %v", err)
+	}
+
+	bindings, err := db.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		t.Fatalf("load key bindings: %v", err)
+	}
+	if len(bindings) != 1 {
+		t.Fatalf("len(bindings) = %d, want 1", len(bindings))
+	}
+	if bindings[0].APIKey != "sh-abc123" || bindings[0].DepartmentID != "dept_sh" {
+		t.Fatalf("binding = %#v", bindings[0])
+	}
+	if !regexp.MustCompile(`^[0-9a-f]{64}$`).MatchString(bindings[0].APIKeyHash) {
+		t.Fatalf("binding APIKeyHash = %q", bindings[0].APIKeyHash)
+	}
+	expectedHash := fmt.Sprintf("%x", sha256.Sum256([]byte(bindings[0].APIKey)))
+	if bindings[0].APIKeyHash != expectedHash {
+		t.Fatalf("binding APIKeyHash = %q, want %q", bindings[0].APIKeyHash, expectedHash)
+	}
+
+	aliases, err := db.LoadAPIKeyAliases(ctx)
+	if err != nil {
+		t.Fatalf("load aliases: %v", err)
+	}
+	if len(aliases) != 1 || aliases[0].Alias != "zhangsan" || aliases[0].APIKeyHash != bindings[0].APIKeyHash {
+		t.Fatalf("aliases = %#v", aliases)
+	}
+
+	if err := db.AppendEnterpriseImportHistory(ctx, EnterpriseImportHistory{
+		TaskID:       "task-001",
+		CSVFileName:  "enterprise-users.csv",
+		TotalRows:    10,
+		PassedRows:   9,
+		WarningRows:  1,
+		ErrorRows:    0,
+		ErrorDetails: `[{"row":4,"reason":"duplicate user"}]`,
+		Status:       "completed",
+		UpdatedBy:    "admin",
+	}); err != nil {
+		t.Fatalf("append import history: %v", err)
+	}
+
+	history, err := db.LoadEnterpriseImportHistory(ctx, 10)
+	if err != nil {
+		t.Fatalf("load import history: %v", err)
+	}
+	if len(history) != 1 {
+		t.Fatalf("len(history) = %d, want 1", len(history))
+	}
+	if history[0].TaskID != "task-001" || history[0].Status != "completed" {
+		t.Fatalf("history = %#v", history[0])
+	}
+	if history[0].CSVFileName != "enterprise-users.csv" {
+		t.Fatalf("history CSVFileName = %q", history[0].CSVFileName)
+	}
+	if history[0].ErrorDetails != `[{"row":4,"reason":"duplicate user"}]` {
+		t.Fatalf("history ErrorDetails = %q", history[0].ErrorDetails)
 	}
 }

@@ -12,6 +12,7 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -86,6 +87,43 @@ type apiKeyAliasesRequest struct {
 	Items []store.APIKeyAlias `json:"items"`
 }
 
+type enterpriseDepartmentsRequest struct {
+	Items []store.EnterpriseDepartment `json:"items"`
+}
+
+type enterpriseKeyBindingsRequest struct {
+	Items []store.EnterpriseKeyBinding `json:"items"`
+}
+
+type enterpriseImportHistoryRequest struct {
+	Item store.EnterpriseImportHistory `json:"item"`
+}
+
+type createEnterpriseKeyBindingRequest struct {
+	UserName     string `json:"userName"`
+	DepartmentID string `json:"departmentId"`
+	APIKey       string `json:"apiKey"`
+}
+
+type deleteEnterpriseKeyBindingsRequest struct {
+	APIKeys []string `json:"apiKeys"`
+}
+
+type updateEnterpriseKeyBindingRequest struct {
+	UserName     string `json:"userName"`
+	DepartmentID string `json:"departmentId"`
+}
+
+type keyBindingGenerateRequest struct {
+	CSV      string `json:"csv"`
+	FileName string `json:"fileName"`
+}
+
+type keyBindingImportRequest struct {
+	Items    []usage.KeyGenPreviewItem `json:"items"`
+	FileName string                    `json:"fileName"`
+}
+
 func New(cfg config.Config, store *store.Store, collector *collector.Manager) *Server {
 	return &Server{
 		cfg:       cfg,
@@ -119,6 +157,18 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/api-key-aliases") {
 		s.withCORS(s.handleAPIKeyAliases)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/departments") {
+		s.withCORS(s.handleEnterpriseDepartments)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/key-bindings") {
+		s.withCORS(s.handleEnterpriseKeyBindings)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/import-history") {
+		s.withCORS(s.handleEnterpriseImportHistory)(w, r)
 		return
 	}
 	cleanUsagePath := strings.TrimRight(r.URL.Path, "/")
@@ -686,6 +736,510 @@ func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func (s *Server) handleEnterpriseDepartments(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	path := strings.TrimRight(r.URL.Path, "/")
+	const basePath = "/v0/management/enterprise/departments"
+	switch {
+	case path == basePath && r.Method == http.MethodGet:
+		items, err := s.store.LoadEnterpriseDepartments(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	case path == basePath && r.Method == http.MethodPut:
+		var req enterpriseDepartmentsRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if req.Items == nil {
+			writeError(w, http.StatusBadRequest, errors.New("enterprise departments are required"))
+			return
+		}
+		if err := s.store.UpsertEnterpriseDepartments(r.Context(), req.Items); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		items, err := s.store.LoadEnterpriseDepartments(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	case strings.HasPrefix(path, basePath+"/") && r.Method == http.MethodDelete:
+		departmentID := strings.TrimPrefix(path, basePath+"/")
+		if strings.TrimSpace(departmentID) == "" {
+			writeError(w, http.StatusBadRequest, errors.New("department id is required"))
+			return
+		}
+		if err := s.store.DeleteEnterpriseDepartment(r.Context(), departmentID); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		items, err := s.store.LoadEnterpriseDepartments(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+func (s *Server) handleEnterpriseKeyBindings(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	path := strings.TrimRight(r.URL.Path, "/")
+	const basePath = "/v0/management/enterprise/key-bindings"
+	switch {
+	case path == basePath && r.Method == http.MethodGet:
+		setup, ok, err := s.resolveSetup(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if ok {
+			baseURL := normalizeBaseURL(setup.CPAUpstreamURL)
+			managementKey := strings.TrimSpace(setup.ManagementKey)
+			if baseURL != "" && managementKey != "" {
+				if err := s.mergeCPAAPIKeysIntoEnterpriseStore(r.Context(), baseURL, managementKey); err != nil {
+					writeError(w, http.StatusBadGateway, err)
+					return
+				}
+			}
+		}
+		items, err := s.store.LoadEnterpriseKeyBindings(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	case path == basePath && r.Method == http.MethodPut:
+		var req enterpriseKeyBindingsRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if req.Items == nil {
+			writeError(w, http.StatusBadRequest, errors.New("enterprise key bindings are required"))
+			return
+		}
+		if err := s.store.UpsertEnterpriseKeyBindings(r.Context(), req.Items); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if err := s.syncEnterpriseKeysToCPAConfig(r.Context()); err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+		items, err := s.store.LoadEnterpriseKeyBindings(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	case path == basePath && r.Method == http.MethodPost:
+		s.handleCreateEnterpriseKeyBinding(w, r)
+	case path == basePath+"/generate" && r.Method == http.MethodPost:
+		s.handleGenerateEnterpriseKeyBindings(w, r)
+	case path == basePath+"/import" && r.Method == http.MethodPost:
+		s.handleImportEnterpriseKeyBindings(w, r)
+	case path == basePath && r.Method == http.MethodDelete:
+		s.handleBatchDeleteEnterpriseKeyBindings(w, r)
+	case strings.HasPrefix(path, basePath+"/") && r.Method == http.MethodPatch:
+		s.handleUpdateEnterpriseKeyBinding(w, r)
+	case strings.HasPrefix(path, basePath+"/") && r.Method == http.MethodDelete:
+		apiKey, err := url.PathUnescape(strings.TrimPrefix(path, basePath+"/"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if err := s.store.DeleteEnterpriseKeyBinding(r.Context(), apiKey); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if err := s.syncEnterpriseKeysToCPAConfig(r.Context()); err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+func (s *Server) handleCreateEnterpriseKeyBinding(w http.ResponseWriter, r *http.Request) {
+	var req createEnterpriseKeyBindingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if strings.TrimSpace(req.UserName) == "" || strings.TrimSpace(req.DepartmentID) == "" {
+		writeError(w, http.StatusBadRequest, errors.New("userName and departmentId are required"))
+		return
+	}
+	departments, err := s.store.LoadEnterpriseDepartments(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	var selected *store.EnterpriseDepartment
+	for i := range departments {
+		if departments[i].ID == strings.TrimSpace(req.DepartmentID) {
+			selected = &departments[i]
+			break
+		}
+	}
+	if selected == nil {
+		writeError(w, http.StatusBadRequest, errors.New("department not found"))
+		return
+	}
+	key := strings.TrimSpace(req.APIKey)
+	if key == "" {
+		key, err = usage.GenerateAPIKeyForUser(selected.Prefix, req.UserName)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+	}
+	item := store.EnterpriseKeyBinding{
+		APIKey:               key,
+		UserName:             strings.TrimSpace(req.UserName),
+		DepartmentID:         strings.TrimSpace(req.DepartmentID),
+		Source:               "manual",
+		DepartmentResolvedBy: "manual",
+	}
+	if err := s.store.UpsertEnterpriseKeyBindings(r.Context(), []store.EnterpriseKeyBinding{item}); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if err := s.syncEnterpriseKeysToCPAConfig(r.Context()); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	items, err := s.store.LoadEnterpriseKeyBindings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	for _, binding := range items {
+		if binding.APIKey == key {
+			writeJSON(w, http.StatusOK, binding)
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, item)
+}
+
+func (s *Server) handleBatchDeleteEnterpriseKeyBindings(w http.ResponseWriter, r *http.Request) {
+	var req deleteEnterpriseKeyBindingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if len(req.APIKeys) == 0 {
+		writeError(w, http.StatusBadRequest, errors.New("apiKeys are required"))
+		return
+	}
+	if err := s.store.DeleteEnterpriseKeyBindings(r.Context(), req.APIKeys); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if err := s.syncEnterpriseKeysToCPAConfig(r.Context()); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+}
+
+func (s *Server) handleUpdateEnterpriseKeyBinding(w http.ResponseWriter, r *http.Request) {
+	path := strings.TrimRight(r.URL.Path, "/")
+	const basePath = "/v0/management/enterprise/key-bindings"
+	apiKey, err := url.PathUnescape(strings.TrimPrefix(path, basePath+"/"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if strings.TrimSpace(apiKey) == "" {
+		writeError(w, http.StatusBadRequest, errors.New("apiKey is required"))
+		return
+	}
+	var req updateEnterpriseKeyBindingRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if strings.TrimSpace(req.UserName) == "" || strings.TrimSpace(req.DepartmentID) == "" {
+		writeError(w, http.StatusBadRequest, errors.New("userName and departmentId are required"))
+		return
+	}
+	items, err := s.store.LoadEnterpriseKeyBindings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	var current *store.EnterpriseKeyBinding
+	for i := range items {
+		if items[i].APIKey == strings.TrimSpace(apiKey) {
+			current = &items[i]
+			break
+		}
+	}
+	if current == nil {
+		writeError(w, http.StatusNotFound, errors.New("api key not found"))
+		return
+	}
+	departments, err := s.store.LoadEnterpriseDepartments(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	departmentExists := false
+	for _, dept := range departments {
+		if dept.ID == strings.TrimSpace(req.DepartmentID) {
+			departmentExists = true
+			break
+		}
+	}
+	if !departmentExists {
+		writeError(w, http.StatusBadRequest, errors.New("department not found"))
+		return
+	}
+	updated := *current
+	updated.UserName = strings.TrimSpace(req.UserName)
+	updated.DepartmentID = strings.TrimSpace(req.DepartmentID)
+	updated.Source = "manual"
+	updated.DepartmentResolvedBy = "manual"
+	updated.UpdatedAtMS = time.Now().UnixMilli()
+	if err := s.store.UpsertEnterpriseKeyBindings(r.Context(), []store.EnterpriseKeyBinding{updated}); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if err := s.syncEnterpriseKeysToCPAConfig(r.Context()); err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	fresh, err := s.store.LoadEnterpriseKeyBindings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	for _, binding := range fresh {
+		if binding.APIKey == strings.TrimSpace(apiKey) {
+			writeJSON(w, http.StatusOK, binding)
+			return
+		}
+	}
+	writeJSON(w, http.StatusOK, updated)
+}
+
+func (s *Server) handleGenerateEnterpriseKeyBindings(w http.ResponseWriter, r *http.Request) {
+	csvContent, _, err := readKeyBindingCSVRequest(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	departments, err := s.store.LoadEnterpriseDepartments(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	lites := make([]usage.DepartmentLite, 0, len(departments))
+	for _, dept := range departments {
+		lites = append(lites, usage.DepartmentLite{ID: dept.ID, Name: dept.Name, Prefix: dept.Prefix})
+	}
+	items, err := usage.ParseCSVPreview(csvContent, lites)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+}
+
+func (s *Server) handleImportEnterpriseKeyBindings(w http.ResponseWriter, r *http.Request) {
+	var req keyBindingImportRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if req.Items == nil {
+		writeError(w, http.StatusBadRequest, errors.New("items are required"))
+		return
+	}
+
+	existing, err := s.store.LoadEnterpriseKeyBindings(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	existingSet := make(map[string]struct{}, len(existing))
+	for _, item := range existing {
+		apiKey := strings.TrimSpace(item.APIKey)
+		if apiKey == "" {
+			continue
+		}
+		existingSet[apiKey] = struct{}{}
+	}
+
+	passedRows := 0
+	warningRows := 0
+	errorRows := 0
+	type importErrorDetail struct {
+		Row    int    `json:"row"`
+		Reason string `json:"reason"`
+	}
+	errorDetails := make([]importErrorDetail, 0)
+	toUpsert := make([]store.EnterpriseKeyBinding, 0, len(req.Items))
+	for idx, item := range req.Items {
+		if item.Status != "ok" {
+			errorRows++
+			reason := strings.TrimSpace(item.ErrorReason)
+			if reason == "" {
+				reason = "item status is not ok"
+			}
+			errorDetails = append(errorDetails, importErrorDetail{Row: idx + 1, Reason: reason})
+			continue
+		}
+		apiKey := strings.TrimSpace(item.GeneratedKey)
+		if apiKey == "" {
+			errorRows++
+			errorDetails = append(errorDetails, importErrorDetail{Row: idx + 1, Reason: "generatedKey is required for ok item"})
+			continue
+		}
+		if _, exists := existingSet[apiKey]; exists {
+			warningRows++
+			continue
+		}
+		toUpsert = append(toUpsert, store.EnterpriseKeyBinding{
+			APIKey:               apiKey,
+			UserName:             strings.TrimSpace(item.UserName),
+			DepartmentID:         strings.TrimSpace(item.DepartmentID),
+			Source:               "import",
+			DepartmentResolvedBy: "csv",
+		})
+		existingSet[apiKey] = struct{}{}
+		passedRows++
+	}
+	if len(toUpsert) > 0 {
+		if err := s.store.UpsertEnterpriseKeyBindings(r.Context(), toUpsert); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if err := s.syncEnterpriseKeysToCPAConfig(r.Context()); err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+	}
+
+	taskID := fmt.Sprintf("import-%d", time.Now().UnixMilli())
+	status := "done"
+	if errorRows > 0 && passedRows == 0 {
+		status = "partial"
+	}
+	errorDetailsJSON := ""
+	if len(errorDetails) > 0 {
+		raw, marshalErr := json.Marshal(errorDetails)
+		if marshalErr != nil {
+			writeError(w, http.StatusInternalServerError, marshalErr)
+			return
+		}
+		errorDetailsJSON = string(raw)
+	}
+	if err := s.store.AppendEnterpriseImportHistory(r.Context(), store.EnterpriseImportHistory{
+		TaskID:       taskID,
+		CSVFileName:  strings.TrimSpace(req.FileName),
+		TotalRows:    len(req.Items),
+		PassedRows:   passedRows,
+		WarningRows:  warningRows,
+		ErrorRows:    errorRows,
+		ErrorDetails: errorDetailsJSON,
+		Status:       status,
+	}); err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"taskId":      taskID,
+		"totalRows":   len(req.Items),
+		"passedRows":  passedRows,
+		"warningRows": warningRows,
+		"errorRows":   errorRows,
+	})
+}
+
+func readKeyBindingCSVRequest(r *http.Request) ([]byte, string, error) {
+	contentType := r.Header.Get("Content-Type")
+	mediaType, _, _ := mime.ParseMediaType(contentType)
+	if strings.HasPrefix(mediaType, "multipart/") {
+		if err := r.ParseMultipartForm(8 << 20); err != nil {
+			return nil, "", err
+		}
+		if file, header, err := r.FormFile("file"); err == nil {
+			defer file.Close()
+			data, readErr := io.ReadAll(file)
+			return data, header.Filename, readErr
+		}
+		csvText := r.FormValue("csv")
+		if strings.TrimSpace(csvText) == "" {
+			return nil, "", errors.New("csv is required")
+		}
+		return []byte(csvText), strings.TrimSpace(r.FormValue("fileName")), nil
+	}
+	var req keyBindingGenerateRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		return nil, "", err
+	}
+	if strings.TrimSpace(req.CSV) == "" {
+		return nil, "", errors.New("csv is required")
+	}
+	return []byte(req.CSV), strings.TrimSpace(req.FileName), nil
+}
+
+func (s *Server) handleEnterpriseImportHistory(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	path := strings.TrimRight(r.URL.Path, "/")
+	const basePath = "/v0/management/enterprise/import-history"
+	switch {
+	case path == basePath && r.Method == http.MethodGet:
+		limit := 100
+		if raw := strings.TrimSpace(r.URL.Query().Get("limit")); raw != "" {
+			if value, err := strconv.Atoi(raw); err == nil && value > 0 {
+				limit = value
+			}
+		}
+		items, err := s.store.LoadEnterpriseImportHistory(r.Context(), limit)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	case path == basePath && r.Method == http.MethodPost:
+		var req enterpriseImportHistoryRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if err := s.store.AppendEnterpriseImportHistory(r.Context(), req.Item); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"ok": true})
+	default:
+		methodNotAllowed(w)
+	}
+}
+
 type usageFilters struct {
 	FromMS     *int64
 	ToMS       *int64
@@ -1130,6 +1684,187 @@ func (s *Server) writeCORS(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+}
+
+func (s *Server) syncEnterpriseKeysToCPAConfig(ctx context.Context) error {
+	setup, ok, err := s.resolveSetup(ctx)
+	if err != nil {
+		return err
+	}
+	if !ok {
+		return errors.New("usage service is not configured")
+	}
+	baseURL := normalizeBaseURL(setup.CPAUpstreamURL)
+	managementKey := strings.TrimSpace(setup.ManagementKey)
+	if baseURL == "" || managementKey == "" {
+		return errors.New("cpaBaseUrl and managementKey are required")
+	}
+
+	bindings, err := s.store.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		return err
+	}
+	seen := map[string]struct{}{}
+	apiKeys := make([]string, 0, len(bindings))
+	for _, item := range bindings {
+		key := strings.TrimSpace(item.APIKey)
+		if key == "" {
+			continue
+		}
+		if _, exists := seen[key]; exists {
+			continue
+		}
+		seen[key] = struct{}{}
+		apiKeys = append(apiKeys, key)
+	}
+	sort.Strings(apiKeys)
+
+	payload, err := json.Marshal(apiKeys)
+	if err != nil {
+		return err
+	}
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, baseURL+"/v0/management/api-keys", strings.NewReader(string(payload)))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+managementKey)
+	req.Header.Set("Content-Type", "application/json")
+	client := &http.Client{Timeout: 20 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode >= 200 && res.StatusCode < 300 {
+		return nil
+	}
+	body, _ := io.ReadAll(io.LimitReader(res.Body, 2048))
+	if len(body) > 0 {
+		return fmt.Errorf("sync api-keys to CPA failed: %s: %s", res.Status, strings.TrimSpace(string(body)))
+	}
+	return fmt.Errorf("sync api-keys to CPA failed: %s", res.Status)
+}
+
+func (s *Server) mergeCPAAPIKeysIntoEnterpriseStore(ctx context.Context, baseURL string, managementKey string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+"/v0/management/api-keys", nil)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+managementKey)
+	client := &http.Client{Timeout: 20 * time.Second}
+	res, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		body, _ := io.ReadAll(io.LimitReader(res.Body, 2048))
+		if len(body) > 0 {
+			return fmt.Errorf("fetch api-keys from CPA failed: %s: %s", res.Status, strings.TrimSpace(string(body)))
+		}
+		return fmt.Errorf("fetch api-keys from CPA failed: %s", res.Status)
+	}
+
+	body, err := io.ReadAll(io.LimitReader(res.Body, 2*1024*1024))
+	if err != nil {
+		return err
+	}
+	keys, err := parseAPIKeysPayload(body)
+	if err != nil {
+		return err
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+
+	existing, err := s.store.LoadEnterpriseKeyBindings(ctx)
+	if err != nil {
+		return err
+	}
+	existingSet := make(map[string]struct{}, len(existing))
+	for _, item := range existing {
+		key := strings.TrimSpace(item.APIKey)
+		if key == "" {
+			continue
+		}
+		existingSet[key] = struct{}{}
+	}
+
+	missing := make([]store.EnterpriseKeyBinding, 0)
+	now := time.Now().UnixMilli()
+	for _, key := range keys {
+		if _, ok := existingSet[key]; ok {
+			continue
+		}
+		missing = append(missing, store.EnterpriseKeyBinding{
+			APIKey:               key,
+			UserName:             "",
+			DepartmentID:         "",
+			Source:               "sync",
+			DepartmentResolvedBy: "manual",
+			CreatedAtMS:          now,
+			UpdatedAtMS:          now,
+		})
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	return s.store.UpsertEnterpriseKeyBindings(ctx, missing)
+}
+
+func parseAPIKeysPayload(raw []byte) ([]string, error) {
+	trimmed := strings.TrimSpace(string(raw))
+	if trimmed == "" {
+		return nil, nil
+	}
+
+	var list []string
+	if err := json.Unmarshal([]byte(trimmed), &list); err == nil {
+		return normalizeAPIKeys(list), nil
+	}
+
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(trimmed), &obj); err != nil {
+		return nil, err
+	}
+	for _, key := range []string{"api-keys", "apiKeys", "items"} {
+		value, ok := obj[key]
+		if !ok {
+			continue
+		}
+		switch typed := value.(type) {
+		case []any:
+			next := make([]string, 0, len(typed))
+			for _, item := range typed {
+				text := strings.TrimSpace(fmt.Sprint(item))
+				if text != "" {
+					next = append(next, text)
+				}
+			}
+			return normalizeAPIKeys(next), nil
+		case []string:
+			return normalizeAPIKeys(typed), nil
+		}
+	}
+	return nil, nil
+}
+
+func normalizeAPIKeys(keys []string) []string {
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(keys))
+	for _, key := range keys {
+		trimmed := strings.TrimSpace(key)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		out = append(out, trimmed)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func validateCollectorAgainstCPA(ctx context.Context, cfg store.ManagerConfig) error {

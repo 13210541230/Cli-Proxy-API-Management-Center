@@ -326,6 +326,10 @@ setup 后，`/status`、用量、模型价格和 `/v0/management/*` 反代接口
 - **日志**：增量读取和筛选文件日志
 - **中心信息**：模型列表、版本检查、本地状态工具
 
+## 企业 Key 管理文档
+
+- 设计方案 + 数据模型 + 流程 + 使用说明：`docs/enterprise-key-management.md`
+
 ## 开发命令
 
 前端：
@@ -349,6 +353,7 @@ go run ./cmd/cpa-manager
 ## 构建与发布
 
 - Vite 输出单文件 `dist/index.html`
+- 若通过 Usage Service 内嵌面板访问（`/management.html`），前端改动后需要把 `dist/index.html` 同步到 `usage-service/internal/httpapi/web/management.html`，再重新编译 `usage-service`。
 - 打 `vX.Y.Z` 标签会触发 `.github/workflows/release.yml`
 - 发布流程会上传 `dist/management.html`、原生运行包和 `checksums.txt` 到 GitHub Releases
 - 原生运行包会发布 `linux`、`darwin`、`windows` 的 `amd64` 和 `arm64` 版本，包内已内置管理面板

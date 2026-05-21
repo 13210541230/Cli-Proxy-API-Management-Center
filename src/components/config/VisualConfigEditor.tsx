@@ -37,11 +37,7 @@ import type {
   VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
-import {
-  ApiKeysCardEditor,
-  PayloadFilterRulesEditor,
-  PayloadRulesEditor,
-} from './VisualConfigEditorBlocks';
+import { PayloadFilterRulesEditor, PayloadRulesEditor } from './VisualConfigEditorBlocks';
 import styles from './VisualConfigEditor.module.scss';
 
 type VisualSectionId =
@@ -227,10 +223,6 @@ export function VisualConfigEditor({
     validationErrors?.['streaming.nonstreamKeepaliveInterval']
   );
 
-  const handleApiKeysTextChange = useCallback(
-    (apiKeysText: string) => onChange({ apiKeysText }),
-    [onChange]
-  );
   const handlePayloadDefaultRulesChange = useCallback(
     (payloadDefaultRules: PayloadRule[]) => onChange({ payloadDefaultRules }),
     [onChange]
@@ -697,11 +689,9 @@ export function VisualConfigEditor({
                 hint={t('config_management.visual.sections.auth.auth_dir_hint')}
               />
               <div className={styles.subsection}>
-                <ApiKeysCardEditor
-                  value={values.apiKeysText}
-                  disabled={disabled}
-                  onChange={handleApiKeysTextChange}
-                />
+                <div className={styles.helperText}>
+                  API Key 已迁移至“企业 Key 管理”面板统一维护，Config 面板不再提供新增/编辑入口。
+                </div>
               </div>
             </SectionStack>
           </ConfigSection>
