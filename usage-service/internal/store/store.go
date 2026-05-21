@@ -101,6 +101,7 @@ type EnterpriseKeyBinding struct {
 	DepartmentID         string `json:"departmentId"`
 	Source               string `json:"source"`
 	DepartmentResolvedBy string `json:"departmentResolvedBy"`
+	Email                string `json:"email"`
 	UpdatedBy            string `json:"updatedBy,omitempty"`
 	CreatedAtMS          int64  `json:"createdAtMs"`
 	UpdatedAtMS          int64  `json:"updatedAtMs"`
