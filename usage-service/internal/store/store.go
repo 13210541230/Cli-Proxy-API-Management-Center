@@ -328,6 +328,7 @@ func (s *Store) ensureEnterpriseSchema() error {
 		`alter table enterprise_key_bindings add column updated_by text`,
 		`alter table enterprise_key_bindings add column created_at_ms integer not null default 0`,
 		`alter table enterprise_key_bindings add column updated_at_ms integer not null default 0`,
+		`alter table enterprise_key_bindings add column email text not null default ''`,
 	}
 	for _, stmt := range bindingMigrations {
 		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
