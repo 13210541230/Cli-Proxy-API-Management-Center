@@ -1372,7 +1372,6 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 		left join enterprise_key_bindings ekb on ue.api_key_hash = ekb.api_key_hash
 		left join enterprise_departments ed on ekb.department_id = ed.id
 		where ue.timestamp_ms >= ? and ue.timestamp_ms <= ?
-		  and (ue.failed = 0 or ue.total_tokens > 0)
 		group by ue.api_key_hash, ue.model, ekb.user_name, ekb.department_id, ed.name, ekb.email, ekb.api_key
 		order by ed.name, ekb.user_name
 	`

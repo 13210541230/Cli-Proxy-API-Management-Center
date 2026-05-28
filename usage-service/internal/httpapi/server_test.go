@@ -993,6 +993,17 @@ func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
 			TotalTokens: 100,
 			CreatedAtMS: 1_700_000_000_001,
 		},
+		{
+			EventHash:   "report-e-2",
+			TimestampMS: 1_700_000_000_100,
+			Timestamp:   "2023-11-14T22:13:20.100Z",
+			Model:       "gpt-4",
+			Endpoint:    "POST /v1/chat/completions",
+			APIKeyHash:  hashA,
+			TotalTokens: 0,
+			Failed:      true,
+			CreatedAtMS: 1_700_000_000_101,
+		},
 	}); err != nil {
 		t.Fatalf("insert events: %v", err)
 	}
@@ -1059,8 +1070,14 @@ func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
 		t.Fatalf("models = %+v", item.Models)
 	}
 	m := item.Models[0]
-	if m.TotalTokens != 100 || m.Requests != 1 {
+	if m.TotalTokens != 100 || m.Requests != 2 {
 		t.Fatalf("model stats = %+v", m)
+	}
+	if m.FailedRequests != 1 {
+		t.Fatalf("model failedRequests = %d, want 1", m.FailedRequests)
+	}
+	if item.FailedRequests != 1 {
+		t.Fatalf("item failedRequests = %d, want 1", item.FailedRequests)
 	}
 }
 
