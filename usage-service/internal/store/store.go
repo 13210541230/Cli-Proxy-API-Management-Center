@@ -168,7 +168,7 @@ func (s *Store) Close() error {
 }
 
 // PurgeEventsBefore deletes usage_events older than the given cutoff (timestamp_ms).
-// Also vacuums the database to reclaim space.
+// Also vacuums the database to reclaim disk space.
 func (s *Store) PurgeEventsBefore(ctx context.Context, cutoffMS int64) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `delete from usage_events where timestamp_ms < ?`, cutoffMS)
 	if err != nil {
@@ -176,7 +176,11 @@ func (s *Store) PurgeEventsBefore(ctx context.Context, cutoffMS int64) (int64, e
 	}
 	n, _ := res.RowsAffected()
 	if n > 0 {
-		_, _ = s.db.ExecContext(ctx, `pragma incremental_vacuum`)
+		// Checkpoint WAL so VACUUM can reclaim space in both main db and WAL
+		_, _ = s.db.ExecContext(ctx, `pragma wal_checkpoint(TRUNCATE)`)
+		if _, ve := s.db.ExecContext(ctx, `VACUUM`); ve != nil {
+			log.Printf("cleanup: vacuum error (non-fatal): %v", ve)
+		}
 	}
 	return n, nil
 }
