@@ -17,36 +17,38 @@ const defaultConfigName = "config.json"
 const defaultSecretFile = "/run/secrets/cpa_management_key"
 
 type Config struct {
-	HTTPAddr       string
-	DBPath         string
-	CPAUpstreamURL string
-	ManagementKey  string
-	CollectorMode  string
-	Queue          string
-	PopSide        string
-	BatchSize      int
-	PollInterval   time.Duration
-	QueryLimit     int
-	PanelPath      string
-	CORSOrigins    []string
-	TLSSkipVerify  bool
+	HTTPAddr              string
+	DBPath                string
+	CPAUpstreamURL        string
+	ManagementKey         string
+	CollectorMode         string
+	Queue                 string
+	PopSide               string
+	BatchSize             int
+	PollInterval          time.Duration
+	QueryLimit            int
+	PanelPath             string
+	CORSOrigins           []string
+	TLSSkipVerify         bool
+	RetentionDays         int
 }
 
 type fileConfig struct {
-	HTTPAddr          string   `json:"httpAddr,omitempty"`
-	DataDir           string   `json:"dataDir,omitempty"`
-	DBPath            string   `json:"dbPath,omitempty"`
-	CPAUpstreamURL    string   `json:"cpaUpstreamUrl,omitempty"`
-	ManagementKeyFile string   `json:"managementKeyFile,omitempty"`
-	CollectorMode     string   `json:"collectorMode,omitempty"`
-	Queue             string   `json:"queue,omitempty"`
-	PopSide           string   `json:"popSide,omitempty"`
-	BatchSize         int      `json:"batchSize,omitempty"`
-	PollIntervalMS    int      `json:"pollIntervalMs,omitempty"`
-	QueryLimit        int      `json:"queryLimit,omitempty"`
-	PanelPath         string   `json:"panelPath,omitempty"`
-	CORSOrigins       []string `json:"corsOrigins,omitempty"`
-	TLSSkipVerify     bool     `json:"tlsSkipVerify,omitempty"`
+	HTTPAddr              string   `json:"httpAddr,omitempty"`
+	DataDir               string   `json:"dataDir,omitempty"`
+	DBPath                string   `json:"dbPath,omitempty"`
+	CPAUpstreamURL        string   `json:"cpaUpstreamUrl,omitempty"`
+	ManagementKeyFile     string   `json:"managementKeyFile,omitempty"`
+	CollectorMode         string   `json:"collectorMode,omitempty"`
+	Queue                 string   `json:"queue,omitempty"`
+	PopSide               string   `json:"popSide,omitempty"`
+	BatchSize             int      `json:"batchSize,omitempty"`
+	PollIntervalMS        int      `json:"pollIntervalMs,omitempty"`
+	QueryLimit            int      `json:"queryLimit,omitempty"`
+	PanelPath             string   `json:"panelPath,omitempty"`
+	CORSOrigins           []string `json:"corsOrigins,omitempty"`
+	TLSSkipVerify         bool     `json:"tlsSkipVerify,omitempty"`
+	RetentionDays         int      `json:"retentionDays,omitempty"`
 }
 
 func Load() (Config, error) {
@@ -87,6 +89,7 @@ func Load() (Config, error) {
 		PanelPath:      env("PANEL_PATH", resolveConfigPath(cfgFile.PanelPath, cfgDir)),
 		CORSOrigins:    splitCSV(env("USAGE_CORS_ORIGINS", strings.Join(sliceFallback(cfgFile.CORSOrigins, []string{"*"}), ","))),
 		TLSSkipVerify:  envBool("USAGE_RESP_TLS_SKIP_VERIFY", cfgFile.TLSSkipVerify),
+		RetentionDays:  envInt("USAGE_RETENTION_DAYS", intFallback(cfgFile.RetentionDays, 30)),
 	}, nil
 }
 
