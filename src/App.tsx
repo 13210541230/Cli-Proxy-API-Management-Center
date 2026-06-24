@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
+import { ApiKeyUsageSelfServicePage } from '@/pages/ApiKeyUsageSelfServicePage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { MainLayout } from '@/components/layout/MainLayout';
@@ -22,6 +23,7 @@ const router = createHashRouter([
     element: <RootShell />,
     children: [
       { path: '/login', element: <LoginPage /> },
+      { path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
       {
         path: '/*',
         element: (
@@ -46,8 +48,7 @@ function App() {
 
   useEffect(() => {
     setLanguage(language);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // 仅用于首屏同步 i18n 语言
+  }, []);
 
   useEffect(() => {
     document.documentElement.lang = language;

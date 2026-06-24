@@ -16,3 +16,6 @@ export * from './transformers';
 export * from './vertex';
 export * from './codexQuota';
 export * from './enterpriseKeys';
+export * from './quotaPause';
+export * from './quotaLimits';
+export * from './selfUsage';

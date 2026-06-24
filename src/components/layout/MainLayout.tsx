@@ -42,11 +42,13 @@ const sidebarIcons: Record<string, ReactNode> = {
   aiProviders: <IconSidebarProviders size={18} />,
   authFiles: <IconSidebarAuthFiles size={18} />,
   oauth: <IconSidebarOauth size={18} />,
-  quota: <IconSidebarQuota size={18} />,
-  monitoring: <IconSidebarMonitor size={18} />,
-  config: <IconSidebarConfig size={18} />,
-  logs: <IconSidebarLogs size={18} />,
-  system: <IconSidebarSystem size={18} />,
+	quota: <IconSidebarQuota size={18} />,
+	quotaLimits: <IconSidebarQuota size={18} />,
+	quotaPaused: <IconSidebarQuota size={18} />,
+	monitoring: <IconSidebarMonitor size={18} />,
+	config: <IconSidebarConfig size={18} />,
+	logs: <IconSidebarLogs size={18} />,
+	system: <IconSidebarSystem size={18} />,
 };
 
 // Header action icons - smaller size for header buttons
@@ -395,14 +397,16 @@ export function MainLayout() {
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
-    { path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
-    ...(requestMonitoringAvailability.available
-      ? [{ path: '/monitoring', label: t('nav.monitoring_center'), icon: sidebarIcons.monitoring }]
+	{ path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
+	{ path: '/quota-limits', label: t('nav.quota_limits', 'Quota Limits'), icon: sidebarIcons.quotaLimits },
+	{ path: '/quota-paused', label: t('nav.quota_paused', 'Paused Keys'), icon: sidebarIcons.quotaPaused },
+	...(requestMonitoringAvailability.available
+	  ? [{ path: '/monitoring', label: t('nav.monitoring_center'), icon: sidebarIcons.monitoring }]
       : []),
-    ...(config?.loggingToFile
-      ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
-      : []),
-    { path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system },
+	...(config?.loggingToFile
+	  ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
+	  : []),
+	{ path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system }
   ];
   const navOrder = navItems.map((item) => item.path);
   const getRouteOrder = (pathname: string) => {

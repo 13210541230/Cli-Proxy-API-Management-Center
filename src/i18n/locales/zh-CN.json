@@ -146,7 +146,10 @@
     "config_management": "配置面板",
     "enterprise_keys": "企业 Key 管理",
     "logs": "日志查看",
-    "system_info": "中心信息"
+    "system_info": "中心信息",
+    "quota_limits": "限额配置",
+    "quota_paused": "暂停管理",
+    "my_usage": "用量查询"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -2050,5 +2053,66 @@
   "enterpriseKeys": {
     "email": "邮箱",
     "emailPlaceholder": "邮箱（可选）"
+  },
+  "quota_pause": {
+    "title": "暂停的密钥",
+    "manual_pause": "手动暂停",
+    "key_hash": "密钥哈希",
+    "key_hash_required": "请输入密钥哈希",
+    "reason": "原因",
+    "reason_placeholder": "例如：超出日限额",
+    "duration_seconds": "持续时间（秒）",
+    "confirm_pause": "确认暂停",
+    "pause_success": "暂停成功",
+    "resume": "恢复",
+    "resume_success": "恢复成功",
+    "paused_at": "暂停时间",
+    "expires_at": "过期时间",
+    "permanent": "永久",
+    "no_paused_keys": "暂无暂停的密钥"
+  },
+  "quota_limits": {
+    "title": "限额配置",
+    "global_settings": "全局设置",
+    "enabled": "启用限额",
+    "daily_cents": "每日额度（美分）",
+    "weekly_cents": "每周额度（美分）",
+    "overrides": "覆盖规则",
+    "add_override": "添加规则",
+    "edit_override": "编辑规则",
+    "no_overrides": "暂无覆盖规则",
+    "apply_to": "应用范围",
+    "apply_value": "应用值",
+    "apply_global": "全局",
+    "apply_api_key": "API 密钥",
+    "key_hash_placeholder": "输入密钥哈希",
+    "save_success": "限额配置已保存"
+  },
+  "self_usage": {
+    "title": "用量查询",
+    "description": "输入您的 API Key 查询用量统计",
+    "api_key_placeholder": "输入您的 API Key",
+    "key_required": "请输入 API Key",
+    "query": "查询",
+    "pause_status": "暂停状态",
+    "paused": "已暂停",
+    "active": "正常",
+    "pause_reason": "暂停原因",
+    "resumes_at": "恢复时间",
+    "requests": "请求数",
+    "success": "成功",
+    "failed": "失败",
+    "input_tokens": "输入 Tokens",
+    "output_tokens": "输出 Tokens",
+    "cache_hit_rate": "缓存命中率",
+    "total_tokens": "总 Tokens",
+    "cost": "费用",
+    "limit": "限额",
+    "today": "今日",
+    "this_week": "本周",
+    "by_model": "按模型分布",
+    "model": "模型",
+    "usage_unavailable": "用量服务不可用，请稍后重试",
+    "no_data": "未查询到数据，请检查 API Key 是否正确"
   }
 }

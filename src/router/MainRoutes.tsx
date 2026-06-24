@@ -22,7 +22,9 @@ import { ConfigPage } from '@/pages/ConfigPage';
 import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
 import { EnterpriseKeysPage } from '@/pages/EnterpriseKeysPage';
-
+import { QuotaLimitsPage } from '@/pages/QuotaLimitsPage';
+import { PausedKeysPage } from '@/pages/PausedKeysPage';
+import { ApiKeyUsageSelfServicePage } from '@/pages/ApiKeyUsageSelfServicePage';
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
   { path: '/dashboard', element: <DashboardPage /> },
@@ -79,10 +81,12 @@ const mainRoutes = [
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
-  { path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
-  { path: '*', element: <Navigate to="/" replace /> },
+	{ path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
+	{ path: '/quota-limits', element: <QuotaLimitsPage /> },
+	{ path: '/quota-paused', element: <PausedKeysPage /> },
+	{ path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
+	{ path: '*', element: <Navigate to="/" replace /> },
 ];
-
 export function MainRoutes({ location }: { location?: Location }) {
   return useRoutes(mainRoutes, location);
 }

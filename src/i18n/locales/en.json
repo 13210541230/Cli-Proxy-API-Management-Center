@@ -146,7 +146,10 @@
     "config_management": "Config Panel",
     "enterprise_keys": "Enterprise Key Management",
     "logs": "Logs Viewer",
-    "system_info": "Management Center Info"
+    "system_info": "Management Center Info",
+    "quota_limits": "Quota Limits",
+    "quota_paused": "Paused Keys",
+    "my_usage": "My Usage"
   },
   "dashboard": {
     "title": "Dashboard",
