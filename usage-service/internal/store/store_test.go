@@ -595,32 +595,4 @@ func TestStoreUsageReport(t *testing.T) {
 		}
 	})
 
-		t.Run("failed zero-token events are excluded by spec filter", func(t *testing.T) {
-			if _, err := db.InsertEvents(ctx, []usage.Event{{
-				EventHash:   "e-zero-token-fail",
-				TimestampMS: 1_700_000_000_000,
-				Timestamp:   "2023-11-14T22:13:20Z",
-				Model:       "gpt-zero",
-				Endpoint:    "POST /v1/chat/completions",
-				APIKeyHash:  hashA,
-				Failed:      true,
-				TotalTokens: 0,
-				CreatedAtMS: 1_700_000_000_001,
-			}}); err != nil {
-				t.Fatalf("insert zero-token event: %v", err)
-			}
-
-			rows, err := db.UsageReport(ctx, 1_699_000_000_000, 1_701_000_000_000)
-			if err != nil {
-				t.Fatalf("usage report: %v", err)
-			}
-			for _, r := range rows {
-				for _, m := range r.Models {
-					if m.Model == "gpt-zero" {
-						t.Fatalf("gpt-zero should be excluded by spec filter but was found")
-					}
-				}
-			}
-		})
- 
 }

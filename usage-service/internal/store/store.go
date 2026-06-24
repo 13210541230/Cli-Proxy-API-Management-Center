@@ -80,6 +80,22 @@ type APIKeyAlias struct {
 	UpdatedAtMS int64  `json:"updatedAtMs"`
 }
 
+// KeySpend holds aggregated spend (in cents) for a single API key.
+type KeySpend struct {
+	KeyHash    string
+	TodayCents int64
+	WeekCents  int64
+}
+
+// SpendLimitConfig holds the quota limits read from settings.
+type SpendLimitConfig struct {
+	Enabled      bool   `json:"enabled"`
+	DailyCents   int64  `json:"daily_cents"`
+	WeeklyCents  int64  `json:"weekly_cents"`
+}
+
+const spendLimitConfigKey = "quota_config"
+
 const UngroupedDepartmentID = "__ungrouped__"
 
 type EnterpriseDepartment struct {
@@ -1476,3 +1492,117 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 	}
 	return result, nil
 }
+
+
+// SaveSpendLimitConfig persists the quota limit config to the settings table.
+func (s *Store) SaveSpendLimitConfig(ctx context.Context, cfg SpendLimitConfig) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx,
+		`insert into settings(key, value, updated_at_ms)
+		 values(?, ?, ?)
+		 on conflict(key) do update set value = excluded.value, updated_at_ms = excluded.updated_at_ms`,
+		spendLimitConfigKey, string(data), time.Now().UnixMilli(),
+	)
+	return err
+}
+
+// LoadSpendLimitConfig reads the quota limit config from the settings table.
+// Returns (cfg, false, nil) when no config is stored.
+func (s *Store) LoadSpendLimitConfig(ctx context.Context) (SpendLimitConfig, bool, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, spendLimitConfigKey).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return SpendLimitConfig{}, false, nil
+	}
+	if err != nil {
+		return SpendLimitConfig{}, false, err
+	}
+	var cfg SpendLimitConfig
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return SpendLimitConfig{}, false, err
+	}
+	return cfg, true, nil
+}
+// It joins usage_events with model_prices to compute cost = tokens * price_per_1m / 1000000 * 100.
+func (s *Store) QueryKeySpend(ctx context.Context) ([]KeySpend, error) {
+	todayQuery := `
+		select ue.api_key_hash,
+			coalesce(round(sum(
+				cast(ue.input_tokens as real) * coalesce(mp.prompt_per_1m, 0)
+				+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
+				+ cast(ue.cached_tokens as real) * coalesce(mp.cache_per_1m, 0)
+			) / 1000000.0 * 100), 0) as today_cents
+		from usage_events ue
+		left join model_prices mp on ue.model = mp.model
+		where ue.api_key_hash != ''
+		  and date(ue.timestamp_ms / 1000, 'unixepoch') = date('now')
+		group by ue.api_key_hash
+	`
+	weekQuery := `
+		select ue.api_key_hash,
+			coalesce(round(sum(
+				cast(ue.input_tokens as real) * coalesce(mp.prompt_per_1m, 0)
+				+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
+				+ cast(ue.cached_tokens as real) * coalesce(mp.cache_per_1m, 0)
+			) / 1000000.0 * 100), 0) as week_cents
+		from usage_events ue
+		left join model_prices mp on ue.model = mp.model
+		where ue.api_key_hash != ''
+		  and strftime('%W', ue.timestamp_ms / 1000, 'unixepoch') = strftime('%W', 'now')
+		group by ue.api_key_hash
+	`
+
+	todayMap := make(map[string]int64)
+	todayRows, err := s.db.QueryContext(ctx, todayQuery)
+	if err != nil {
+		return nil, fmt.Errorf("query today spend: %w", err)
+	}
+	for todayRows.Next() {
+		var hash string
+		var cents int64
+		if err := todayRows.Scan(&hash, &cents); err != nil {
+			todayRows.Close()
+			return nil, err
+		}
+		todayMap[hash] = cents
+	}
+	todayRows.Close()
+
+	weekMap := make(map[string]int64)
+	weekRows, err := s.db.QueryContext(ctx, weekQuery)
+	if err != nil {
+		return nil, fmt.Errorf("query week spend: %w", err)
+	}
+	for weekRows.Next() {
+		var hash string
+		var cents int64
+		if err := weekRows.Scan(&hash, &cents); err != nil {
+			weekRows.Close()
+			return nil, err
+		}
+		weekMap[hash] = cents
+	}
+	weekRows.Close()
+
+	allKeys := make(map[string]bool)
+	for h := range todayMap {
+		allKeys[h] = true
+	}
+	for h := range weekMap {
+		allKeys[h] = true
+	}
+
+	result := make([]KeySpend, 0, len(allKeys))
+	for h := range allKeys {
+		result = append(result, KeySpend{
+			KeyHash:    h,
+			TodayCents: todayMap[h],
+			WeekCents:  weekMap[h],
+		})
+	}
+	return result, nil
+}
+

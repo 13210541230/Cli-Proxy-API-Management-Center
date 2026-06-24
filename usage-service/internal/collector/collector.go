@@ -105,6 +105,8 @@ func (m *Manager) setStatus(update func(*Status)) {
 }
 
 func (m *Manager) run(ctx context.Context, cfg RuntimeConfig) {
+	go m.spendLimitTicker(ctx, cfg)
+
 	mode := collectorMode(valueOr(cfg.CollectorMode, m.base.CollectorMode))
 
 	if mode == "http" {
@@ -372,3 +374,25 @@ func (m *Manager) pollInterval(cfg RuntimeConfig) time.Duration {
 	}
 	return m.base.PollInterval
 }
+
+	// spendLimitTicker periodically checks all keys' spend against limits and pauses over-limit keys.
+	func (m *Manager) spendLimitTicker(ctx context.Context, cfg RuntimeConfig) {
+		ticker := time.NewTicker(30 * time.Second)
+		defer ticker.Stop()
+
+		// Run once immediately on start: sync config from CPA, then check
+		ctxBg := context.Background()
+		syncSpendLimitConfig(ctxBg, m.store, cfg.CPAUpstreamURL, cfg.ManagementKey)
+		client := newPauseClient(cfg.CPAUpstreamURL, cfg.ManagementKey)
+		CheckAndEnforceLimits(m.store, client)
+
+		for {
+			select {
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				syncSpendLimitConfig(ctxBg, m.store, cfg.CPAUpstreamURL, cfg.ManagementKey)
+				CheckAndEnforceLimits(m.store, client)
+			}
+		}
+	}
