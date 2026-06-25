@@ -89,6 +89,12 @@ type apiKeyAliasesRequest struct {
 	Items []store.APIKeyAlias `json:"items"`
 }
 
+type quotaConfigRequest struct {
+	Enabled   *bool                   `json:"enabled"`
+	Default   *store.SpendLimit       `json:"default"`
+	Overrides []store.SpendLimitEntry `json:"overrides"`
+}
+
 type enterpriseDepartmentsRequest struct {
 	Items []store.EnterpriseDepartment `json:"items"`
 }
@@ -161,6 +167,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/api-key-aliases") {
 		s.withCORS(s.handleAPIKeyAliases)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/quota/config") {
+		s.withCORS(s.handleQuotaConfig)(w, r)
 		return
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/departments") {
@@ -576,6 +586,100 @@ func (s *Server) handleAPIKeyAliases(w http.ResponseWriter, r *http.Request) {
 	default:
 		methodNotAllowed(w)
 	}
+}
+
+func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	path := strings.TrimRight(r.URL.Path, "/")
+	if path != "/v0/management/quota/config" {
+		methodNotAllowed(w)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		cfg, _, err := s.loadSpendLimitConfig(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		s.writeSpendLimitConfig(w, cfg)
+	case http.MethodPut:
+		current, _, err := s.loadSpendLimitConfig(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		var req quotaConfigRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if req.Enabled != nil {
+			current.Enabled = *req.Enabled
+		}
+		if req.Default != nil {
+			current.Default = *req.Default
+			current.DailyCents = 0
+			current.WeeklyCents = 0
+		}
+		if req.Overrides != nil {
+			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
+		}
+		if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		s.writeSpendLimitConfig(w, current)
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+func (s *Server) loadSpendLimitConfig(ctx context.Context) (store.SpendLimitConfig, bool, error) {
+	cfg, ok, err := s.store.LoadSpendLimitConfig(ctx)
+	if err != nil {
+		return store.SpendLimitConfig{}, false, err
+	}
+	if !ok {
+		cfg.Default = store.SpendLimit{}
+		cfg.Overrides = []store.SpendLimitEntry{}
+	}
+	return cfg, ok, nil
+}
+
+func (s *Server) writeSpendLimitConfig(w http.ResponseWriter, cfg store.SpendLimitConfig) {
+	overrides := cfg.Overrides
+	if overrides == nil {
+		overrides = []store.SpendLimitEntry{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"enabled":   cfg.Enabled,
+		"db_path":   s.cfg.DBPath,
+		"default":   cfg.DefaultLimit(),
+		"overrides": overrides,
+	})
+}
+
+func normalizeSpendLimitOverrides(entries []store.SpendLimitEntry) []store.SpendLimitEntry {
+	out := make([]store.SpendLimitEntry, 0, len(entries))
+	for _, entry := range entries {
+		applyTo := strings.TrimSpace(entry.ApplyTo)
+		applyValue := strings.ToLower(strings.TrimSpace(entry.ApplyValue))
+		if applyTo != "api-key" || applyValue == "" {
+			continue
+		}
+		out = append(out, store.SpendLimitEntry{
+			ApplyTo:     applyTo,
+			ApplyValue:  applyValue,
+			DailyCents:  entry.DailyCents,
+			WeeklyCents: entry.WeeklyCents,
+		})
+	}
+	return out
 }
 
 func fetchLiteLLMModelPrices(ctx context.Context) (map[string]store.ModelPrice, int, error) {
@@ -1131,7 +1235,7 @@ func (s *Server) handleImportEnterpriseKeyBindings(w http.ResponseWriter, r *htt
 		toUpsert = append(toUpsert, store.EnterpriseKeyBinding{
 			APIKey:               apiKey,
 			UserName:             strings.TrimSpace(item.UserName),
-				Email:                strings.TrimSpace(item.Email),
+			Email:                strings.TrimSpace(item.Email),
 			DepartmentID:         strings.TrimSpace(item.DepartmentID),
 			Source:               "import",
 			DepartmentResolvedBy: "csv",
@@ -1288,7 +1392,6 @@ func parseOptionalInt64Query(raw string, field string) (*int64, error) {
 	}
 	return &value, nil
 }
-
 
 func (s *Server) handleEnterpriseUsageReport(w http.ResponseWriter, r *http.Request) {
 	if !s.authorizeIfConfigured(w, r) {

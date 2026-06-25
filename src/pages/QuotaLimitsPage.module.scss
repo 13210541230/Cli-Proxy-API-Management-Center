@@ -116,3 +116,15 @@
   gap: 8px;
   margin-top: 16px;
 }
+
+.valueCell {
+  font-weight: 500;
+}
+
+.valueHash {
+  display: block;
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted, #999);
+  margin-top: 2px;
+}

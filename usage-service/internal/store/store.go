@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -88,11 +87,45 @@ type KeySpend struct {
 	WeekCents  int64
 }
 
+// SpendLimit defines daily and weekly cost limits in cents.
+type SpendLimit struct {
+	DailyCents  int64 `json:"daily_cents"`
+	WeeklyCents int64 `json:"weekly_cents"`
+}
+
+// SpendLimitEntry associates a limit override with an API key hash.
+type SpendLimitEntry struct {
+	ApplyTo     string `json:"apply_to"`
+	ApplyValue  string `json:"apply_value"`
+	DailyCents  int64  `json:"daily_cents"`
+	WeeklyCents int64  `json:"weekly_cents"`
+}
+
 // SpendLimitConfig holds the quota limits read from settings.
 type SpendLimitConfig struct {
-	Enabled      bool   `json:"enabled"`
-	DailyCents   int64  `json:"daily_cents"`
-	WeeklyCents  int64  `json:"weekly_cents"`
+	Enabled     bool              `json:"enabled"`
+	DailyCents  int64             `json:"daily_cents,omitempty"`
+	WeeklyCents int64             `json:"weekly_cents,omitempty"`
+	Default     SpendLimit        `json:"default"`
+	Overrides   []SpendLimitEntry `json:"overrides,omitempty"`
+}
+
+func (c SpendLimitConfig) DefaultLimit() SpendLimit {
+	if c.Default.DailyCents != 0 || c.Default.WeeklyCents != 0 {
+		return c.Default
+	}
+	return SpendLimit{DailyCents: c.DailyCents, WeeklyCents: c.WeeklyCents}
+}
+
+func (c SpendLimitConfig) LimitForKey(keyHash string) SpendLimit {
+	keyHash = strings.ToLower(strings.TrimSpace(keyHash))
+	for _, entry := range c.Overrides {
+		if entry.ApplyTo != "api-key" || strings.ToLower(strings.TrimSpace(entry.ApplyValue)) != keyHash {
+			continue
+		}
+		return SpendLimit{DailyCents: entry.DailyCents, WeeklyCents: entry.WeeklyCents}
+	}
+	return c.DefaultLimit()
 }
 
 const spendLimitConfigKey = "quota_config"
@@ -148,7 +181,7 @@ func Open(path string) (*Store, error) {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return nil, err
 	}
-		db, err := sql.Open("sqlite", path)
+	db, err := sql.Open("sqlite", path)
 	if err != nil {
 		return nil, err
 	}
@@ -169,20 +202,12 @@ func (s *Store) Close() error {
 }
 
 // PurgeEventsBefore deletes usage_events older than the given cutoff (timestamp_ms).
-// Also vacuums the database to reclaim disk space.
 func (s *Store) PurgeEventsBefore(ctx context.Context, cutoffMS int64) (int64, error) {
 	res, err := s.db.ExecContext(ctx, `delete from usage_events where timestamp_ms < ?`, cutoffMS)
 	if err != nil {
 		return 0, err
 	}
 	n, _ := res.RowsAffected()
-	if n > 0 {
-		// Checkpoint WAL so VACUUM can reclaim space in both main db and WAL
-		_, _ = s.db.ExecContext(ctx, `pragma wal_checkpoint(TRUNCATE)`)
-		if _, ve := s.db.ExecContext(ctx, `VACUUM`); ve != nil {
-			log.Printf("cleanup: vacuum error (non-fatal): %v", ve)
-		}
-	}
 	return n, nil
 }
 
@@ -229,7 +254,8 @@ func (s *Store) init() error {
 		`create index if not exists idx_usage_events_model on usage_events(model)`,
 		`create index if not exists idx_usage_events_auth_index on usage_events(auth_index)`,
 		`create index if not exists idx_usage_events_endpoint on usage_events(endpoint)`,
-	`create index if not exists idx_usage_events_api_key_hash on usage_events(api_key_hash)`,
+		`create index if not exists idx_usage_events_api_key_hash on usage_events(api_key_hash)`,
+		`create index if not exists idx_usage_events_spend_window on usage_events(failed, timestamp_ms, api_key_hash, model)`,
 		`create table if not exists dead_letter_events (
 			id integer primary key autoincrement,
 			payload text not null,
@@ -1419,7 +1445,7 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 
 	type flatRow struct {
 		apiKeyHash       string
-			apiKey           string
+		apiKey           string
 		model            string
 		userName         string
 		departmentID     string
@@ -1436,32 +1462,32 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 	for rows.Next() {
 		var f flatRow
 		if err := rows.Scan(
-				&f.apiKeyHash,
-				&f.apiKey,
-				&f.model,
-				&f.userName,
-				&f.departmentID,
-				&f.departmentName,
-				&f.email,
-				&f.totalTokens,
-				&f.totalRequests,
-				&f.failedRequests,
-				&f.cachedTokens,
-				&f.totalCacheTokens,
-				&f.cacheHits,
-			); err != nil {
-				return nil, err
-			}
-			flats = append(flats, f)
+			&f.apiKeyHash,
+			&f.apiKey,
+			&f.model,
+			&f.userName,
+			&f.departmentID,
+			&f.departmentName,
+			&f.email,
+			&f.totalTokens,
+			&f.totalRequests,
+			&f.failedRequests,
+			&f.cachedTokens,
+			&f.totalCacheTokens,
+			&f.cacheHits,
+		); err != nil {
+			return nil, err
 		}
+		flats = append(flats, f)
+	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 
 	// Group flat rows by api_key_hash into the nested key-row structure.
 	type keyAccum struct {
-		row        UsageReportKeyRow
-		cacheHits  int64
+		row       UsageReportKeyRow
+		cacheHits int64
 	}
 	keyIndex := map[string]int{}
 	accums := make([]keyAccum, 0)
@@ -1513,7 +1539,6 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 	return result, nil
 }
 
-
 // SaveSpendLimitConfig persists the quota limit config to the settings table.
 func (s *Store) SaveSpendLimitConfig(ctx context.Context, cfg SpendLimitConfig) error {
 	data, err := json.Marshal(cfg)
@@ -1544,68 +1569,36 @@ func (s *Store) LoadSpendLimitConfig(ctx context.Context) (SpendLimitConfig, boo
 	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
 		return SpendLimitConfig{}, false, err
 	}
+	if cfg.Default.DailyCents == 0 && cfg.Default.WeeklyCents == 0 {
+		cfg.Default = SpendLimit{DailyCents: cfg.DailyCents, WeeklyCents: cfg.WeeklyCents}
+	}
 	return cfg, true, nil
 }
-// It joins usage_events with model_prices to compute cost = tokens * price_per_1m / 1000000 * 100.
-func (s *Store) QueryKeySpend(ctx context.Context) ([]KeySpend, error) {
-	todayQuery := `
-		select ue.api_key_hash,
-			coalesce(round(sum(
-				cast(ue.input_tokens as real) * coalesce(mp.prompt_per_1m, 0)
-				+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
-				+ cast(ue.cached_tokens as real) * coalesce(mp.cache_per_1m, 0)
-			) / 1000000.0 * 100), 0) as today_cents
-		from usage_events ue
-		left join model_prices mp on ue.model = mp.model
-		where ue.api_key_hash != ''
-		  and date(ue.timestamp_ms / 1000, 'unixepoch') = date('now')
-		group by ue.api_key_hash
-	`
-	weekQuery := `
-		select ue.api_key_hash,
-			coalesce(round(sum(
-				cast(ue.input_tokens as real) * coalesce(mp.prompt_per_1m, 0)
-				+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
-				+ cast(ue.cached_tokens as real) * coalesce(mp.cache_per_1m, 0)
-			) / 1000000.0 * 100), 0) as week_cents
-		from usage_events ue
-		left join model_prices mp on ue.model = mp.model
-		where ue.api_key_hash != ''
-		  and strftime('%W', ue.timestamp_ms / 1000, 'unixepoch') = strftime('%W', 'now')
-		group by ue.api_key_hash
-	`
 
-	todayMap := make(map[string]int64)
-	todayRows, err := s.db.QueryContext(ctx, todayQuery)
+// Cost formula matches the management panel's calculateCost() in src/utils/usage.ts:
+//   prompt_cost = max(input_tokens - max(cached_tokens, cache_tokens), 0) * prompt_price / 1_000_000
+//   completion_cost = output_tokens * completion_price / 1_000_000
+//   cache_cost = max(cached_tokens, cache_tokens) * cache_price / 1_000_000
+//   total_cents = (prompt_cost + completion_cost + cache_cost) * 100
+// Failed requests are excluded from spend-limit enforcement.
+func (s *Store) QueryKeySpend(ctx context.Context) ([]KeySpend, error) {
+	return s.queryKeySpendAt(ctx, time.Now())
+}
+
+func (s *Store) queryKeySpendAt(ctx context.Context, now time.Time) ([]KeySpend, error) {
+	localNow := now.In(time.Local)
+	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, localNow.Location())
+	daysSinceMonday := (int(dayStart.Weekday()) + 6) % 7
+	weekStart := dayStart.AddDate(0, 0, -daysSinceMonday)
+
+	todayMap, err := s.queryKeySpendSince(ctx, dayStart.UnixMilli())
 	if err != nil {
 		return nil, fmt.Errorf("query today spend: %w", err)
 	}
-	for todayRows.Next() {
-		var hash string
-		var cents int64
-		if err := todayRows.Scan(&hash, &cents); err != nil {
-			todayRows.Close()
-			return nil, err
-		}
-		todayMap[hash] = cents
-	}
-	todayRows.Close()
-
-	weekMap := make(map[string]int64)
-	weekRows, err := s.db.QueryContext(ctx, weekQuery)
+	weekMap, err := s.queryKeySpendSince(ctx, weekStart.UnixMilli())
 	if err != nil {
 		return nil, fmt.Errorf("query week spend: %w", err)
 	}
-	for weekRows.Next() {
-		var hash string
-		var cents int64
-		if err := weekRows.Scan(&hash, &cents); err != nil {
-			weekRows.Close()
-			return nil, err
-		}
-		weekMap[hash] = cents
-	}
-	weekRows.Close()
 
 	allKeys := make(map[string]bool)
 	for h := range todayMap {
@@ -1626,3 +1619,48 @@ func (s *Store) QueryKeySpend(ctx context.Context) ([]KeySpend, error) {
 	return result, nil
 }
 
+func (s *Store) queryKeySpendSince(ctx context.Context, startMS int64) (map[string]int64, error) {
+	query := `
+		with priced_events as (
+			select ue.api_key_hash,
+				case when coalesce(ue.cached_tokens, 0) > coalesce(ue.cache_tokens, 0)
+					then coalesce(ue.cached_tokens, 0)
+					else coalesce(ue.cache_tokens, 0)
+				end as cache_tokens,
+				ue.input_tokens,
+				ue.output_tokens,
+				coalesce(mp.prompt_per_1m, 0) as prompt_per_1m,
+				coalesce(mp.completion_per_1m, 0) as completion_per_1m,
+				coalesce(mp.cache_per_1m, 0) as cache_per_1m
+			from usage_events ue
+			left join model_prices mp on ue.model = mp.model
+			where ue.api_key_hash != ''
+			  and ue.failed = 0
+			  and ue.timestamp_ms >= ?
+		)
+		select api_key_hash,
+			coalesce(round(sum(
+				cast(max(input_tokens - cache_tokens, 0) as real) * prompt_per_1m
+				+ cast(output_tokens as real) * completion_per_1m
+				+ cast(cache_tokens as real) * cache_per_1m
+			) / 1000000.0 * 100), 0) as cents
+		from priced_events
+		group by api_key_hash
+	`
+	rows, err := s.db.QueryContext(ctx, query, startMS)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string]int64)
+	for rows.Next() {
+		var hash string
+		var cents int64
+		if err := rows.Scan(&hash, &cents); err != nil {
+			return nil, err
+		}
+		result[hash] = cents
+	}
+	return result, rows.Err()
+}

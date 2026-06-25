@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -8,7 +8,16 @@ import { Select } from '@/components/ui/Select';
 import { useNotificationStore } from '@/stores';
 import type { NotificationType } from '@/types';
 import { quotaLimitsApi, type QuotaConfig, type SpendLimitEntry } from '@/services/api/quotaLimits';
+import { enterpriseKeysApi } from '@/services/api/enterpriseKeys';
 import styles from './QuotaLimitsPage.module.scss';
+
+interface KeyDisplayOption {
+  hash: string;
+  label: string;
+}
+
+const buildBindingLabel = (userName: string, email?: string): string =>
+  email ? `${userName} (${email})` : userName;
 
 export function QuotaLimitsPage() {
   const { t } = useTranslation();
@@ -19,13 +28,13 @@ export function QuotaLimitsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
 
-  // Editable fields
   const [enabled, setEnabled] = useState(false);
   const [dailyCents, setDailyCents] = useState('15000');
   const [weeklyCents, setWeeklyCents] = useState('50000');
   const [overrides, setOverrides] = useState<SpendLimitEntry[]>([]);
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [editingOverride, setEditingOverride] = useState<SpendLimitEntry | null>(null);
+  const [hashToDisplay, setHashToDisplay] = useState<Record<string, string>>({});
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -36,7 +45,7 @@ export function QuotaLimitsPage() {
       setEnabled(data.enabled);
       setDailyCents(String(data.default.daily_cents));
       setWeeklyCents(String(data.default.weekly_cents));
-      setOverrides(data.overrides ?? []);
+      setOverrides((data.overrides ?? []).filter((entry) => entry.apply_to === 'api-key'));
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load config');
     } finally {
@@ -44,22 +53,41 @@ export function QuotaLimitsPage() {
     }
   }, []);
 
+  const loadKeyBindings = useCallback(async () => {
+    try {
+      const data = await enterpriseKeysApi.listKeyBindings();
+      const next: Record<string, string> = {};
+      for (const binding of data.items ?? []) {
+        if (binding.apiKeyHash && binding.userName) {
+          next[binding.apiKeyHash] = buildBindingLabel(binding.userName, binding.email);
+        }
+      }
+      setHashToDisplay(next);
+    } catch {
+      setHashToDisplay({});
+    }
+  }, []);
+
   useEffect(() => {
     void loadConfig();
-  }, [loadConfig]);
+    void loadKeyBindings();
+  }, [loadConfig, loadKeyBindings]);
 
   const handleSave = async () => {
     setSaving(true);
     try {
       await quotaLimitsApi.updateConfig({
         enabled,
-        default: { daily_cents: parseInt(dailyCents, 10) || 0, weekly_cents: parseInt(weeklyCents, 10) || 0 },
+        default: {
+          daily_cents: parseInt(dailyCents, 10) || 0,
+          weekly_cents: parseInt(weeklyCents, 10) || 0,
+        },
         overrides,
       });
-			showNotification(t('quota_limits.save_success'), 'success' as NotificationType);
+      showNotification(t('quota_limits.save_success'), 'success' as NotificationType);
       void loadConfig();
     } catch (err: unknown) {
-			showNotification(err instanceof Error ? err.message : 'Failed', 'error' as NotificationType);
+      showNotification(err instanceof Error ? err.message : 'Failed', 'error' as NotificationType);
     } finally {
       setSaving(false);
     }
@@ -71,25 +99,36 @@ export function QuotaLimitsPage() {
   };
 
   const saveOverride = () => {
-    if (!editingOverride) return;
+    if (!editingOverride || !editingOverride.apply_value) return;
+    const entry = { ...editingOverride, apply_to: 'api-key' };
     setOverrides((prev) => {
-      const idx = prev.findIndex(
-        (o) => o.apply_to === editingOverride.apply_to && o.apply_value === editingOverride.apply_value
-      );
+      const idx = prev.findIndex((item) => item.apply_value === entry.apply_value);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = editingOverride;
+        next[idx] = entry;
         return next;
       }
-      return [...prev, editingOverride];
+      return [...prev, entry];
     });
     setOverrideModalOpen(false);
     setEditingOverride(null);
   };
 
   const deleteOverride = (entry: SpendLimitEntry) => {
-    setOverrides((prev) => prev.filter((o) => o !== entry));
+    setOverrides((prev) => prev.filter((item) => item !== entry));
   };
+
+  const resolveDisplay = (entry: SpendLimitEntry): string =>
+    hashToDisplay[entry.apply_value] || entry.apply_value;
+
+  const keyOptions = useMemo<KeyDisplayOption[]>(
+    () =>
+      Object.entries(hashToDisplay).map(([hash, label]) => ({
+        hash,
+        label,
+      })),
+    [hashToDisplay]
+  );
 
   if (loading) return <div className={styles.loading}>{t('common.loading')}</div>;
   if (error) return <div className={styles.error}>{error}</div>;
@@ -124,7 +163,7 @@ export function QuotaLimitsPage() {
       <Card className={styles.section}>
         <div className={styles.sectionHeader}>
           <h2>{t('quota_limits.overrides')}</h2>
-			<Button size="sm" onClick={openNewOverride}>{t('quota_limits.add_override')}</Button>
+          <Button size="sm" onClick={openNewOverride}>{t('quota_limits.add_override')}</Button>
         </div>
         {overrides.length === 0 ? (
           <div className={styles.empty}>{t('quota_limits.no_overrides')}</div>
@@ -140,14 +179,17 @@ export function QuotaLimitsPage() {
               </tr>
             </thead>
             <tbody>
-              {overrides.map((o) => (
-                <tr key={`${o.apply_to}-${o.apply_value}`}>
-                  <td>{o.apply_to}</td>
-                  <td>{o.apply_value}</td>
-                  <td>{o.daily_cents}</td>
-                  <td>{o.weekly_cents}</td>
+              {overrides.map((entry) => (
+                <tr key={entry.apply_value}>
+                  <td>{t('quota_limits.apply_api_key')}</td>
+                  <td className={styles.valueCell}>
+                    {resolveDisplay(entry)}
+                    <span className={styles.valueHash}>{entry.apply_value}</span>
+                  </td>
+                  <td>{entry.daily_cents}</td>
+                  <td>{entry.weekly_cents}</td>
                   <td>
-					<Button size="sm" variant="secondary" onClick={() => deleteOverride(o)}>
+                    <Button size="sm" variant="secondary" onClick={() => deleteOverride(entry)}>
                       {t('common.delete')}
                     </Button>
                   </td>
@@ -165,22 +207,19 @@ export function QuotaLimitsPage() {
       >
         {editingOverride && (
           <div className={styles.form}>
-            <label>{t('quota_limits.apply_to')}</label>
-			<Select
-				value={editingOverride.apply_to}
-				onChange={(value) => setEditingOverride({ ...editingOverride, apply_to: value })}
-				options={[
-				  { value: 'global', label: t('quota_limits.apply_global') },
-                { value: 'global', label: t('quota_limits.apply_global') },
-                { value: 'api-key', label: t('quota_limits.apply_api_key') },
-              ]}
-            />
-            <label>{t('quota_limits.apply_value')}</label>
-            <Input
-              value={editingOverride.apply_value}
-              onChange={(e) => setEditingOverride({ ...editingOverride, apply_value: e.target.value })}
-              placeholder={editingOverride.apply_to === 'api-key' ? t('quota_limits.key_hash_placeholder') : '-'}
-            />
+            <label>{t('quota_limits.apply_api_key')}</label>
+            {keyOptions.length > 0 ? (
+              <Select
+                value={editingOverride.apply_value}
+                onChange={(value) => setEditingOverride({ ...editingOverride, apply_value: value })}
+                options={[
+                  { value: '', label: t('quota_limits.select_user_placeholder') },
+                  ...keyOptions.map((option) => ({ value: option.hash, label: option.label })),
+                ]}
+              />
+            ) : (
+              <div className={styles.empty}>{t('quota_limits.no_key_bindings')}</div>
+            )}
             <label>{t('quota_limits.daily_cents')}</label>
             <Input
               type="number"
@@ -194,8 +233,8 @@ export function QuotaLimitsPage() {
               onChange={(e) => setEditingOverride({ ...editingOverride, weekly_cents: parseInt(e.target.value, 10) || 0 })}
             />
             <div className={styles.formActions}>
-				<Button variant="secondary" onClick={() => setOverrideModalOpen(false)}>{t('common.cancel')}</Button>
-              <Button onClick={saveOverride}>{t('common.save')}</Button>
+              <Button variant="secondary" onClick={() => setOverrideModalOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={saveOverride} disabled={!editingOverride.apply_value}>{t('common.save')}</Button>
             </div>
           </div>
         )}

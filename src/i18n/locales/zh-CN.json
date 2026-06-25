@@ -2069,7 +2069,9 @@
     "paused_at": "暂停时间",
     "expires_at": "过期时间",
     "permanent": "永久",
-    "no_paused_keys": "暂无暂停的密钥"
+    "no_paused_keys": "暂无暂停的密钥",
+    "user_name": "用户名",
+    "unresolved_user": "未绑定用户"
   },
   "quota_limits": {
     "title": "限额配置",
@@ -2086,7 +2088,10 @@
     "apply_global": "全局",
     "apply_api_key": "API 密钥",
     "key_hash_placeholder": "输入密钥哈希",
-    "save_success": "限额配置已保存"
+    "save_success": "限额配置已保存",
+    "select_user_placeholder": "选择用户名...",
+    "user_name_placeholder": "输入用户名或密钥哈希",
+    "no_key_bindings": "暂无企业 Key 绑定，请先在企业 Key 管理中维护用户绑定"
   },
   "self_usage": {
     "title": "用量查询",

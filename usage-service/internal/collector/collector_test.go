@@ -2,6 +2,7 @@ package collector
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
+	"github.com/seakee/cpa-manager/usage-service/internal/usage"
 )
 
 func TestManagerConsumesHTTPUsageQueue(t *testing.T) {
@@ -107,6 +109,79 @@ func TestManagerFallsBackToRESPWhenHTTPQueueUnsupported(t *testing.T) {
 		status := manager.Status()
 		return status.Transport == "resp" && strings.Contains(status.LastError, "unsupported RESP prefix")
 	})
+}
+
+func TestCheckAndEnforceLimitsUsesDefaultAndOverrides(t *testing.T) {
+	paused := make(map[string]bool)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/quota/config" {
+			t.Fatal("CheckAndEnforceLimits must not fetch quota config from CPA")
+		}
+		if r.URL.Path != "/v0/management/quota/pause" {
+			http.NotFound(w, r)
+			return
+		}
+		if r.Header.Get("Authorization") != "Bearer management-key" {
+			http.Error(w, "bad key", http.StatusUnauthorized)
+			return
+		}
+		var body struct {
+			KeyHash string `json:"key_hash"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode pause body: %v", err)
+		}
+		paused[body.KeyHash] = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	t.Cleanup(upstream.Close)
+
+	db := newTestStore(t)
+	ctx := context.Background()
+	if _, err := db.UpsertSyncedModelPrices(ctx, map[string]store.ModelPrice{
+		"gpt-4": {Prompt: 10, Completion: 30, Cache: 5},
+	}); err != nil {
+		t.Fatalf("UpsertSyncedModelPrices failed: %v", err)
+	}
+	if err := db.SaveSpendLimitConfig(ctx, store.SpendLimitConfig{
+		Enabled: true,
+		Default: store.SpendLimit{DailyCents: 1000, WeeklyCents: 1000},
+		Overrides: []store.SpendLimitEntry{
+			{ApplyTo: "api-key", ApplyValue: "hash-b", DailyCents: 100, WeeklyCents: 1000},
+		},
+	}); err != nil {
+		t.Fatalf("SaveSpendLimitConfig failed: %v", err)
+	}
+	now := time.Now()
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		spendLimitEvent("event-a", "hash-a", now),
+		spendLimitEvent("event-b", "hash-b", now),
+	}); err != nil {
+		t.Fatalf("InsertEvents failed: %v", err)
+	}
+
+	CheckAndEnforceLimits(db, newPauseClient(upstream.URL, "management-key"))
+
+	if paused["hash-a"] {
+		t.Fatal("hash-a should use default limit and stay active")
+	}
+	if !paused["hash-b"] {
+		t.Fatal("hash-b should use override limit and be paused")
+	}
+}
+
+func spendLimitEvent(hash, keyHash string, at time.Time) usage.Event {
+	return usage.Event{
+		EventHash:   hash,
+		TimestampMS: at.UnixMilli(),
+		Timestamp:   at.UTC().Format(time.RFC3339),
+		Model:       "gpt-4",
+		APIKeyHash:  keyHash,
+		InputTokens: 100000,
+		TotalTokens: 100000,
+		CreatedAtMS: at.UnixMilli(),
+	}
 }
 
 func newTestStore(t *testing.T) *store.Store {

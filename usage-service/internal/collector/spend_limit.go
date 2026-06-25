@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"time"
@@ -27,64 +26,6 @@ func newPauseClient(baseURL, mgmtKey string) *pauseClient {
 		client:  &http.Client{Timeout: 10 * time.Second},
 	}
 }
-
-// syncSpendLimitConfig fetches the quota config from CPA upstream and saves it to local DB.
-// CPA returns: {"enabled":true, "default":{"daily_cents":15000,"weekly_cents":50000}, ...}
-// We extract and persist the default limits into local settings, bridging the gap
-// between QuotaLimitsPage (PUT /quota/config → CPA yaml) and spend limit checker.
-func syncSpendLimitConfig(ctx context.Context, s *store.Store, baseURL, mgmtKey string) {
-	if baseURL == "" || mgmtKey == "" {
-		return
-	}
-	url := fmt.Sprintf("%s/v0/management/quota/config", baseURL)
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		log.Printf("spend-limit: sync request error: %v", err)
-		return
-	}
-	req.Header.Set("Authorization", "Bearer "+mgmtKey)
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Printf("spend-limit: sync fetch error: %v", err)
-		return
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		log.Printf("spend-limit: sync returned status %d", resp.StatusCode)
-		return
-	}
-
-	raw, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Printf("spend-limit: sync read error: %v", err)
-		return
-	}
-
-		var remoteCfg struct {
-			Enabled  bool `json:"enabled"`
-			Default  struct {
-				DailyCents  int64 `json:"daily_cents"`
-				WeeklyCents int64 `json:"weekly_cents"`
-			} `json:"default"`
-		}
-		if err := json.Unmarshal(raw, &remoteCfg); err != nil {
-			log.Printf("spend-limit: sync parse error: %v", err)
-			return
-		}
-
-		localCfg := store.SpendLimitConfig{
-			Enabled:     remoteCfg.Enabled,
-			DailyCents:  remoteCfg.Default.DailyCents,
-			WeeklyCents: remoteCfg.Default.WeeklyCents,
-		}
-	if err := s.SaveSpendLimitConfig(ctx, localCfg); err != nil {
-		log.Printf("spend-limit: sync save error: %v", err)
-	}
-}
-
 
 func (c *pauseClient) PauseKey(keyHash, reason string, expiresAt time.Time) error {
 	if c == nil || c.baseURL == "" || c.mgmtKey == "" {
@@ -134,7 +75,8 @@ func CheckAndEnforceLimits(s *store.Store, pauseClient *pauseClient) {
 	if !ok || !cfg.Enabled {
 		return
 	}
-	if cfg.DailyCents <= 0 && cfg.WeeklyCents <= 0 {
+	defaultLimit := cfg.DefaultLimit()
+	if defaultLimit.DailyCents <= 0 && defaultLimit.WeeklyCents <= 0 && len(cfg.Overrides) == 0 {
 		return
 	}
 
@@ -150,16 +92,15 @@ func CheckAndEnforceLimits(s *store.Store, pauseClient *pauseClient) {
 			continue
 		}
 
+		limit := cfg.LimitForKey(k.KeyHash)
 		exceeded := false
 		var expiresAt time.Time
 
-		if cfg.DailyCents > 0 && k.TodayCents >= cfg.DailyCents {
+		if limit.DailyCents > 0 && k.TodayCents >= limit.DailyCents {
 			exceeded = true
-			// Resume at next day 00:00
 			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
-		} else if cfg.WeeklyCents > 0 && k.WeekCents >= cfg.WeeklyCents {
+		} else if limit.WeeklyCents > 0 && k.WeekCents >= limit.WeeklyCents {
 			exceeded = true
-			// Resume at next Monday 00:00
 			daysUntilMonday := (8 - int(now.Weekday())) % 7
 			if daysUntilMonday == 0 {
 				daysUntilMonday = 7
@@ -169,11 +110,10 @@ func CheckAndEnforceLimits(s *store.Store, pauseClient *pauseClient) {
 
 		if exceeded {
 			log.Printf("spend-limit: pausing key %s (today=%dc weekly=%dc limit daily=%dc weekly=%dc)",
-				k.KeyHash[:4], k.TodayCents, k.WeekCents, cfg.DailyCents, cfg.WeeklyCents)
+				k.KeyHash[:4], k.TodayCents, k.WeekCents, limit.DailyCents, limit.WeeklyCents)
 			if err := pauseClient.PauseKey(k.KeyHash, "spend_limit_exceeded", expiresAt); err != nil {
 				log.Printf("spend-limit: failed to pause key %s: %v", k.KeyHash[:4], err)
 			}
 		}
 	}
 }
-

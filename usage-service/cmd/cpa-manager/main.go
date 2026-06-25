@@ -77,12 +77,12 @@ func main() {
 	// Periodic cleanup of old usage events
 	if cfg.RetentionDays > 0 {
 		cleanupInterval := 24 * time.Hour
-		cleanupCutoff := time.Now().AddDate(0, 0, -cfg.RetentionDays).UnixMilli()
-		log.Printf("cleanup: purging usage_events older than %d days (cutoff=%d)", cfg.RetentionDays, cleanupCutoff)
+		log.Printf("cleanup: purging usage_events older than %d days", cfg.RetentionDays)
 		go func() {
 			ticker := time.NewTicker(cleanupInterval)
 			defer ticker.Stop()
 			for {
+				cleanupCutoff := time.Now().AddDate(0, 0, -cfg.RetentionDays).UnixMilli()
 				if n, err := db.PurgeEventsBefore(ctx, cleanupCutoff); err != nil {
 					log.Printf("cleanup: purge error: %v", err)
 				} else if n > 0 {
