@@ -149,7 +149,8 @@
     "system_info": "Management Center Info",
     "quota_limits": "Quota Limits",
     "quota_paused": "Paused Keys",
-    "my_usage": "My Usage"
+    "my_usage": "My Usage",
+    "alert_config": "Alert Configuration"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1664,7 +1665,24 @@
       "config_source_none": "Not saved",
       "cpa_usage_enabled": "CPA Usage Statistics",
       "cpa_retention": "CPA Queue Retention",
-      "cpa_retention_value": "{{seconds}}s"
+      "cpa_retention_value": "{{seconds}}s",
+      "alert_title": "Alert Configuration",
+      "alert_hint": "Configure SMTP and spend alert thresholds for API usage notifications.",
+      "alert_enabled": "Enable alerts",
+      "alert_dependency": "Configure a reachable Usage Service before configuring alerts.",
+      "alert_save_failed": "Alert config saved, SMTP settings may be incomplete.",
+      "smtp_host": "SMTP Host",
+      "smtp_port": "SMTP Port",
+      "smtp_username": "SMTP Username",
+      "smtp_password": "SMTP Password",
+      "smtp_from": "From Address",
+      "smtp_from_name": "From Name",
+      "threshold_cents": "Alert Threshold (cents)",
+      "threshold_hint": "Alerts fire at each multiple (e.g. 5000 = $50, $100, $150...). Default 5000.",
+      "password_placeholder": "Enter new password to change",
+      "pool_check": "Pool Quota Check",
+      "pool_check_enabled": "Notify all users when all pool accounts are exhausted",
+      "pool_check_interval": "Check Interval (minutes)"
     },
     "visual": {
       "notice": "Visual mode covers common fields. Review or edit unsupported config.yaml entries in source mode.",

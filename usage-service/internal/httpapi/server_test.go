@@ -52,7 +52,7 @@ func newTestHandler(t *testing.T, upstreamURL string, saveSetup bool) http.Handl
 		}
 	}
 
-	manager := collector.NewManager(cfg, db)
+	manager := collector.NewManager(cfg, db, nil, collector.AlertConfig{})
 	return New(cfg, db, manager).Handler()
 }
 
@@ -73,7 +73,7 @@ func newTestHandlerWithConfig(t *testing.T, cfg config.Config) http.Handler {
 		_ = db.Close()
 	})
 
-	manager := collector.NewManager(cfg, db)
+	manager := collector.NewManager(cfg, db, nil, collector.AlertConfig{})
 	return New(cfg, db, manager).Handler()
 }
 
@@ -692,7 +692,7 @@ func TestUsageQueryFiltersByRangeAndAPIKeyHash(t *testing.T) {
 		t.Fatalf("insert events: %v", err)
 	}
 
-	handler := New(cfg, db, collector.NewManager(cfg, db)).Handler()
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -1008,7 +1008,7 @@ func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
 		t.Fatalf("insert events: %v", err)
 	}
 
-	handler := New(cfg, db, collector.NewManager(cfg, db)).Handler()
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
 
 	req := httptest.NewRequest(
 		http.MethodGet,
@@ -1157,7 +1157,7 @@ func TestEnterpriseUsageReportCSVResponse(t *testing.T) {
 		t.Fatalf("insert events: %v", err)
 	}
 
-	handler := New(cfg, db, collector.NewManager(cfg, db)).Handler()
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
 	req := httptest.NewRequest(
 		http.MethodGet,
 		"/v0/management/enterprise/usage-report?fromMs=1600000000000&toMs=1800000000000&format=csv",

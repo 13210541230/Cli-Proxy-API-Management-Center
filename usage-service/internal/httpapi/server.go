@@ -173,6 +173,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		s.withCORS(s.handleQuotaConfig)(w, r)
 		return
 	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/alert/config") {
+		s.withCORS(s.handleAlertConfig)(w, r)
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/departments") {
 		s.withCORS(s.handleEnterpriseDepartments)(w, r)
 		return
@@ -634,6 +638,52 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		s.writeSpendLimitConfig(w, current)
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+// handleAlertConfig handles GET/PUT /v0/management/alert/config for SMTP and alert settings.
+func (s *Server) handleAlertConfig(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		cfg, _, err := s.store.LoadAlertConfig(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, cfg)
+	case http.MethodPut:
+		var req store.AlertConfigStored
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		// Preserve existing password if masked value or empty (no change requested)
+		if req.SMTPPassword == "******" || req.SMTPPassword == "" {
+			existing, ok, err := s.store.LoadAlertConfigWithPassword(r.Context())
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, err)
+				return
+			}
+			if ok {
+				req.SMTPPassword = existing.SMTPPassword
+			}
+		}
+		if err := s.store.SaveAlertConfig(r.Context(), req); err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		// Return with masked password
+		resp := req
+		if resp.SMTPPassword != "" {
+			resp.SMTPPassword = "******"
+		}
+		writeJSON(w, http.StatusOK, resp)
 	default:
 		methodNotAllowed(w)
 	}

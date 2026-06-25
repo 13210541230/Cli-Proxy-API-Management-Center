@@ -42,3 +42,4 @@ TODO.md
 /run/*.pid
 /run/*.log
 .ccg
+*.stackdump

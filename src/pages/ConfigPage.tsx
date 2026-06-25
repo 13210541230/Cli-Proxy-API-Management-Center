@@ -36,6 +36,7 @@ import {
   type ManagerConfig,
   type ManagerConfigResponse,
 } from '@/services/api/usageService';
+import { alertConfigApi, type AlertSMTPConfig } from '@/services/api/alertConfig';
 import { detectApiBaseFromLocation } from '@/utils/connection';
 import styles from './ConfigPage.module.scss';
 
@@ -126,6 +127,10 @@ export function ConfigPage() {
   const [managerQueryLimit, setManagerQueryLimit] = useState(
     String(MANAGER_COLLECTOR_DEFAULT.queryLimit)
   );
+
+  // Alert config state
+  const [alertConfig, setAlertConfig] = useState<AlertSMTPConfig | null>(null);
+  const [alertConfigLoading, setAlertConfigLoading] = useState(false);
 
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -321,10 +326,25 @@ export function ConfigPage() {
     );
   }, [activeTab, showNotification, t, visualParseError]);
 
+  const loadAlertConfig = useCallback(async () => {
+    const serviceBase = resolveManagerServiceBase();
+    if (!serviceBase || !managementKey) return;
+    setAlertConfigLoading(true);
+    try {
+      const cfg = await alertConfigApi.getConfig(serviceBase, managementKey);
+      setAlertConfig(cfg);
+    } catch {
+      setAlertConfig(null);
+    } finally {
+      setAlertConfigLoading(false);
+    }
+  }, [managementKey, resolveManagerServiceBase]);
+
   useEffect(() => {
     if (activeTab !== 'manager') return;
     void loadManagerConfig();
-  }, [activeTab, loadManagerConfig]);
+    void loadAlertConfig();
+  }, [activeTab, loadManagerConfig, loadAlertConfig]);
 
   const handleConfirmSave = async () => {
     setSaving(true);
@@ -433,6 +453,16 @@ export function ConfigPage() {
         enabled: true,
         serviceBase,
       });
+
+      // Save alert config if loaded (user may have changed SMTP, thresholds, or toggles)
+      if (alertConfig) {
+        try {
+          await alertConfigApi.updateConfig(serviceBase, alertConfig, managementKey);
+        } catch (alertError) {
+          showNotification(t('config_management.manager.alert_save_failed'), 'warning');
+        }
+      }
+
       showNotification(t('config_management.manager.save_success'), 'success');
     } catch (error: unknown) {
       const message = getUsageServiceDisplayError(error, 'usage_service_errors.request_failed');
@@ -1059,6 +1089,135 @@ export function ConfigPage() {
                     }
                   />
                 </div>
+              </section>
+
+              <section className={styles.managerSection}>
+                <div className={styles.managerSectionHeader}>
+                  <div>
+                    <h3>{t('config_management.manager.alert_title')}</h3>
+                    <p>
+                      {t('config_management.manager.alert_hint')}
+                    </p>
+                  </div>
+                  <ToggleSwitch
+                    label={t('config_management.manager.alert_enabled')}
+                    labelPosition="left"
+                    checked={alertConfig?.alertEnabled ?? false}
+                    onChange={(value) => {
+                      setAlertConfig((prev) => prev ? { ...prev, alertEnabled: value } : null);
+                    }}
+                    disabled={disableControls || alertConfigLoading}
+                  />
+                </div>
+
+                {alertConfigLoading ? (
+                  <div className={styles.managerDependencyNote}>
+                    {t('common.loading')}
+                  </div>
+                ) : !resolveManagerServiceBase() ? (
+                  <div className={styles.managerDependencyNote}>
+                    {t('config_management.manager.alert_dependency')}
+                  </div>
+                ) : (
+                  <div className={styles.managerConfigGrid}>
+                    <Input
+                      label={t('config_management.manager.smtp_host')}
+                      placeholder="smtp.example.com"
+                      value={alertConfig?.smtpHost ?? ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, smtpHost: event.target.value } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                    <Input
+                      label={t('config_management.manager.smtp_port')}
+                      type="number"
+                      min="1"
+                      max="65535"
+                      placeholder="587"
+                      value={alertConfig ? String(alertConfig.smtpPort) : ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, smtpPort: Number(event.target.value) } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                    <Input
+                      label={t('config_management.manager.smtp_username')}
+                      placeholder="alert@example.com"
+                      value={alertConfig?.smtpUsername ?? ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, smtpUsername: event.target.value } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                    <Input
+                      label={t('config_management.manager.smtp_password')}
+                      type="password"
+                      placeholder={alertConfig?.smtpPassword === '******' ? t('config_management.manager.password_placeholder') : ''}
+                      value={alertConfig?.smtpPassword === '******' ? '' : (alertConfig?.smtpPassword ?? '')}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, smtpPassword: event.target.value } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                    <Input
+                      label={t('config_management.manager.smtp_from')}
+                      placeholder="alert@example.com"
+                      value={alertConfig?.smtpFrom ?? ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, smtpFrom: event.target.value } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                    <Input
+                      label={t('config_management.manager.smtp_from_name')}
+                      placeholder="API额度告警"
+                      value={alertConfig?.smtpFromName ?? ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, smtpFromName: event.target.value } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                    <Input
+                      label={t('config_management.manager.threshold_cents')}
+                      type="number"
+                      min="100"
+                      step="100"
+                      placeholder="5000"
+                      value={alertConfig ? String(alertConfig.thresholdCents) : ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, thresholdCents: Number(event.target.value) } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                      hint={t('config_management.manager.threshold_hint')}
+                    />
+                    <div className={styles.managerField}>
+                      <span className={styles.managerFieldLabel}>
+                        {t('config_management.manager.pool_check')}
+                      </span>
+                      <ToggleSwitch
+                        label={t('config_management.manager.pool_check_enabled')}
+                        labelPosition="left"
+                        checked={alertConfig?.poolCheckEnabled ?? false}
+                        onChange={(value) => {
+                          setAlertConfig((prev) => prev ? { ...prev, poolCheckEnabled: value } : null);
+                        }}
+                        disabled={disableControls || alertConfigLoading}
+                      />
+                    </div>
+                    <Input
+                      label={t('config_management.manager.pool_check_interval')}
+                      type="number"
+                      min="1"
+                      placeholder="5"
+                      value={alertConfig ? String(alertConfig.poolCheckInterval) : ''}
+                      onChange={(event) => {
+                        setAlertConfig((prev) => prev ? { ...prev, poolCheckInterval: Number(event.target.value) } : null);
+                      }}
+                      disabled={disableControls || alertConfigLoading}
+                    />
+                  </div>
+                )}
               </section>
 
               <div className={styles.managerMetaGrid}>

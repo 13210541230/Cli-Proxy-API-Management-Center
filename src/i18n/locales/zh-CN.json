@@ -149,7 +149,8 @@
     "system_info": "中心信息",
     "quota_limits": "限额配置",
     "quota_paused": "暂停管理",
-    "my_usage": "用量查询"
+    "my_usage": "用量查询",
+    "alert_config": "告警配置"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -1666,7 +1667,24 @@
       "config_source_none": "未保存",
       "cpa_usage_enabled": "CPA 用量统计",
       "cpa_retention": "CPA 队列保留时间",
-      "cpa_retention_value": "{{seconds}} 秒"
+      "cpa_retention_value": "{{seconds}} 秒",
+      "alert_title": "告警配置",
+      "alert_hint": "配置 SMTP 和 API 用量告警阈值，当消费超过阈值时发送邮件通知。",
+      "alert_enabled": "启用告警",
+      "alert_dependency": "请先配置可访问的 Usage Service 后再配置告警。",
+      "alert_save_failed": "告警配置已保存，但 SMTP 设置可能不完整。",
+      "smtp_host": "SMTP 服务器",
+      "smtp_port": "SMTP 端口",
+      "smtp_username": "SMTP 用户名",
+      "smtp_password": "SMTP 密码",
+      "smtp_from": "发件人地址",
+      "smtp_from_name": "发件人名称",
+      "threshold_cents": "告警阈值（美分）",
+      "threshold_hint": "每达到一个倍数触发告警（如 5000 = $50, $100, $150...）。默认 5000。",
+      "password_placeholder": "输入新密码以修改",
+      "pool_check": "池配额检查",
+      "pool_check_enabled": "池中所有账号 5h/周额度耗尽时通知全部用户",
+      "pool_check_interval": "检查间隔（分钟）"
     },
     "visual": {
       "notice": "可视化模式覆盖常用字段，未覆盖的配置仍需在源文件模式中查看或编辑。",

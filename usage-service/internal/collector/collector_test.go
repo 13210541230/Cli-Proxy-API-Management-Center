@@ -54,7 +54,7 @@ func TestManagerConsumesHTTPUsageQueue(t *testing.T) {
 
 	db := newTestStore(t)
 	cfg := testConfig(t, "auto")
-	manager := NewManager(cfg, db)
+	manager := NewManager(cfg, db, nil, AlertConfig{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
@@ -96,7 +96,7 @@ func TestManagerFallsBackToRESPWhenHTTPQueueUnsupported(t *testing.T) {
 
 	db := newTestStore(t)
 	cfg := testConfig(t, "auto")
-	manager := NewManager(cfg, db)
+	manager := NewManager(cfg, db, nil, AlertConfig{})
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 

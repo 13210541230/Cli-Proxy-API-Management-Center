@@ -306,6 +306,12 @@ func (s *Store) init() error {
 			updated_at_ms integer not null
 		)`,
 		`create index if not exists idx_enterprise_key_bindings_department_id on enterprise_key_bindings(department_id)`,
+		`create table if not exists pool_quota_alert_log (
+			window_type text not null,
+			exhausted_at_ms integer not null,
+			notified_at_ms integer not null,
+			primary key (window_type)
+		)`,
 		`create table if not exists enterprise_import_history (
 			task_id text primary key,
 			total_rows integer not null,
@@ -1661,6 +1667,261 @@ func (s *Store) queryKeySpendSince(ctx context.Context, startMS int64) (map[stri
 			return nil, err
 		}
 		result[hash] = cents
+	}
+	return result, rows.Err()
+}
+
+// UserSpend holds aggregated spend (in cents) for a single user across all their keys.
+type UserSpend struct {
+	UserName   string
+	Email      string
+	TodayCents int64
+}
+
+// QueryUserSpend queries spend aggregated by user (via enterprise_key_bindings).
+// Same cost formula as QueryKeySpend: only successful requests, local calendar day.
+func (s *Store) QueryUserSpend(ctx context.Context) ([]UserSpend, error) {
+	localNow := time.Now().In(time.Local)
+	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, localNow.Location())
+
+	query := `
+		with priced_events as (
+			select ue.api_key_hash,
+				cast(max(ue.input_tokens -
+					case when coalesce(ue.cached_tokens, 0) > coalesce(ue.cache_tokens, 0)
+						then coalesce(ue.cached_tokens, 0)
+						else coalesce(ue.cache_tokens, 0)
+					end, 0) as real) * coalesce(mp.prompt_per_1m, 0)
+				+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
+				+ cast(case when coalesce(ue.cached_tokens, 0) > coalesce(ue.cache_tokens, 0)
+					then coalesce(ue.cached_tokens, 0)
+					else coalesce(ue.cache_tokens, 0)
+				end as real) * coalesce(mp.cache_per_1m, 0) as raw_cost
+			from usage_events ue
+			left join model_prices mp on ue.model = mp.model
+			where ue.failed = 0
+			  and ue.api_key_hash != ''
+			  and ue.timestamp_ms >= ?
+		),
+		user_events as (
+			select ekb.user_name, ekb.email, pe.raw_cost
+			from priced_events pe
+			inner join enterprise_key_bindings ekb on pe.api_key_hash = ekb.api_key_hash
+			where ekb.user_name != '' and ekb.email != ''
+		)
+		select user_name, email,
+			coalesce(round(sum(raw_cost) / 1000000.0 * 100), 0) as today_cents
+		from user_events
+		group by user_name, email
+		having today_cents > 0
+		order by today_cents desc
+	`
+	rows, err := s.db.QueryContext(ctx, query, dayStart.UnixMilli())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []UserSpend
+	for rows.Next() {
+		var us UserSpend
+		if err := rows.Scan(&us.UserName, &us.Email, &us.TodayCents); err != nil {
+			return nil, err
+		}
+		result = append(result, us)
+	}
+	return result, rows.Err()
+}
+
+// LoadUserAlertThresholds returns a set of already-notified threshold_cents for each user.
+// Key: user_name, Value: set of threshold_cents notified.
+func (s *Store) LoadUserAlertThresholds(ctx context.Context) (map[string]map[int64]bool, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`select user_name, threshold_cents from spend_alert_log`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string]map[int64]bool)
+	for rows.Next() {
+		var userName string
+		var threshold int64
+		if err := rows.Scan(&userName, &threshold); err != nil {
+			return nil, err
+		}
+		if result[userName] == nil {
+			result[userName] = make(map[int64]bool)
+		}
+		result[userName][threshold] = true
+	}
+	return result, rows.Err()
+}
+
+// RecordUserAlert records that a spend alert was sent for a user at the given threshold.
+func (s *Store) RecordUserAlert(ctx context.Context, userName string, thresholdCents int64) error {
+	now := time.Now().UnixMilli()
+	_, err := s.db.ExecContext(ctx,
+		`insert into spend_alert_log(user_name, threshold_cents, triggered_at_ms, notified_at_ms)
+		 values(?, ?, ?, ?)
+		 on conflict(user_name, threshold_cents) do update set
+		   notified_at_ms = excluded.notified_at_ms`,
+		userName, thresholdCents, now, now,
+	)
+	return err
+}
+
+// LoadAllUserEmails returns a map of user_name → email for all users with bindings.
+func (s *Store) LoadAllUserEmails(ctx context.Context) (map[string]string, error) {
+	rows, err := s.db.QueryContext(ctx,
+		`select distinct user_name, email from enterprise_key_bindings
+		 where user_name != '' and email != ''
+		 order by user_name`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	result := make(map[string]string)
+	for rows.Next() {
+		var userName, email string
+		if err := rows.Scan(&userName, &email); err != nil {
+			return nil, err
+		}
+		// Keep the first email encountered for each user
+		if _, ok := result[userName]; !ok {
+			result[userName] = email
+		}
+	}
+	return result, rows.Err()
+}
+
+// AlertConfigStored holds SMTP and alert settings persisted in the DB.
+type AlertConfigStored struct {
+	SMTPHost          string `json:"smtpHost"`
+	SMTPPort          int    `json:"smtpPort"`
+	SMTPUsername      string `json:"smtpUsername"`
+	SMTPPassword      string `json:"smtpPassword,omitempty"`
+	SMTPFrom          string `json:"smtpFrom"`
+	SMTPFromName      string `json:"smtpFromName"`
+	AlertEnabled      bool   `json:"alertEnabled"`
+	ThresholdCents    int64  `json:"thresholdCents"`
+	CheckIntervalMS   int    `json:"checkIntervalMs"`
+	PoolCheckEnabled  bool   `json:"poolCheckEnabled"`
+	PoolCheckInterval int    `json:"poolCheckInterval"` // minutes
+}
+
+const alertConfigKey = "alert_config"
+
+// SaveAlertConfig persists alert config to the settings table.
+func (s *Store) SaveAlertConfig(ctx context.Context, cfg AlertConfigStored) error {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx,
+		`insert into settings(key, value, updated_at_ms)
+		 values(?, ?, ?)
+		 on conflict(key) do update set value = excluded.value, updated_at_ms = excluded.updated_at_ms`,
+		alertConfigKey, string(data), time.Now().UnixMilli(),
+	)
+	return err
+}
+
+// LoadAlertConfig reads alert config from the settings table. Returns false when not stored.
+// SMTPPassword is masked as "******" when non-empty (for safe transport to the frontend).
+func (s *Store) LoadAlertConfig(ctx context.Context) (AlertConfigStored, bool, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, alertConfigKey).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return AlertConfigStored{}, false, nil
+	}
+	if err != nil {
+		return AlertConfigStored{}, false, err
+	}
+	var cfg AlertConfigStored
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return AlertConfigStored{}, false, err
+	}
+	if cfg.SMTPPassword != "" {
+		cfg.SMTPPassword = "******"
+	}
+	return cfg, true, nil
+}
+
+// LoadAlertConfigWithPassword reads alert config including the password (for internal use).
+func (s *Store) LoadAlertConfigWithPassword(ctx context.Context) (AlertConfigStored, bool, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, alertConfigKey).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return AlertConfigStored{}, false, nil
+	}
+	if err != nil {
+		return AlertConfigStored{}, false, err
+	}
+	var cfg AlertConfigStored
+	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
+		return AlertConfigStored{}, false, err
+	}
+	return cfg, true, nil
+}
+
+// PoolQuotaAlertLog represents a notification record for pool quota exhaustion.
+type PoolQuotaAlertLog struct {
+	WindowType    string `json:"windowType"` // "five_hour" or "weekly"
+	ExhaustedAtMS int64  `json:"exhaustedAtMs"`
+	NotifiedAtMS  int64  `json:"notifiedAtMs"`
+}
+
+// LoadPoolQuotaAlert returns the pool exhaustion notification log for the given window type.
+func (s *Store) LoadPoolQuotaAlert(ctx context.Context, windowType string) (*PoolQuotaAlertLog, error) {
+	var row PoolQuotaAlertLog
+	err := s.db.QueryRowContext(ctx,
+		`select window_type, exhausted_at_ms, notified_at_ms from pool_quota_alert_log where window_type = ?`,
+		windowType,
+	).Scan(&row.WindowType, &row.ExhaustedAtMS, &row.NotifiedAtMS)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &row, nil
+}
+
+// UpsertPoolQuotaAlert inserts or updates the pool exhaustion notification log.
+func (s *Store) UpsertPoolQuotaAlert(ctx context.Context, windowType string, exhaustedAtMS, notifiedAtMS int64) error {
+	_, err := s.db.ExecContext(ctx,
+		`insert into pool_quota_alert_log(window_type, exhausted_at_ms, notified_at_ms)
+		 values(?, ?, ?)
+		 on conflict(window_type) do update set
+		   exhausted_at_ms = excluded.exhausted_at_ms,
+		   notified_at_ms = excluded.notified_at_ms`,
+		windowType, exhaustedAtMS, notifiedAtMS,
+	)
+	return err
+}
+
+// LoadDistinctAuthIndices returns distinct non-empty auth_index values from recent usage_events.
+func (s *Store) LoadDistinctAuthIndices(ctx context.Context) ([]string, error) {
+	since := time.Now().Add(-24 * time.Hour).UnixMilli()
+	rows, err := s.db.QueryContext(ctx,
+		`select distinct auth_index from usage_events
+		 where auth_index != '' and auth_index is not null
+		   and timestamp_ms >= ?
+		 order by auth_index`, since)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var result []string
+	for rows.Next() {
+		var idx string
+		if err := rows.Scan(&idx); err != nil {
+			return nil, err
+		}
+		result = append(result, idx)
 	}
 	return result, rows.Err()
 }

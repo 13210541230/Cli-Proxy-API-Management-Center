@@ -400,6 +400,7 @@ export function MainLayout() {
 	{ path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },
 	{ path: '/quota-limits', label: t('nav.quota_limits', 'Quota Limits'), icon: sidebarIcons.quotaLimits },
 	{ path: '/quota-paused', label: t('nav.quota_paused', 'Paused Keys'), icon: sidebarIcons.quotaPaused },
+	{ path: '/alert-config', label: t('nav.alert_config'), icon: sidebarIcons.config },
 	...(requestMonitoringAvailability.available
 	  ? [{ path: '/monitoring', label: t('nav.monitoring_center'), icon: sidebarIcons.monitoring }]
       : []),

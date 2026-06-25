@@ -24,6 +24,7 @@ import { SystemPage } from '@/pages/SystemPage';
 import { EnterpriseKeysPage } from '@/pages/EnterpriseKeysPage';
 import { QuotaLimitsPage } from '@/pages/QuotaLimitsPage';
 import { PausedKeysPage } from '@/pages/PausedKeysPage';
+import { AlertConfigPage } from '@/pages/AlertConfigPage';
 import { ApiKeyUsageSelfServicePage } from '@/pages/ApiKeyUsageSelfServicePage';
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
@@ -85,6 +86,7 @@ const mainRoutes = [
 	{ path: '/quota-limits', element: <QuotaLimitsPage /> },
 	{ path: '/quota-paused', element: <PausedKeysPage /> },
 	{ path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
+	{ path: '/alert-config', element: <AlertConfigPage /> },
 	{ path: '*', element: <Navigate to="/" replace /> },
 ];
 export function MainRoutes({ location }: { location?: Location }) {

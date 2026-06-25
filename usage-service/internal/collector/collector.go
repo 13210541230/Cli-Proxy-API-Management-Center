@@ -3,12 +3,14 @@ package collector
 import (
 	"context"
 	"errors"
+	"log"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/httpqueue"
+	"github.com/seakee/cpa-manager/usage-service/internal/mail"
 	"github.com/seakee/cpa-manager/usage-service/internal/resp"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
@@ -47,18 +49,122 @@ type Manager struct {
 	cancel           context.CancelFunc
 	status           Status
 	runtimeCfg       RuntimeConfig
+	mailSender       *mail.Sender
+	alertCfg         AlertConfig
+	alertMu          sync.RWMutex
 }
 
-func NewManager(base config.Config, store *store.Store) *Manager {
+// AlertConfig controls the periodic spend alert check that sends email
+// notifications when a user's daily spend crosses a threshold multiple.
+type AlertConfig struct {
+	Enabled         bool
+	ThresholdCents  int64
+	CheckInterval   time.Duration
+	PoolAlertEnabled bool
+	PoolCheckInterval time.Duration
+}
+
+func NewManager(base config.Config, store *store.Store, sender *mail.Sender, alertCfg AlertConfig) *Manager {
+	if alertCfg.CheckInterval <= 0 {
+		alertCfg.CheckInterval = 60 * time.Second
+	}
 	return &Manager{
 		base:             base,
 		store:            store,
 		snapshotResolver: newAuthSnapshotResolver(),
+		mailSender:       sender,
+		alertCfg:         alertCfg,
 		status: Status{
 			Collector: "stopped",
 			Mode:      collectorMode(base.CollectorMode),
 			Queue:     base.Queue,
 		},
+	}
+}
+
+// getAlertConfig returns a copy of the current alert configuration.
+func (m *Manager) getAlertConfig() AlertConfig {
+	m.alertMu.RLock()
+	defer m.alertMu.RUnlock()
+	return m.alertCfg
+}
+
+// getMailSender returns the current mail sender instance.
+func (m *Manager) getMailSender() *mail.Sender {
+	m.alertMu.RLock()
+	defer m.alertMu.RUnlock()
+	return m.mailSender
+}
+
+// reloadAlertConfig re-reads alert config from the DB and updates the managed
+// copies of mailSender and alertCfg. This allows config changes made via the
+// HTTP API (saved to settings table) to take effect without restarting the service.
+func (m *Manager) reloadAlertConfig() {
+	if m.store == nil {
+		return
+	}
+	dbCfg, ok, err := m.store.LoadAlertConfigWithPassword(context.Background())
+	if err != nil {
+		log.Printf("alert: reload config from DB failed: %v", err)
+		return
+	}
+	if !ok {
+		return
+	}
+
+	m.alertMu.Lock()
+	defer m.alertMu.Unlock()
+
+	// Merge: DB overrides env defaults; empty fields fall back to env defaults
+	smtpHost := dbCfg.SMTPHost
+	if smtpHost == "" {
+		smtpHost = m.base.SMTPHost
+	}
+	smtpPort := dbCfg.SMTPPort
+	if smtpPort <= 0 {
+		smtpPort = m.base.SMTPPort
+	}
+	smtpUsername := dbCfg.SMTPUsername
+	if smtpUsername == "" {
+		smtpUsername = m.base.SMTPUsername
+	}
+	smtpPassword := dbCfg.SMTPPassword
+	if smtpPassword == "" {
+		smtpPassword = m.base.SMTPPassword
+	}
+	smtpFrom := dbCfg.SMTPFrom
+	if smtpFrom == "" {
+		smtpFrom = m.base.SMTPFrom
+	}
+	smtpFromName := dbCfg.SMTPFromName
+	if smtpFromName == "" {
+		smtpFromName = m.base.SMTPFromName
+	}
+
+	m.mailSender = mail.NewSender(mail.Config{
+		Host:     smtpHost,
+		Port:     smtpPort,
+		Username: smtpUsername,
+		Password: smtpPassword,
+		From:     smtpFrom,
+		FromName: smtpFromName,
+	})
+
+	checkInterval := time.Duration(dbCfg.CheckIntervalMS) * time.Millisecond
+	if checkInterval <= 0 {
+		checkInterval = 60 * time.Second
+	}
+	poolInterval := time.Duration(dbCfg.PoolCheckInterval) * time.Minute
+	if poolInterval <= 0 {
+		poolInterval = 5 * time.Minute
+	}
+
+	m.alertCfg = AlertConfig{
+		Enabled:           dbCfg.AlertEnabled,
+		ThresholdCents:    dbCfg.ThresholdCents,
+		CheckInterval:     checkInterval,
+		PoolAlertEnabled:  dbCfg.PoolCheckEnabled,
+		PoolCheckInterval: poolInterval,
 	}
 }
 
@@ -106,6 +212,7 @@ func (m *Manager) setStatus(update func(*Status)) {
 
 func (m *Manager) run(ctx context.Context, cfg RuntimeConfig) {
 	go m.spendLimitTicker(ctx, cfg)
+	go m.alertTicker(ctx, cfg)
 
 	mode := collectorMode(valueOr(cfg.CollectorMode, m.base.CollectorMode))
 
@@ -373,6 +480,122 @@ func (m *Manager) pollInterval(cfg RuntimeConfig) time.Duration {
 		return 500 * time.Millisecond
 	}
 	return m.base.PollInterval
+}
+
+// alertTicker periodically checks user daily spend against $ThresholdStep thresholds and
+// pool quota exhaustion. Pool check runs at a separate, slower interval.
+func (m *Manager) alertTicker(ctx context.Context, cfg RuntimeConfig) {
+	if m.mailSender == nil && m.store == nil {
+		return
+	}
+
+	// Config reload ticker (30s) checks for DB-side changes so HTTP API edits
+	// take effect without restarting.
+	const reloadInterval = 30 * time.Second
+	reloadTicker := time.NewTicker(reloadInterval)
+	defer reloadTicker.Stop()
+
+	// Initial load from DB overrides startup defaults
+	m.reloadAlertConfig()
+
+	// Build initial tickers with current config
+	rebuildTickers := func() (spendTicker, poolTicker *time.Ticker, spendInterval, poolInterval time.Duration) {
+		ac := m.getAlertConfig()
+
+		spendInterval = ac.CheckInterval
+		if spendInterval <= 0 {
+			spendInterval = 60 * time.Second
+		}
+		spendTicker = time.NewTicker(spendInterval)
+
+		poolInterval = ac.PoolCheckInterval
+		if poolInterval <= 0 {
+			poolInterval = 5 * time.Minute
+		}
+		poolTicker = time.NewTicker(poolInterval)
+		return
+	}
+
+	spendTk, poolTk, curSpendInt, curPoolInt := rebuildTickers()
+	defer spendTk.Stop()
+	defer poolTk.Stop()
+
+	// Run both checks once immediately on startup
+	if ac := m.getAlertConfig(); ac.Enabled && ac.ThresholdCents > 0 {
+		if sender := m.getMailSender(); sender != nil {
+			CheckUserSpendAlerts(m.store, sender, ac.ThresholdCents)
+		}
+	}
+	if ac := m.getAlertConfig(); ac.PoolAlertEnabled {
+		if sender := m.getMailSender(); sender != nil {
+			checker := newPoolQuotaChecker(m.store, sender, cfg.CPAUpstreamURL, cfg.ManagementKey)
+			checker.Check(ctx)
+		}
+	}
+
+	// poolCheckRunning guards against overlapping pool quota checks
+	var poolCheckRunning bool
+
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case <-reloadTicker.C:
+			m.reloadAlertConfig()
+			newCfg := m.getAlertConfig()
+			newSpendInt := newCfg.CheckInterval
+			if newSpendInt <= 0 {
+				newSpendInt = 60 * time.Second
+			}
+			newPoolInt := newCfg.PoolCheckInterval
+			if newPoolInt <= 0 {
+				newPoolInt = 5 * time.Minute
+			}
+			// Rebuild tickers only if interval changed
+			if newSpendInt != curSpendInt {
+				spendTk.Stop()
+				spendTk = time.NewTicker(newSpendInt)
+				curSpendInt = newSpendInt
+			}
+			if newPoolInt != curPoolInt {
+				poolTk.Stop()
+				poolTk = time.NewTicker(newPoolInt)
+				curPoolInt = newPoolInt
+			}
+
+		case <-spendTk.C:
+			ac := m.getAlertConfig()
+			if !ac.Enabled || ac.ThresholdCents <= 0 {
+				continue
+			}
+			sender := m.getMailSender()
+			if sender == nil {
+				continue
+			}
+			CheckUserSpendAlerts(m.store, sender, ac.ThresholdCents)
+
+		case <-poolTk.C:
+			ac := m.getAlertConfig()
+			if !ac.PoolAlertEnabled {
+				continue
+			}
+			if poolCheckRunning {
+				log.Println("pool-quota: previous check still running, skipping this tick")
+				continue
+			}
+			sender := m.getMailSender()
+			if sender == nil {
+				continue
+			}
+			poolCheckRunning = true
+			checker := newPoolQuotaChecker(m.store, sender, cfg.CPAUpstreamURL, cfg.ManagementKey)
+			go func() {
+				defer func() { poolCheckRunning = false }()
+				checker.Check(ctx)
+			}()
+		}
+	}
 }
 
 // spendLimitTicker periodically checks all keys' spend against limits and pauses over-limit keys.

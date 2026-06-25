@@ -12,6 +12,7 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/collector"
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/httpapi"
+	"github.com/seakee/cpa-manager/usage-service/internal/mail"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
 )
 
@@ -26,7 +27,23 @@ func main() {
 	}
 	defer db.Close()
 
-	manager := collector.NewManager(cfg, db)
+	// Build alert config: env defaults overridden by DB-persisted config
+	alertCfg := buildAlertConfig(db, cfg)
+	sender := mail.NewSender(mail.Config{
+		Host:     alertCfg.SMTPHost,
+		Port:     alertCfg.SMTPPort,
+		Username: alertCfg.SMTPUsername,
+		Password: alertCfg.SMTPPassword,
+		From:     alertCfg.SMTPFrom,
+		FromName: alertCfg.SMTPFromName,
+	})
+	manager := collector.NewManager(cfg, db, sender, collector.AlertConfig{
+		Enabled:           alertCfg.AlertEnabled,
+		ThresholdCents:    alertCfg.ThresholdCents,
+		CheckInterval:     time.Duration(alertCfg.CheckIntervalMS) * time.Millisecond,
+		PoolAlertEnabled:  alertCfg.PoolCheckEnabled,
+		PoolCheckInterval: time.Duration(alertCfg.PoolCheckInterval) * time.Minute,
+	})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
@@ -136,4 +153,66 @@ func valueOr(value string, fallback string) string {
 
 func managerCollectorEnabled(managerCfg store.ManagerConfig) bool {
 	return managerCfg.Collector.Enabled == nil || *managerCfg.Collector.Enabled
+}
+
+// buildAlertConfig merges env-based config with DB-persisted alert config.
+// DB values take precedence when present.
+func buildAlertConfig(s *store.Store, cfg config.Config) store.AlertConfigStored {
+	result := store.AlertConfigStored{
+		SMTPHost:          cfg.SMTPHost,
+		SMTPPort:          cfg.SMTPPort,
+		SMTPUsername:      cfg.SMTPUsername,
+		SMTPPassword:      cfg.SMTPPassword,
+		SMTPFrom:          cfg.SMTPFrom,
+		SMTPFromName:      cfg.SMTPFromName,
+		AlertEnabled:      cfg.AlertEnabled,
+		ThresholdCents:    cfg.AlertThresholdCents,
+		CheckIntervalMS:   int(cfg.AlertCheckInterval / time.Millisecond),
+		PoolCheckEnabled:  false,
+		PoolCheckInterval: 5,
+	}
+
+	dbCfg, ok, err := s.LoadAlertConfigWithPassword(context.Background())
+	if err != nil {
+		log.Printf("alert: load DB config failed: %v, using env defaults", err)
+		return result
+	}
+	if !ok {
+		return result
+	}
+
+	// DB values override env defaults (non-zero fields only for optional fields)
+	if dbCfg.SMTPHost != "" {
+		result.SMTPHost = dbCfg.SMTPHost
+	}
+	if dbCfg.SMTPPort > 0 {
+		result.SMTPPort = dbCfg.SMTPPort
+	}
+	if dbCfg.SMTPUsername != "" {
+		result.SMTPUsername = dbCfg.SMTPUsername
+	}
+	if dbCfg.SMTPPassword != "" {
+		result.SMTPPassword = dbCfg.SMTPPassword
+	}
+	if dbCfg.SMTPFrom != "" {
+		result.SMTPFrom = dbCfg.SMTPFrom
+	}
+	if dbCfg.SMTPFromName != "" {
+		result.SMTPFromName = dbCfg.SMTPFromName
+	}
+	if dbCfg.ThresholdCents > 0 {
+		result.ThresholdCents = dbCfg.ThresholdCents
+	}
+	if dbCfg.CheckIntervalMS > 0 {
+		result.CheckIntervalMS = dbCfg.CheckIntervalMS
+	}
+	if dbCfg.PoolCheckInterval > 0 {
+		result.PoolCheckInterval = dbCfg.PoolCheckInterval
+	}
+
+	// These are DB-only — always use DB value when present
+	result.AlertEnabled = dbCfg.AlertEnabled
+	result.PoolCheckEnabled = dbCfg.PoolCheckEnabled
+
+	return result
 }

@@ -31,6 +31,15 @@ type Config struct {
 	CORSOrigins           []string
 	TLSSkipVerify         bool
 	RetentionDays         int
+	SMTPHost              string
+	SMTPPort              int
+	SMTPUsername          string
+	SMTPPassword          string
+	SMTPFrom              string
+	SMTPFromName          string
+	AlertEnabled          bool
+	AlertThresholdCents   int64
+	AlertCheckInterval    time.Duration
 }
 
 type fileConfig struct {
@@ -49,6 +58,15 @@ type fileConfig struct {
 	CORSOrigins           []string `json:"corsOrigins,omitempty"`
 	TLSSkipVerify         bool     `json:"tlsSkipVerify,omitempty"`
 	RetentionDays         int      `json:"retentionDays,omitempty"`
+	SMTPHost              string   `json:"smtpHost,omitempty"`
+	SMTPPort              int      `json:"smtpPort,omitempty"`
+	SMTPUsername          string   `json:"smtpUsername,omitempty"`
+	SMTPPassword          string   `json:"smtpPassword,omitempty"`
+	SMTPFrom              string   `json:"smtpFrom,omitempty"`
+	SMTPFromName          string   `json:"smtpFromName,omitempty"`
+	AlertEnabled          *bool    `json:"alertEnabled,omitempty"`
+	AlertThresholdCents   int64    `json:"alertThresholdCents,omitempty"`
+	AlertCheckIntervalMS  int      `json:"alertCheckIntervalMs,omitempty"`
 }
 
 func Load() (Config, error) {
@@ -75,21 +93,35 @@ func Load() (Config, error) {
 		managementKeyFile = resolveConfigPath(cfgFile.ManagementKeyFile, cfgDir)
 	}
 
+	alertEnabled := false
+	if cfgFile.AlertEnabled != nil {
+		alertEnabled = *cfgFile.AlertEnabled
+	}
+
 	return Config{
-		HTTPAddr:       env("HTTP_ADDR", stringFallback(cfgFile.HTTPAddr, "0.0.0.0:18317")),
-		DBPath:         env("USAGE_DB_PATH", dbPathFallback),
-		CPAUpstreamURL: env("CPA_UPSTREAM_URL", cfgFile.CPAUpstreamURL),
-		ManagementKey:  readSecret("CPA_MANAGEMENT_KEY", "CPA_MANAGEMENT_KEY_FILE", managementKeyFile),
-		CollectorMode:  normalizeCollectorMode(env("USAGE_COLLECTOR_MODE", stringFallback(cfgFile.CollectorMode, "auto"))),
-		Queue:          env("USAGE_RESP_QUEUE", stringFallback(cfgFile.Queue, "usage")),
-		PopSide:        env("USAGE_RESP_POP_SIDE", stringFallback(cfgFile.PopSide, "right")),
-		BatchSize:      envInt("USAGE_BATCH_SIZE", intFallback(cfgFile.BatchSize, 100)),
-		PollInterval:   time.Duration(envInt("USAGE_POLL_INTERVAL_MS", intFallback(cfgFile.PollIntervalMS, 500))) * time.Millisecond,
-		QueryLimit:     envInt("USAGE_QUERY_LIMIT", intFallback(cfgFile.QueryLimit, 50000)),
-		PanelPath:      env("PANEL_PATH", resolveConfigPath(cfgFile.PanelPath, cfgDir)),
-		CORSOrigins:    splitCSV(env("USAGE_CORS_ORIGINS", strings.Join(sliceFallback(cfgFile.CORSOrigins, []string{"*"}), ","))),
-		TLSSkipVerify:  envBool("USAGE_RESP_TLS_SKIP_VERIFY", cfgFile.TLSSkipVerify),
-		RetentionDays:  envInt("USAGE_RETENTION_DAYS", intFallback(cfgFile.RetentionDays, 30)),
+		HTTPAddr:            env("HTTP_ADDR", stringFallback(cfgFile.HTTPAddr, "0.0.0.0:18317")),
+		DBPath:              env("USAGE_DB_PATH", dbPathFallback),
+		CPAUpstreamURL:      env("CPA_UPSTREAM_URL", cfgFile.CPAUpstreamURL),
+		ManagementKey:       readSecret("CPA_MANAGEMENT_KEY", "CPA_MANAGEMENT_KEY_FILE", managementKeyFile),
+		CollectorMode:       normalizeCollectorMode(env("USAGE_COLLECTOR_MODE", stringFallback(cfgFile.CollectorMode, "auto"))),
+		Queue:               env("USAGE_RESP_QUEUE", stringFallback(cfgFile.Queue, "usage")),
+		PopSide:             env("USAGE_RESP_POP_SIDE", stringFallback(cfgFile.PopSide, "right")),
+		BatchSize:           envInt("USAGE_BATCH_SIZE", intFallback(cfgFile.BatchSize, 100)),
+		PollInterval:        time.Duration(envInt("USAGE_POLL_INTERVAL_MS", intFallback(cfgFile.PollIntervalMS, 500))) * time.Millisecond,
+		QueryLimit:          envInt("USAGE_QUERY_LIMIT", intFallback(cfgFile.QueryLimit, 50000)),
+		PanelPath:           env("PANEL_PATH", resolveConfigPath(cfgFile.PanelPath, cfgDir)),
+		CORSOrigins:         splitCSV(env("USAGE_CORS_ORIGINS", strings.Join(sliceFallback(cfgFile.CORSOrigins, []string{"*"}), ","))),
+		TLSSkipVerify:       envBool("USAGE_RESP_TLS_SKIP_VERIFY", cfgFile.TLSSkipVerify),
+		RetentionDays:       envInt("USAGE_RETENTION_DAYS", intFallback(cfgFile.RetentionDays, 30)),
+		SMTPHost:            env("SMTP_HOST", cfgFile.SMTPHost),
+		SMTPPort:            envInt("SMTP_PORT", intFallback(cfgFile.SMTPPort, 587)),
+		SMTPUsername:        env("SMTP_USERNAME", cfgFile.SMTPUsername),
+		SMTPPassword:        env("SMTP_PASSWORD", cfgFile.SMTPPassword),
+		SMTPFrom:            env("SMTP_FROM", cfgFile.SMTPFrom),
+		SMTPFromName:        env("SMTP_FROM_NAME", stringFallback(cfgFile.SMTPFromName, "API额度告警")),
+		AlertEnabled:        envBool("ALERT_ENABLED", alertEnabled),
+		AlertThresholdCents: int64(envInt("ALERT_THRESHOLD_CENTS", int(intFallback(int(cfgFile.AlertThresholdCents), 5000)))),
+		AlertCheckInterval:  time.Duration(envInt("ALERT_CHECK_INTERVAL_MS", intFallback(cfgFile.AlertCheckIntervalMS, 60000))) * time.Millisecond,
 	}, nil
 }
 
