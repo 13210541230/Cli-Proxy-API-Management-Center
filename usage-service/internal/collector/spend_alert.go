@@ -115,6 +115,83 @@ type codexWindow struct {
 	ResetAt      *float64 `json:"reset_at"`
 }
 
+// loadEnabledAuthIndices fetches auth files from CPA and returns the set of auth_indices
+// that are not disabled. Returns nil on error so callers can degrade gracefully.
+func (c *poolQuotaChecker) loadEnabledAuthIndices(ctx context.Context) map[string]struct{} {
+	apiURL := fmt.Sprintf("%s/v0/management/auth-files", c.cpaBaseURL)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, nil)
+	if err != nil {
+		log.Printf("pool-quota: create auth-files request: %v", err)
+		return nil
+	}
+	req.Header.Set("Authorization", "Bearer "+c.mgmtKey)
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Printf("pool-quota: fetch auth-files failed: %v", err)
+		return nil
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		log.Printf("pool-quota: auth-files status %d", resp.StatusCode)
+		return nil
+	}
+
+	var payload struct {
+		Files []struct {
+			AuthIndex string `json:"auth_index"`
+			Disabled  any    `json:"disabled"`
+		} `json:"files"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&payload); err != nil {
+		log.Printf("pool-quota: decode auth-files: %v", err)
+		return nil
+	}
+
+	enabled := make(map[string]struct{}, len(payload.Files))
+	for _, f := range payload.Files {
+		if f.AuthIndex == "" {
+			continue
+		}
+		// disabled=false, absent, "", or "false" → treat as enabled
+		if isDisabled(f.Disabled) {
+			log.Printf("pool-quota: skipping disabled account %s", f.AuthIndex)
+			continue
+		}
+		enabled[f.AuthIndex] = struct{}{}
+	}
+	return enabled
+}
+
+// isDisabled returns true if the auth file's disabled field indicates a disabled account.
+func isDisabled(d any) bool {
+	if d == nil {
+		return false
+	}
+	switch v := d.(type) {
+	case bool:
+		return v
+	case string:
+		return v == "true" || v == "1"
+	case float64:
+		return v != 0
+	default:
+		return false
+	}
+}
+
+// isPermanentQuotaError returns true if the error indicates the upstream account
+// itself is invalid (401 Unauthorized, 403 Forbidden), as opposed to a transient
+// network or server error (timeout, 502, 503, etc.).
+func isPermanentQuotaError(errMsg string) bool {
+	return strings.Contains(errMsg, "upstream status 401") ||
+		strings.Contains(errMsg, "upstream status 403") ||
+		strings.Contains(errMsg, "status 401") ||
+		strings.Contains(errMsg, "status 403")
+}
+
 // CheckPoolQuota runs one round of pool quota exhaustion detection.
 func (c *poolQuotaChecker) Check(ctx context.Context) {
 	if c.sender == nil || c.cpaBaseURL == "" || c.mgmtKey == "" {
@@ -131,20 +208,104 @@ func (c *poolQuotaChecker) Check(ctx context.Context) {
 		return
 	}
 
+	// 1b. Filter to only enabled accounts (skip disabled ones)
+	enabledSet := c.loadEnabledAuthIndices(ctx)
+	if enabledSet != nil {
+		filtered := make([]string, 0, len(authIndices))
+		for _, ai := range authIndices {
+			if _, ok := enabledSet[ai]; ok {
+				filtered = append(filtered, ai)
+			} else {
+				log.Printf("pool-quota: skipping auth_index %s (not in enabled set)", ai)
+			}
+		}
+		authIndices = filtered
+		// If all accounts are disabled, there is nothing to check
+		if len(authIndices) == 0 {
+			log.Println("pool-quota: no enabled accounts to check")
+			return
+		}
+	} else {
+		log.Println("pool-quota: auth-files unavailable, falling back to all auth indices from usage_events")
+	}
+
 	// Rate limit: only check up to 50 accounts per run
 	if len(authIndices) > 50 {
 		log.Printf("pool-quota: %d auth indices exceeds limit 50, skipping check to avoid false positives", len(authIndices))
 		return
 	}
 
-	// 2. For each auth_index, query Codex quota via CPA proxy API
-	results := make([]accountQuota, 0, len(authIndices))
-	for _, ai := range authIndices {
-		q := c.queryAccountQuota(ctx, ai)
-		results = append(results, q)
+	// 2. For each auth_index, query Codex quota via CPA proxy API (parallel)
+	type accountResult struct {
+		quota accountQuota
 	}
 
-	// 3. Aggregate: find if ALL accounts have 5-hour or weekly at >= 100%
+	queryAccounts := func(indices []string) []accountQuota {
+		if len(indices) == 0 {
+			return nil
+		}
+		ch := make(chan accountResult, len(indices))
+		bgCtx := context.Background()
+		for _, ai := range indices {
+			ai := ai
+			go func() {
+				ch <- accountResult{quota: c.queryAccountQuota(bgCtx, ai)}
+			}()
+		}
+		results := make([]accountQuota, 0, len(indices))
+		for range indices {
+			r := <-ch
+			results = append(results, r.quota)
+		}
+		return results
+	}
+
+	results := queryAccounts(authIndices)
+
+	// 2b. Retry temporary failures with exponential backoff (up to 3 attempts)
+	const maxRetries = 3
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		var retryIndices []string
+		for _, r := range results {
+			if r.err != "" && !isPermanentQuotaError(r.err) {
+				retryIndices = append(retryIndices, r.account)
+			}
+		}
+		if len(retryIndices) == 0 {
+			break
+		}
+		backoff := time.Duration(500<<attempt) * time.Millisecond // 500ms, 1s, 2s
+		log.Printf("pool-quota: retrying %d accounts (attempt %d/%d, backoff %v)",
+			len(retryIndices), attempt+1, maxRetries, backoff)
+		time.Sleep(backoff)
+
+		retryResults := queryAccounts(retryIndices)
+		// Merge retry results into original results
+		retryMap := make(map[string]accountQuota, len(retryResults))
+		for _, r := range retryResults {
+			retryMap[r.account] = r
+		}
+		for i, r := range results {
+			if newR, ok := retryMap[r.account]; ok {
+				results[i] = newR
+			}
+		}
+	}
+
+	// 2c. After retry, if any accounts still have transient errors, skip alert
+	var transientAfterRetry int
+	for _, r := range results {
+		if r.err != "" && !isPermanentQuotaError(r.err) {
+			transientAfterRetry++
+		}
+	}
+	if transientAfterRetry > 0 {
+		log.Printf("pool-quota: %d accounts still in transient error state after %d retries, cannot determine pool state, skipping check",
+			transientAfterRetry, maxRetries)
+		return
+	}
+
+	// 3. Aggregate: find if ALL (non-permanently-failed) accounts have 5-hour or weekly at >= 100%
 	var total5h, exhausted5h int
 	var totalWeek, exhaustedWeek int
 	var earliest5hReset, earliestWeekReset string
@@ -152,7 +313,8 @@ func (c *poolQuotaChecker) Check(ctx context.Context) {
 
 	for _, r := range results {
 		if r.err != "" {
-			log.Printf("pool-quota: account %s error: %s", r.account, r.err)
+			// Only permanent errors remain here (transient ones caused early return above)
+			log.Printf("pool-quota: account %s permanently unavailable, excluding from pool check: %s", r.account, r.err)
 			continue
 		}
 		// 5-hour
@@ -257,7 +419,9 @@ func (c *poolQuotaChecker) queryAccountQuota(ctx context.Context, authIndex stri
 	body, _ := json.Marshal(apiCallPayload)
 
 	apiURL := fmt.Sprintf("%s/v0/management/api-call", c.cpaBaseURL)
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL, strings.NewReader(string(body)))
+	reqCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodPost, apiURL, strings.NewReader(string(body)))
 	if err != nil {
 		result.err = fmt.Sprintf("create request: %v", err)
 		return result

@@ -312,6 +312,13 @@ func (s *Store) init() error {
 			notified_at_ms integer not null,
 			primary key (window_type)
 		)`,
+		`create table if not exists spend_alert_log (
+			user_name text not null,
+			threshold_cents integer not null,
+			triggered_at_ms integer not null,
+			notified_at_ms integer not null,
+			primary key (user_name, threshold_cents)
+		)`,
 		`create table if not exists enterprise_import_history (
 			task_id text primary key,
 			total_rows integer not null,
