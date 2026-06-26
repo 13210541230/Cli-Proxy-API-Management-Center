@@ -1740,11 +1740,13 @@ func (s *Store) QueryUserSpend(ctx context.Context) ([]UserSpend, error) {
 	return result, rows.Err()
 }
 
-// LoadUserAlertThresholds returns a set of already-notified threshold_cents for each user.
-// Key: user_name, Value: set of threshold_cents notified.
+// LoadUserAlertThresholds returns already-notified threshold_cents for each user today.
+// Key: user_name, Value: set of threshold_cents notified today.
 func (s *Store) LoadUserAlertThresholds(ctx context.Context) (map[string]map[int64]bool, error) {
+	todayStart := time.Now().In(time.Local).Truncate(24 * time.Hour).UnixMilli()
 	rows, err := s.db.QueryContext(ctx,
-		`select user_name, threshold_cents from spend_alert_log`)
+		`select user_name, threshold_cents from spend_alert_log
+		 where notified_at_ms >= ?`, todayStart)
 	if err != nil {
 		return nil, err
 	}
@@ -1765,13 +1767,16 @@ func (s *Store) LoadUserAlertThresholds(ctx context.Context) (map[string]map[int
 	return result, rows.Err()
 }
 
-// RecordUserAlert records that a spend alert was sent for a user at the given threshold.
+// RecordUserAlert records that a spend alert was sent for a user at the given threshold today.
+// The primary key (user_name, threshold_cents) ensures the same
+// threshold is only notified once per calendar day.
 func (s *Store) RecordUserAlert(ctx context.Context, userName string, thresholdCents int64) error {
 	now := time.Now().UnixMilli()
 	_, err := s.db.ExecContext(ctx,
 		`insert into spend_alert_log(user_name, threshold_cents, triggered_at_ms, notified_at_ms)
 		 values(?, ?, ?, ?)
 		 on conflict(user_name, threshold_cents) do update set
+		   triggered_at_ms = excluded.triggered_at_ms,
 		   notified_at_ms = excluded.notified_at_ms`,
 		userName, thresholdCents, now, now,
 	)
@@ -1805,23 +1810,40 @@ func (s *Store) LoadAllUserEmails(ctx context.Context) (map[string]string, error
 
 // AlertConfigStored holds SMTP and alert settings persisted in the DB.
 type AlertConfigStored struct {
-	SMTPHost          string `json:"smtpHost"`
-	SMTPPort          int    `json:"smtpPort"`
-	SMTPUsername      string `json:"smtpUsername"`
-	SMTPPassword      string `json:"smtpPassword,omitempty"`
-	SMTPFrom          string `json:"smtpFrom"`
-	SMTPFromName      string `json:"smtpFromName"`
-	AlertEnabled      bool   `json:"alertEnabled"`
-	ThresholdCents    int64  `json:"thresholdCents"`
-	CheckIntervalMS   int    `json:"checkIntervalMs"`
-	PoolCheckEnabled  bool   `json:"poolCheckEnabled"`
-	PoolCheckInterval int    `json:"poolCheckInterval"` // minutes
+	SMTPHost              string `json:"smtpHost"`
+	SMTPPort              int    `json:"smtpPort"`
+	SMTPUsername          string `json:"smtpUsername"`
+	SMTPPassword          string `json:"smtpPassword,omitempty"`
+	SMTPFrom              string `json:"smtpFrom"`
+	SMTPFromName          string `json:"smtpFromName"`
+	SMTPAuthSecure        bool   `json:"smtpAuthSecure"`        // true = implicit TLS (port 465)
+	SMTPTLSAllowInsecure  bool   `json:"smtpTlsAllowInsecure"`  // skip TLS cert verification
+	AlertEnabled          bool   `json:"alertEnabled"`
+	ThresholdCents        int64  `json:"thresholdCents"`
+	CheckIntervalMS       int    `json:"checkIntervalMs"`
+	PoolCheckEnabled      bool   `json:"poolCheckEnabled"`
+	PoolCheckInterval     int    `json:"poolCheckInterval"` // minutes
 }
 
 const alertConfigKey = "alert_config"
 
 // SaveAlertConfig persists alert config to the settings table.
+// If ThresholdCents changed, today's spend_alert_log records are cleared
+// so threshold crossings are re-evaluated with the new step.
 func (s *Store) SaveAlertConfig(ctx context.Context, cfg AlertConfigStored) error {
+	// Check if threshold changed
+	existing, ok, err := s.LoadAlertConfigWithPassword(ctx)
+	if err != nil {
+		return err
+	}
+	if ok && existing.ThresholdCents != cfg.ThresholdCents {
+		todayStart := time.Now().In(time.Local).Truncate(24 * time.Hour).UnixMilli()
+		if _, err := s.db.ExecContext(ctx,
+			`delete from spend_alert_log where notified_at_ms >= ?`, todayStart,
+		); err != nil {
+			return err
+		}
+	}
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
@@ -1907,6 +1929,62 @@ func (s *Store) UpsertPoolQuotaAlert(ctx context.Context, windowType string, exh
 		windowType, exhaustedAtMS, notifiedAtMS,
 	)
 	return err
+}
+
+// PoolQuotaSummary holds aggregated pool status for inclusion in alert emails.
+type PoolQuotaSummary struct {
+	TotalEnabled      int           `json:"totalEnabled"`
+	FiveHourExhausted int           `json:"fiveHourExhausted"`
+	WeeklyExhausted   int           `json:"weeklyExhausted"`
+	FiveHourAvgUsed   float64       `json:"fiveHourAvgUsed"`   // average 5h used% across successful accounts
+	WeeklyAvgUsed     float64       `json:"weeklyAvgUsed"`     // average weekly used% across successful accounts
+	EarliestReset     string        `json:"earliestReset"`
+	UpdatedAtMS       int64         `json:"updatedAtMs"`
+	Accounts          []AccountData `json:"accounts"`          // per-account detail
+}
+
+// AccountData holds quota data for a single pool account in the persisted summary.
+type AccountData struct {
+	Account      string  `json:"account"`
+	FiveHourUsed float64 `json:"fiveHourUsed"`
+	FiveHourReset string `json:"fiveHourReset"`
+	WeeklyUsed   float64 `json:"weeklyUsed"`
+	WeeklyReset  string  `json:"weeklyReset"`
+	Error        string  `json:"error"`
+}
+
+const poolQuotaSummaryKey = "pool_quota_summary"
+
+// SavePoolQuotaSummary writes the latest pool quota summary to settings.
+func (s *Store) SavePoolQuotaSummary(ctx context.Context, summary PoolQuotaSummary) error {
+	data, err := json.Marshal(summary)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.ExecContext(ctx,
+		`insert into settings(key, value, updated_at_ms)
+		 values(?, ?, ?)
+		 on conflict(key) do update set value = excluded.value, updated_at_ms = excluded.updated_at_ms`,
+		poolQuotaSummaryKey, string(data), time.Now().UnixMilli(),
+	)
+	return err
+}
+
+// LoadPoolQuotaSummary reads the latest pool quota summary from settings.
+func (s *Store) LoadPoolQuotaSummary(ctx context.Context) (*PoolQuotaSummary, error) {
+	var raw string
+	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, poolQuotaSummaryKey).Scan(&raw)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var summary PoolQuotaSummary
+	if err := json.Unmarshal([]byte(raw), &summary); err != nil {
+		return nil, err
+	}
+	return &summary, nil
 }
 
 // LoadDistinctAuthIndices returns distinct non-empty auth_index values from recent usage_events.

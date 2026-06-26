@@ -37,6 +37,8 @@ type Config struct {
 	SMTPPassword          string
 	SMTPFrom              string
 	SMTPFromName          string
+	SMTPAuthSecure        bool
+	SMTPTLSAllowInsecure  bool
 	AlertEnabled          bool
 	AlertThresholdCents   int64
 	AlertCheckInterval    time.Duration
@@ -64,6 +66,8 @@ type fileConfig struct {
 	SMTPPassword          string   `json:"smtpPassword,omitempty"`
 	SMTPFrom              string   `json:"smtpFrom,omitempty"`
 	SMTPFromName          string   `json:"smtpFromName,omitempty"`
+	SMTPAuthSecure        *bool    `json:"smtpAuthSecure,omitempty"`
+	SMTPTLSAllowInsecure  *bool    `json:"smtpTlsAllowInsecure,omitempty"`
 	AlertEnabled          *bool    `json:"alertEnabled,omitempty"`
 	AlertThresholdCents   int64    `json:"alertThresholdCents,omitempty"`
 	AlertCheckIntervalMS  int      `json:"alertCheckIntervalMs,omitempty"`
@@ -119,6 +123,8 @@ func Load() (Config, error) {
 		SMTPPassword:        env("SMTP_PASSWORD", cfgFile.SMTPPassword),
 		SMTPFrom:            env("SMTP_FROM", cfgFile.SMTPFrom),
 		SMTPFromName:        env("SMTP_FROM_NAME", stringFallback(cfgFile.SMTPFromName, "API额度告警")),
+		SMTPAuthSecure:      envBool("SMTP_AUTH_SECURE", boolFallback(cfgFile.SMTPAuthSecure, false)),
+		SMTPTLSAllowInsecure: envBool("SMTP_TLS_ALLOW_INSECURE", boolFallback(cfgFile.SMTPTLSAllowInsecure, false)),
 		AlertEnabled:        envBool("ALERT_ENABLED", alertEnabled),
 		AlertThresholdCents: int64(envInt("ALERT_THRESHOLD_CENTS", int(intFallback(int(cfgFile.AlertThresholdCents), 5000)))),
 		AlertCheckInterval:  time.Duration(envInt("ALERT_CHECK_INTERVAL_MS", intFallback(cfgFile.AlertCheckIntervalMS, 60000))) * time.Millisecond,
@@ -248,6 +254,13 @@ func intFallback(value int, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+func boolFallback(value *bool, fallback bool) bool {
+	if value != nil {
+		return *value
+	}
+	return fallback
 }
 
 func sliceFallback(value []string, fallback []string) []string {
