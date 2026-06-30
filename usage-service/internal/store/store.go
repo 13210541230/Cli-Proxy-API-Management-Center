@@ -132,6 +132,20 @@ const spendLimitConfigKey = "quota_config"
 
 const UngroupedDepartmentID = "__ungrouped__"
 
+var shanghaiLoc = func() *time.Location {
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		loc = time.FixedZone("CST", 8*3600)
+	}
+	return loc
+}()
+
+// shanghaiDayStart returns epoch ms of the most recent midnight in Asia/Shanghai.
+func shanghaiDayStart() int64 {
+	now := time.Now().In(shanghaiLoc)
+	return time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, shanghaiLoc).UnixMilli()
+}
+
 type EnterpriseDepartment struct {
 	ID          string `json:"id"`
 	Name        string `json:"name"`
@@ -1599,8 +1613,8 @@ func (s *Store) QueryKeySpend(ctx context.Context) ([]KeySpend, error) {
 }
 
 func (s *Store) queryKeySpendAt(ctx context.Context, now time.Time) ([]KeySpend, error) {
-	localNow := now.In(time.Local)
-	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, localNow.Location())
+	localNow := now.In(shanghaiLoc)
+	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, shanghaiLoc)
 	daysSinceMonday := (int(dayStart.Weekday()) + 6) % 7
 	weekStart := dayStart.AddDate(0, 0, -daysSinceMonday)
 
@@ -1688,8 +1702,8 @@ type UserSpend struct {
 // QueryUserSpend queries spend aggregated by user (via enterprise_key_bindings).
 // Same cost formula as QueryKeySpend: only successful requests, local calendar day.
 func (s *Store) QueryUserSpend(ctx context.Context) ([]UserSpend, error) {
-	localNow := time.Now().In(time.Local)
-	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, localNow.Location())
+	localNow := time.Now().In(shanghaiLoc)
+	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, shanghaiLoc)
 
 	query := `
 		with priced_events as (
@@ -1743,7 +1757,7 @@ func (s *Store) QueryUserSpend(ctx context.Context) ([]UserSpend, error) {
 // LoadUserAlertThresholds returns already-notified threshold_cents for each user today.
 // Key: user_name, Value: set of threshold_cents notified today.
 func (s *Store) LoadUserAlertThresholds(ctx context.Context) (map[string]map[int64]bool, error) {
-	todayStart := time.Now().In(time.Local).Truncate(24 * time.Hour).UnixMilli()
+	todayStart := shanghaiDayStart()
 	rows, err := s.db.QueryContext(ctx,
 		`select user_name, threshold_cents from spend_alert_log
 		 where notified_at_ms >= ?`, todayStart)
@@ -1837,7 +1851,7 @@ func (s *Store) SaveAlertConfig(ctx context.Context, cfg AlertConfigStored) erro
 		return err
 	}
 	if ok && existing.ThresholdCents != cfg.ThresholdCents {
-		todayStart := time.Now().In(time.Local).Truncate(24 * time.Hour).UnixMilli()
+		todayStart := shanghaiDayStart()
 		if _, err := s.db.ExecContext(ctx,
 			`delete from spend_alert_log where notified_at_ms >= ?`, todayStart,
 		); err != nil {

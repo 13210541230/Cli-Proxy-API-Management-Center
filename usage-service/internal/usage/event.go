@@ -223,7 +223,7 @@ func BuildPayload(events []Event) Payload {
 }
 
 func readTimestamp(record map[string]any) (int64, string) {
-	raw := first(record, "timestamp", "time", "created_at", "createdAt", "created", "request_time", "requestTime")
+	raw := first(record, "timestamp", "timestamp_ms", "time", "created_at_ms", "created_at", "createdAt", "created", "request_time", "requestTime")
 	now := time.Now()
 	if raw == nil {
 		return now.UnixMilli(), now.UTC().Format(time.RFC3339Nano)
