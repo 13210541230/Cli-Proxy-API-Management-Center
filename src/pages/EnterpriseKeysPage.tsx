@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -7,7 +8,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { IconDownload, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
 import { useEnterpriseKeyStore, useNotificationStore } from '@/stores';
-import { UNGROUPED_DEPARTMENT_ID, type EnterpriseDepartment, type KeyGenPreviewItem } from '@/types';
+import { quotaLimitsApi, type SpendLimitEntry } from '@/services/api/quotaLimits';
+import { quotaPauseApi } from '@/services/api/quotaPause';
+import { UNGROUPED_DEPARTMENT_ID, type EnterpriseDepartment, type EnterpriseKeyBinding, type KeyGenPreviewItem } from '@/types';
 import { downloadBlob } from '@/utils/download';
 import styles from './EnterpriseKeysPage.module.scss';
 
@@ -17,6 +20,13 @@ type ImportResultSummary = {
   warningRows: number;
   errorRows: number;
 } | null;
+
+type KeyActionTarget = {
+  label: string;
+  keyHashes: string[];
+};
+
+const DEFAULT_PAUSE_REASON = '企业 Key 管理手动停用';
 
 const nowMs = () => Date.now();
 
@@ -56,10 +66,23 @@ export function EnterpriseKeysPage() {
   } = useEnterpriseKeyStore();
   const { showNotification, showConfirmation } = useNotificationStore();
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const [departmentModalOpen, setDepartmentModalOpen] = useState(false);
   const [importModalOpen, setImportModalOpen] = useState(false);
   const [addKeyModalOpen, setAddKeyModalOpen] = useState(false);
+  const [pauseModalOpen, setPauseModalOpen] = useState(false);
+  const [quotaModalOpen, setQuotaModalOpen] = useState(false);
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pausedKeyHashes, setPausedKeyHashes] = useState<Set<string>>(new Set());
+  const [quotaOverrides, setQuotaOverrides] = useState<SpendLimitEntry[]>([]);
+  const [actionTarget, setActionTarget] = useState<KeyActionTarget | null>(null);
+  const [pauseReason, setPauseReason] = useState(DEFAULT_PAUSE_REASON);
+  const [pauseDurationSec, setPauseDurationSec] = useState('3600');
+  const [quotaDailyCents, setQuotaDailyCents] = useState('');
+  const [quotaWeeklyCents, setQuotaWeeklyCents] = useState('');
+  const [actionSaving, setActionSaving] = useState(false);
 
   const [editingDepartments, setEditingDepartments] = useState<EnterpriseDepartment[]>([]);
   const [newDepartmentName, setNewDepartmentName] = useState('');
@@ -79,11 +102,21 @@ export function EnterpriseKeysPage() {
   const [importFileName, setImportFileName] = useState('');
   const [importSummary, setImportSummary] = useState<ImportResultSummary>(null);
 
-  useEffect(() => {
-    void Promise.all([fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20)]).catch(() => {});
-  }, [fetchDepartments, fetchImportHistory, fetchKeyBindings]);
+  const loadQuotaState = useCallback(async () => {
+    const [paused, quota] = await Promise.all([quotaPauseApi.listPaused(), quotaLimitsApi.getConfig()]);
+    setPausedKeyHashes(new Set((paused.entries ?? []).map((entry) => entry.key_hash.toLowerCase())));
+    setQuotaOverrides(
+      (quota.overrides ?? [])
+        .filter((entry) => entry.apply_to === 'api-key')
+        .map((entry) => ({ ...entry, apply_value: entry.apply_value.toLowerCase() }))
+    );
+  }, []);
 
-  const filteredRows = useMemo(() => {
+  useEffect(() => {
+    void Promise.all([fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState()]).catch(() => {});
+  }, [fetchDepartments, fetchImportHistory, fetchKeyBindings, loadQuotaState]);
+
+  const departmentRows = useMemo(() => {
     if (selectedDepartmentId === 'all') {
       return keyBindings;
     }
@@ -92,6 +125,16 @@ export function EnterpriseKeysPage() {
     }
     return keyBindings.filter((item) => item.departmentId === selectedDepartmentId);
   }, [keyBindings, selectedDepartmentId]);
+
+  const filteredRows = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return departmentRows;
+    return departmentRows.filter((item) =>
+      [item.userName, item.email, item.apiKeyHash, item.apiKey]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(query))
+    );
+  }, [departmentRows, searchQuery]);
 
   const managedDepartments = useMemo(
     () => departments.filter((item) => item.id !== UNGROUPED_DEPARTMENT_ID && item.name !== '未分组'),
@@ -116,9 +159,43 @@ export function EnterpriseKeysPage() {
     return map;
   }, [managedDepartments]);
 
+  const selectedActionRows = useMemo(
+    () => filteredRows.filter((row) => selectedApiKeys.includes(row.apiKey) && row.apiKeyHash),
+    [filteredRows, selectedApiKeys]
+  );
+
+
+  const keyHashesFromRows = (rows: EnterpriseKeyBinding[]) =>
+    Array.from(new Set(rows.map((row) => row.apiKeyHash.toLowerCase()).filter(Boolean)));
+
+  const openPauseTarget = (target: KeyActionTarget) => {
+    setActionTarget(target);
+    setPauseReason(DEFAULT_PAUSE_REASON);
+    setPauseDurationSec('3600');
+    setPauseModalOpen(true);
+  };
+
+  const openQuotaTarget = (target: KeyActionTarget) => {
+    const existing = quotaOverrides.find((entry) => target.keyHashes.includes(entry.apply_value.toLowerCase()));
+    setActionTarget(target);
+    setQuotaDailyCents(existing ? String(existing.daily_cents) : '');
+    setQuotaWeeklyCents(existing ? String(existing.weekly_cents) : '');
+    setQuotaModalOpen(true);
+  };
+
+  const requireSelectedTarget = (): KeyActionTarget | null => {
+    const keyHashes = keyHashesFromRows(selectedActionRows);
+    if (keyHashes.length === 0) {
+      showNotification('请先选择需要操作的 Key', 'error');
+      return null;
+    }
+    return { label: `选中的 ${keyHashes.length} 个 Key`, keyHashes };
+  };
+
+
   const refreshAll = async () => {
     try {
-      await Promise.all([fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20)]);
+      await Promise.all([fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState()]);
       clearSelection();
       showNotification('企业 Key 数据已刷新', 'success');
     } catch {
@@ -346,6 +423,72 @@ export function EnterpriseKeysPage() {
     showNotification(`已导出 ${selectedRows.length} 条记录`, 'success');
   };
 
+  const handlePauseTarget = async () => {
+    if (!actionTarget) return;
+    setActionSaving(true);
+    try {
+      const secs = parseInt(pauseDurationSec, 10) || 0;
+      await Promise.all(
+        actionTarget.keyHashes.map((keyHash) =>
+          quotaPauseApi.pauseKey(keyHash, pauseReason.trim() || DEFAULT_PAUSE_REASON, secs > 0 ? secs : undefined)
+        )
+      );
+      await loadQuotaState();
+      setPauseModalOpen(false);
+      setActionTarget(null);
+      showNotification(`已停用 ${actionTarget.keyHashes.length} 个 Key`, 'success');
+    } catch {
+      showNotification('停用失败', 'error');
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
+  const handleResumeTarget = async (target: KeyActionTarget) => {
+    setActionSaving(true);
+    try {
+      await Promise.all(target.keyHashes.map((keyHash) => quotaPauseApi.resumeKey(keyHash)));
+      await loadQuotaState();
+      showNotification(`已恢复 ${target.keyHashes.length} 个 Key`, 'success');
+    } catch {
+      showNotification('恢复失败', 'error');
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
+  const handleSaveQuotaTarget = async () => {
+    if (!actionTarget) return;
+    setActionSaving(true);
+    try {
+      const daily = parseInt(quotaDailyCents, 10) || 0;
+      const weekly = parseInt(quotaWeeklyCents, 10) || 0;
+      const config = await quotaLimitsApi.getConfig();
+      const targetSet = new Set(actionTarget.keyHashes);
+      const preserved = (config.overrides ?? []).filter(
+        (entry) => entry.apply_to !== 'api-key' || !targetSet.has(entry.apply_value.toLowerCase())
+      );
+      const nextOverrides = [
+        ...preserved,
+        ...actionTarget.keyHashes.map((keyHash) => ({
+          apply_to: 'api-key',
+          apply_value: keyHash,
+          daily_cents: daily,
+          weekly_cents: weekly,
+        })),
+      ];
+      await quotaLimitsApi.updateConfig({ overrides: nextOverrides });
+      await loadQuotaState();
+      setQuotaModalOpen(false);
+      setActionTarget(null);
+      showNotification(`已设置 ${actionTarget.keyHashes.length} 个 Key 的限额`, 'success');
+    } catch {
+      showNotification('限额保存失败', 'error');
+    } finally {
+      setActionSaving(false);
+    }
+  };
+
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>企业 Key 管理</h1>
@@ -362,6 +505,16 @@ export function EnterpriseKeysPage() {
                 clearSelection();
               }}
               ariaLabel="部门筛选"
+            />
+            <Input
+              className={styles.searchInput}
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                clearSelection();
+              }}
+              placeholder="搜索用户、邮箱或 Key"
+              aria-label="搜索用户"
             />
             <Button
               variant="secondary"
@@ -398,6 +551,29 @@ export function EnterpriseKeysPage() {
               <IconDownload size={14} />
               导出选中
             </Button>
+            <Button
+              variant="danger"
+              onClick={() => {
+                const target = requireSelectedTarget();
+                if (target) openPauseTarget(target);
+              }}
+              disabled={selectedActionRows.length === 0 || actionSaving}
+            >
+              批量停用
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                const target = requireSelectedTarget();
+                if (target) openQuotaTarget(target);
+              }}
+              disabled={selectedActionRows.length === 0 || actionSaving}
+            >
+              批量限额
+            </Button>
+            <Button variant="secondary" onClick={() => navigate('/alert-config')}>
+              告警配置
+            </Button>
           </div>
         }
       >
@@ -424,6 +600,8 @@ export function EnterpriseKeysPage() {
             <tbody>
               {filteredRows.map((item) => {
                 const checked = selectedApiKeys.includes(item.apiKey);
+                const keyHash = item.apiKeyHash.toLowerCase();
+                const keyTarget = { label: item.userName || keyHash, keyHashes: [keyHash] };
                 const rowKey = `${item.apiKey || ''}|${item.userName}|${item.departmentId || ''}`;
                 return (
                   <tr key={rowKey}>
@@ -442,6 +620,33 @@ export function EnterpriseKeysPage() {
                     <td>
                       {item.apiKey ? (
                         <div className={styles.rowActions}>
+                          {keyHash && pausedKeyHashes.has(keyHash) ? (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={actionSaving}
+                              onClick={() => handleResumeTarget(keyTarget)}
+                            >
+                              恢复
+                            </Button>
+                          ) : (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={!keyHash || actionSaving}
+                              onClick={() => openPauseTarget(keyTarget)}
+                            >
+                              停用
+                            </Button>
+                          )}
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            disabled={!keyHash || actionSaving}
+                            onClick={() => openQuotaTarget(keyTarget)}
+                          >
+                            限额
+                          </Button>
                           <Button
                             variant="secondary"
                             size="sm"
@@ -653,6 +858,93 @@ export function EnterpriseKeysPage() {
             options={managedDepartments.map((d) => ({ value: d.id, label: d.name }))}
             onChange={setEditingDepartmentId}
             ariaLabel="选择部门"
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={pauseModalOpen}
+        onClose={() => {
+          setPauseModalOpen(false);
+          setActionTarget(null);
+        }}
+        title="停用 Key"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={actionSaving}
+              onClick={() => {
+                setPauseModalOpen(false);
+                setActionTarget(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button onClick={handlePauseTarget} loading={actionSaving}>
+              确认停用
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.modalSection}>
+          <div className={styles.actionTarget}>目标：{actionTarget?.label ?? '-'}</div>
+          <Input
+            label="停用原因"
+            value={pauseReason}
+            onChange={(e) => setPauseReason(e.target.value)}
+            placeholder={DEFAULT_PAUSE_REASON}
+          />
+          <Input
+            label="停用时长（秒，0 为永久）"
+            type="number"
+            min="0"
+            value={pauseDurationSec}
+            onChange={(e) => setPauseDurationSec(e.target.value)}
+          />
+        </div>
+      </Modal>
+
+      <Modal
+        open={quotaModalOpen}
+        onClose={() => {
+          setQuotaModalOpen(false);
+          setActionTarget(null);
+        }}
+        title="设置限额"
+        footer={
+          <>
+            <Button
+              variant="secondary"
+              disabled={actionSaving}
+              onClick={() => {
+                setQuotaModalOpen(false);
+                setActionTarget(null);
+              }}
+            >
+              取消
+            </Button>
+            <Button onClick={handleSaveQuotaTarget} loading={actionSaving}>
+              保存限额
+            </Button>
+          </>
+        }
+      >
+        <div className={styles.modalSection}>
+          <div className={styles.actionTarget}>目标：{actionTarget?.label ?? '-'}</div>
+          <Input
+            label="每日限额（分）"
+            type="number"
+            min="0"
+            value={quotaDailyCents}
+            onChange={(e) => setQuotaDailyCents(e.target.value)}
+          />
+          <Input
+            label="每周限额（分）"
+            type="number"
+            min="0"
+            value={quotaWeeklyCents}
+            onChange={(e) => setQuotaWeeklyCents(e.target.value)}
           />
         </div>
       </Modal>

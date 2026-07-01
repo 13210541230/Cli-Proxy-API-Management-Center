@@ -61,6 +61,16 @@
   display: inline-flex;
   gap: $spacing-xs;
   align-items: center;
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  min-width: 220px;
+}
+
+.actionTarget {
+  color: var(--text-secondary);
+  font-size: 13px;
 }
 
 .empty {
