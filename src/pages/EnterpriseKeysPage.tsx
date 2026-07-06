@@ -12,6 +12,7 @@ import { quotaLimitsApi, type SpendLimitEntry } from '@/services/api/quotaLimits
 import { quotaPauseApi } from '@/services/api/quotaPause';
 import { UNGROUPED_DEPARTMENT_ID, type EnterpriseDepartment, type EnterpriseKeyBinding, type KeyGenPreviewItem } from '@/types';
 import { downloadBlob } from '@/utils/download';
+import { quotaKeyHash } from '@/utils/apiKeyHash';
 import styles from './EnterpriseKeysPage.module.scss';
 
 type ImportResultSummary = {
@@ -24,6 +25,7 @@ type ImportResultSummary = {
 type KeyActionTarget = {
   label: string;
   keyHashes: string[];
+  pauseKeys: string[];
 };
 
 const DEFAULT_PAUSE_REASON = '企业 Key 管理手动停用';
@@ -77,6 +79,7 @@ export function EnterpriseKeysPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [pausedKeyHashes, setPausedKeyHashes] = useState<Set<string>>(new Set());
   const [quotaOverrides, setQuotaOverrides] = useState<SpendLimitEntry[]>([]);
+  const [quotaEnabled, setQuotaEnabled] = useState(true);
   const [actionTarget, setActionTarget] = useState<KeyActionTarget | null>(null);
   const [pauseReason, setPauseReason] = useState(DEFAULT_PAUSE_REASON);
   const [pauseDurationSec, setPauseDurationSec] = useState('3600');
@@ -104,6 +107,7 @@ export function EnterpriseKeysPage() {
 
   const loadQuotaState = useCallback(async () => {
     const [paused, quota] = await Promise.all([quotaPauseApi.listPaused(), quotaLimitsApi.getConfig()]);
+    setQuotaEnabled(!!quota.enabled);
     setPausedKeyHashes(new Set((paused.entries ?? []).map((entry) => entry.key_hash.toLowerCase())));
     setQuotaOverrides(
       (quota.overrides ?? [])
@@ -168,6 +172,9 @@ export function EnterpriseKeysPage() {
   const keyHashesFromRows = (rows: EnterpriseKeyBinding[]) =>
     Array.from(new Set(rows.map((row) => row.apiKeyHash.toLowerCase()).filter(Boolean)));
 
+  const pauseKeysFromRows = (rows: EnterpriseKeyBinding[]) =>
+    Array.from(new Set(rows.filter((row) => row.apiKey).map((row) => row.apiKey.trim())));
+
   const openPauseTarget = (target: KeyActionTarget) => {
     setActionTarget(target);
     setPauseReason(DEFAULT_PAUSE_REASON);
@@ -185,11 +192,12 @@ export function EnterpriseKeysPage() {
 
   const requireSelectedTarget = (): KeyActionTarget | null => {
     const keyHashes = keyHashesFromRows(selectedActionRows);
-    if (keyHashes.length === 0) {
+    const pauseKeys = pauseKeysFromRows(selectedActionRows);
+    if (keyHashes.length === 0 || pauseKeys.length === 0) {
       showNotification('请先选择需要操作的 Key', 'error');
       return null;
     }
-    return { label: `选中的 ${keyHashes.length} 个 Key`, keyHashes };
+    return { label: `选中的 ${keyHashes.length} 个 Key`, keyHashes, pauseKeys };
   };
 
 
@@ -429,31 +437,31 @@ export function EnterpriseKeysPage() {
     try {
       const secs = parseInt(pauseDurationSec, 10) || 0;
       await Promise.all(
-        actionTarget.keyHashes.map((keyHash) =>
-          quotaPauseApi.pauseKey(keyHash, pauseReason.trim() || DEFAULT_PAUSE_REASON, secs > 0 ? secs : undefined)
+        actionTarget.pauseKeys.map((apiKey) =>
+          quotaPauseApi.pauseKey(apiKey, pauseReason.trim() || DEFAULT_PAUSE_REASON, secs > 0 ? secs : undefined)
         )
       );
-      await loadQuotaState();
       setPauseModalOpen(false);
       setActionTarget(null);
-      showNotification(`已停用 ${actionTarget.keyHashes.length} 个 Key`, 'success');
-    } catch {
-      showNotification('停用失败', 'error');
+      showNotification(`已停用 ${actionTarget.pauseKeys.length} 个 Key`, 'success');
+    } catch (err) {
+      showNotification(`停用失败：${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setActionSaving(false);
+      loadQuotaState().catch(() => {});
     }
   };
 
   const handleResumeTarget = async (target: KeyActionTarget) => {
     setActionSaving(true);
     try {
-      await Promise.all(target.keyHashes.map((keyHash) => quotaPauseApi.resumeKey(keyHash)));
-      await loadQuotaState();
+      await Promise.all(target.pauseKeys.map((apiKey) => quotaPauseApi.resumeKey(apiKey)));
       showNotification(`已恢复 ${target.keyHashes.length} 个 Key`, 'success');
-    } catch {
-      showNotification('恢复失败', 'error');
+    } catch (err) {
+      showNotification(`恢复失败：${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setActionSaving(false);
+      loadQuotaState().catch(() => {});
     }
   };
 
@@ -461,8 +469,8 @@ export function EnterpriseKeysPage() {
     if (!actionTarget) return;
     setActionSaving(true);
     try {
-      const daily = parseInt(quotaDailyCents, 10) || 0;
-      const weekly = parseInt(quotaWeeklyCents, 10) || 0;
+      const daily = Math.round(parseFloat(quotaDailyCents) || 0);
+      const weekly = Math.round(parseFloat(quotaWeeklyCents) || 0);
       const config = await quotaLimitsApi.getConfig();
       const targetSet = new Set(actionTarget.keyHashes);
       const preserved = (config.overrides ?? []).filter(
@@ -478,12 +486,24 @@ export function EnterpriseKeysPage() {
         })),
       ];
       await quotaLimitsApi.updateConfig({ overrides: nextOverrides });
+
+      // 仅当限额显式填 0 时才触发立即停用（避免空值 parse 成 0）
+      const isExplicitZero = quotaDailyCents.trim() === '0' || quotaWeeklyCents.trim() === '0';
+      if (daily === 0 && isExplicitZero) {
+        const expiresIn = quotaDailyCents.trim() === '0' ? 86400 : 604800;
+        await Promise.all(
+          actionTarget.pauseKeys.filter(Boolean).map((apiKey) =>
+            quotaPauseApi.pauseKey(apiKey, '限额为0自动停用', expiresIn)
+          )
+        );
+      }
+
       await loadQuotaState();
       setQuotaModalOpen(false);
       setActionTarget(null);
       showNotification(`已设置 ${actionTarget.keyHashes.length} 个 Key 的限额`, 'success');
-    } catch {
-      showNotification('限额保存失败', 'error');
+    } catch (err) {
+      showNotification(`限额保存失败：${err instanceof Error ? err.message : String(err)}`, 'error');
     } finally {
       setActionSaving(false);
     }
@@ -574,6 +594,38 @@ export function EnterpriseKeysPage() {
             <Button variant="secondary" onClick={() => navigate('/alert-config')}>
               告警配置
             </Button>
+            <Button variant="secondary" onClick={() => navigate('/quota-limits')}>
+              限额设置
+            </Button>
+            <span className={styles.quotaBadge} data-enabled={quotaEnabled}>
+              Quota: {quotaEnabled ? '已启用' : '未启用'}
+            </span>
+            {!quotaEnabled && (
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={actionSaving}
+                onClick={async () => {
+                  setActionSaving(true);
+                  try {
+                    const cur = await quotaLimitsApi.getConfig();
+                    await quotaLimitsApi.updateConfig({
+                      enabled: true,
+                      default: cur.default,
+                      overrides: cur.overrides ?? [],
+                    });
+                    await loadQuotaState();
+                    showNotification('Quota 已启用', 'success');
+                  } catch (err) {
+                    showNotification(`启用 Quota 失败：${err instanceof Error ? err.message : String(err)}`, 'error');
+                  } finally {
+                    setActionSaving(false);
+                  }
+                }}
+              >
+                启用 Quota
+              </Button>
+            )}
           </div>
         }
       >
@@ -601,7 +653,8 @@ export function EnterpriseKeysPage() {
               {filteredRows.map((item) => {
                 const checked = selectedApiKeys.includes(item.apiKey);
                 const keyHash = item.apiKeyHash.toLowerCase();
-                const keyTarget = { label: item.userName || keyHash, keyHashes: [keyHash] };
+                const pauseKeyHash = item.apiKey ? quotaKeyHash(item.apiKey) : keyHash.slice(0, 8);
+                const keyTarget = { label: item.userName || keyHash, keyHashes: [keyHash], pauseKeys: [item.apiKey] };
                 const rowKey = `${item.apiKey || ''}|${item.userName}|${item.departmentId || ''}`;
                 return (
                   <tr key={rowKey}>
@@ -620,7 +673,7 @@ export function EnterpriseKeysPage() {
                     <td>
                       {item.apiKey ? (
                         <div className={styles.rowActions}>
-                          {keyHash && pausedKeyHashes.has(keyHash) ? (
+                          {pauseKeyHash && pausedKeyHashes.has(pauseKeyHash) ? (
                             <Button
                               variant="secondary"
                               size="sm"
@@ -633,7 +686,7 @@ export function EnterpriseKeysPage() {
                             <Button
                               variant="secondary"
                               size="sm"
-                              disabled={!keyHash || actionSaving}
+                              disabled={!item.apiKey || actionSaving}
                               onClick={() => openPauseTarget(keyTarget)}
                             >
                               停用
@@ -932,17 +985,20 @@ export function EnterpriseKeysPage() {
       >
         <div className={styles.modalSection}>
           <div className={styles.actionTarget}>目标：{actionTarget?.label ?? '-'}</div>
+          <div className={styles.fieldHint}>留空或不填表示不限额；填 0 表示立即停用；填整数（厘分），如 100 = $1</div>
           <Input
-            label="每日限额（分）"
+            label="每日限额（厘分）"
             type="number"
             min="0"
+            step="1"
             value={quotaDailyCents}
             onChange={(e) => setQuotaDailyCents(e.target.value)}
           />
           <Input
-            label="每周限额（分）"
+            label="每周限额（厘分）"
             type="number"
             min="0"
+            step="1"
             value={quotaWeeklyCents}
             onChange={(e) => setQuotaWeeklyCents(e.target.value)}
           />

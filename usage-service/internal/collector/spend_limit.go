@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
@@ -27,10 +28,19 @@ func newPauseClient(baseURL, mgmtKey string) *pauseClient {
 	}
 }
 
+func normalizePauseKeyHash(keyHash string) string {
+	keyHash = strings.ToLower(strings.TrimSpace(keyHash))
+	if len(keyHash) == 64 {
+		return keyHash[:8]
+	}
+	return keyHash
+}
+
 func (c *pauseClient) PauseKey(keyHash, reason string, expiresAt time.Time) error {
 	if c == nil || c.baseURL == "" || c.mgmtKey == "" {
 		return fmt.Errorf("pause client not configured")
 	}
+	keyHash = normalizePauseKeyHash(keyHash)
 	expiresIn := int64(time.Until(expiresAt).Seconds())
 	if expiresIn < 0 {
 		expiresIn = 0
@@ -93,18 +103,25 @@ func CheckAndEnforceLimits(s *store.Store, pauseClient *pauseClient) {
 		}
 
 		limit := cfg.LimitForKey(k.KeyHash)
+		overrideLimit, hasOverride := cfg.OverrideForKey(k.KeyHash)
 		exceeded := false
 		var expiresAt time.Time
+		daysUntilMonday := (8 - int(now.Weekday())) % 7
+		if daysUntilMonday == 0 {
+			daysUntilMonday = 7
+		}
 
-		if limit.DailyCents > 0 && k.TodayCents >= limit.DailyCents {
+		if hasOverride && overrideLimit.DailyCents == 0 {
 			exceeded = true
 			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+		} else if limit.DailyCents > 0 && k.TodayCents >= limit.DailyCents {
+			exceeded = true
+			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
+		} else if hasOverride && overrideLimit.WeeklyCents == 0 {
+			exceeded = true
+			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, 0, 0, 0, 0, now.Location())
 		} else if limit.WeeklyCents > 0 && k.WeekCents >= limit.WeeklyCents {
 			exceeded = true
-			daysUntilMonday := (8 - int(now.Weekday())) % 7
-			if daysUntilMonday == 0 {
-				daysUntilMonday = 7
-			}
 			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, 0, 0, 0, 0, now.Location())
 		}
 

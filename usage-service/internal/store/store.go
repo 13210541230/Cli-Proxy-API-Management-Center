@@ -117,13 +117,20 @@ func (c SpendLimitConfig) DefaultLimit() SpendLimit {
 	return SpendLimit{DailyCents: c.DailyCents, WeeklyCents: c.WeeklyCents}
 }
 
-func (c SpendLimitConfig) LimitForKey(keyHash string) SpendLimit {
+func (c SpendLimitConfig) OverrideForKey(keyHash string) (SpendLimit, bool) {
 	keyHash = strings.ToLower(strings.TrimSpace(keyHash))
 	for _, entry := range c.Overrides {
 		if entry.ApplyTo != "api-key" || strings.ToLower(strings.TrimSpace(entry.ApplyValue)) != keyHash {
 			continue
 		}
-		return SpendLimit{DailyCents: entry.DailyCents, WeeklyCents: entry.WeeklyCents}
+		return SpendLimit{DailyCents: entry.DailyCents, WeeklyCents: entry.WeeklyCents}, true
+	}
+	return SpendLimit{}, false
+}
+
+func (c SpendLimitConfig) LimitForKey(keyHash string) SpendLimit {
+	if limit, ok := c.OverrideForKey(keyHash); ok {
+		return limit
 	}
 	return c.DefaultLimit()
 }

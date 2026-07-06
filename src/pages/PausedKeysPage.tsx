@@ -10,6 +10,7 @@ import type { NotificationType } from '@/types';
 import { quotaPauseApi, type PauseEntry } from '@/services/api/quotaPause';
 import { enterpriseKeysApi } from '@/services/api/enterpriseKeys';
 import type { EnterpriseKeyBinding } from '@/types/enterpriseKey';
+import { quotaKeyHash } from '@/utils/apiKeyHash';
 import styles from './PausedKeysPage.module.scss';
 
 const buildBindingLabel = (binding: EnterpriseKeyBinding): string =>
@@ -31,10 +32,12 @@ export function PausedKeysPage() {
 
   const keyOptions = useMemo(
     () =>
-      Array.from(keyBindings.entries()).map(([hash, binding]) => ({
-        value: hash,
-        label: buildBindingLabel(binding),
-      })),
+      Array.from(keyBindings.values())
+        .filter((binding) => binding.apiKey)
+        .map((binding) => ({
+          value: binding.apiKey,
+          label: buildBindingLabel(binding),
+        })),
     [keyBindings]
   );
 
@@ -56,7 +59,7 @@ export function PausedKeysPage() {
 
       const bindingMap = new Map<string, EnterpriseKeyBinding>();
       for (const binding of bindingsData?.items ?? []) {
-        if (binding.apiKeyHash) bindingMap.set(binding.apiKeyHash.toLowerCase(), binding);
+        if (binding.apiKey) bindingMap.set(quotaKeyHash(binding.apiKey).toLowerCase(), binding);
       }
       setKeyBindings(bindingMap);
     } catch (err: unknown) {

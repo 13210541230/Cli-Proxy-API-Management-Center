@@ -92,3 +92,5 @@ export const sha256Hex = (value: string): string => {
     .map((part) => part.toString(16).padStart(8, '0'))
     .join('');
 };
+
+export const quotaKeyHash = (apiKey: string): string => sha256Hex(apiKey).slice(0, 8);

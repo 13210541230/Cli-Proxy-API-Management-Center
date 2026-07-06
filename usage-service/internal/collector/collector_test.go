@@ -171,6 +171,55 @@ func TestCheckAndEnforceLimitsUsesDefaultAndOverrides(t *testing.T) {
 	}
 }
 
+func TestCheckAndEnforceLimitsPausesZeroOverrideAndNormalizesFullHash(t *testing.T) {
+	paused := make(map[string]bool)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v0/management/quota/pause" {
+			http.NotFound(w, r)
+			return
+		}
+		var body struct {
+			KeyHash string `json:"key_hash"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("decode pause body: %v", err)
+		}
+		paused[body.KeyHash] = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	t.Cleanup(upstream.Close)
+
+	fullHash := strings.Repeat("a", 64)
+	db := newTestStore(t)
+	ctx := context.Background()
+	if _, err := db.UpsertSyncedModelPrices(ctx, map[string]store.ModelPrice{
+		"gpt-4": {Prompt: 10, Completion: 30, Cache: 5},
+	}); err != nil {
+		t.Fatalf("UpsertSyncedModelPrices failed: %v", err)
+	}
+	if err := db.SaveSpendLimitConfig(ctx, store.SpendLimitConfig{
+		Enabled: true,
+		Overrides: []store.SpendLimitEntry{{
+			ApplyTo:     "api-key",
+			ApplyValue:  fullHash,
+			DailyCents:  0,
+			WeeklyCents: 1000,
+		}},
+	}); err != nil {
+		t.Fatalf("SaveSpendLimitConfig failed: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{spendLimitEvent("event-zero", fullHash, time.Now())}); err != nil {
+		t.Fatalf("InsertEvents failed: %v", err)
+	}
+
+	CheckAndEnforceLimits(db, newPauseClient(upstream.URL, "management-key"))
+
+	if !paused[fullHash[:8]] {
+		t.Fatalf("expected zero override to pause key %q", fullHash[:8])
+	}
+}
+
 func spendLimitEvent(hash, keyHash string, at time.Time) usage.Event {
 	return usage.Event{
 		EventHash:   hash,
