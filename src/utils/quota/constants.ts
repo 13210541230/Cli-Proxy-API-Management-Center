@@ -192,6 +192,11 @@ export const CODEX_REQUEST_HEADERS = {
   'User-Agent': 'codex_cli_rs/0.76.0 (Debian 13.0.0; x86_64) WindowsTerminal',
 };
 
+export const CODEX_RATE_LIMIT_RESET_CREDITS_URL =
+  'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits';
+export const CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL =
+  'https://chatgpt.com/backend-api/codex/rate_limit/reset_credits/consume';
+
 // Kimi API configuration
 export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 

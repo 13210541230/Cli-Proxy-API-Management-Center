@@ -307,6 +307,28 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
     [config, disabled, quota, setQuota, showNotification, t]
   );
 
+  const resetQuotaForFile = useCallback(
+    async (file: AuthFileItem) => {
+      if (disabled || file.disabled) return;
+      if (quota[file.name]?.status === 'loading') return;
+      if (!config.resetQuota) return;
+      if (!config.canResetQuota?.(quota[file.name] as TState)) return;
+
+      try {
+        const data = await config.resetQuota(file, t);
+        setQuota((prev) => ({
+          ...prev,
+          [file.name]: config.buildSuccessState(data),
+        }));
+        showNotification(t('codex_quota.reset_success', { name: file.name }), 'success');
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : t('common.unknown_error');
+        showNotification(t('codex_quota.reset_failed', { name: file.name, message }), 'error');
+      }
+    },
+    [config, disabled, quota, setQuota, showNotification, t]
+  );
+
   const titleNode = (
     <div className={styles.titleWrapper}>
       <span>{t(`${config.i18nPrefix}.title`)}</span>
@@ -395,6 +417,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 canRefresh={!disabled && !item.disabled}
                 onRefresh={() => void refreshQuotaForFile(item)}
                 renderQuotaItems={config.renderQuotaItems}
+                canReset={config.resetQuota ? config.canResetQuota?.(quota[item.name] as TState) ?? false : false}
+                onReset={() => void resetQuotaForFile(item)}
               />
             ))}
           </div>

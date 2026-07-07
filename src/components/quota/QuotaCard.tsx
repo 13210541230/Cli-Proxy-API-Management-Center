@@ -66,7 +66,10 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   defaultType: string;
   canRefresh?: boolean;
   onRefresh?: () => void;
+  canReset?: boolean;
+  onReset?: () => void;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
+  renderResetAction?: () => ReactNode;
 }
 
 export function QuotaCard<TState extends QuotaStatusState>({
@@ -79,7 +82,10 @@ export function QuotaCard<TState extends QuotaStatusState>({
   defaultType,
   canRefresh = false,
   onRefresh,
-  renderQuotaItems
+  canReset = false,
+  onReset,
+  renderQuotaItems,
+  renderResetAction
 }: QuotaCardProps<TState>) {
   const { t } = useTranslation();
 
@@ -95,6 +101,33 @@ export function QuotaCard<TState extends QuotaStatusState>({
     quota?.error || t('common.unknown_error')
   );
   const idleMessageKey = onRefresh ? `${i18nPrefix}.idle` : (cardIdleMessageKey ?? `${i18nPrefix}.idle`);
+  const quotaActions =
+    quotaStatus !== 'idle' && quotaStatus !== 'loading' && (onRefresh || (canReset && onReset)) ? (
+      <div className={styles.quotaCardActions}>
+        {onRefresh && (
+          <button
+            type="button"
+            className={styles.quotaResetButton}
+            onClick={onRefresh}
+            disabled={!canRefresh}
+          >
+            {t(`${i18nPrefix}.refresh_button`)}
+          </button>
+        )}
+        {canReset && onReset
+          ? (renderResetAction?.() ?? (
+              <button
+                type="button"
+                className={styles.quotaResetButton}
+                onClick={onReset}
+                disabled={!canReset}
+              >
+                {t('codex_quota.reset_button')}
+              </button>
+            ))
+          : null}
+      </div>
+    ) : null;
 
   const getTypeLabel = (type: string): string => {
     const key = `auth_files.filter_${type}`;
@@ -143,7 +176,10 @@ export function QuotaCard<TState extends QuotaStatusState>({
             })}
           </div>
         ) : quota ? (
-          renderQuotaItems(quota, t, { styles, QuotaProgressBar })
+          <>
+            {renderQuotaItems(quota, t, { styles, QuotaProgressBar })}
+            {quotaActions}
+          </>
         ) : (
           <div className={styles.quotaMessage}>{t(idleMessageKey)}</div>
         )}

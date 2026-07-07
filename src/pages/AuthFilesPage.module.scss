@@ -692,16 +692,40 @@
   padding: $spacing-xs $spacing-sm;
 }
 
-.codexPlan {
+.quotaCardActions {
   display: flex;
   align-items: center;
   gap: 6px;
+  margin-top: 6px;
+}
+
+.quotaResetCreditButton {
+  font-size: 11px !important;
+  height: 24px !important;
+  padding: 0 8px !important;
+}
+
+.codexPlan {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
   font-size: 12px;
   color: var(--text-secondary);
+  flex-wrap: wrap;
+}
+
+.codexPlanItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 .codexPlanLabel {
   color: var(--text-tertiary);
+  flex: 0 0 auto;
 }
 
 .codexPlanValue {
@@ -727,6 +751,41 @@
   background: var(--color-warning-light-9);
   border-color: var(--color-warning-light-5);
   color: var(--color-warning-dark-2);
+}
+
+.codexResetCredits {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.codexResetCreditsTitle {
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+.codexResetCreditRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  padding: 2px 0;
+}
+
+.codexResetCreditLabel {
+  color: var(--text-secondary);
+}
+
+.codexResetCreditTime {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.codexResetCreditsError {
+  font-size: 11px;
+  color: var(--danger-color);
+  margin-top: 4px;
 }
 
 // 单个认证文件卡片

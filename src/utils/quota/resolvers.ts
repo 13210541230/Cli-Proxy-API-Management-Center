@@ -16,7 +16,8 @@ const resolveAccountIdCandidate = (value: unknown): string | null => {
     record.chatgpt_account_id ??
       record.chatgptAccountId ??
       record.account_id ??
-      record.accountId
+      record.accountId ??
+      record.account
   );
 };
 
@@ -45,6 +46,9 @@ export function resolveCodexChatgptAccountId(file: AuthFileItem): string | null 
       : null;
 
   const candidates = [
+    file,
+    metadata,
+    attributes,
     file.chatgpt_account_id,
     file.chatgptAccountId,
     file.account_id,
@@ -146,6 +150,35 @@ export function resolveGeminiCliProjectId(file: AuthFileItem): string | null {
   for (const candidate of candidates) {
     const projectId = extractGeminiCliProjectId(candidate);
     if (projectId) return projectId;
+  }
+
+  return null;
+}
+
+const toRecord = (value: unknown): Record<string, unknown> | null =>
+  value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : null;
+
+export function resolveCodexSubscriptionActiveUntil(file: AuthFileItem): string | null {
+  const metadata = toRecord(file.metadata);
+  const attributes = toRecord(file.attributes);
+  const idToken = parseIdTokenPayload(file.id_token);
+
+  const candidates = [
+    file.chatgpt_subscription_active_until,
+    file.subscription_active_until,
+    file.subscriptionActiveUntil,
+    metadata?.chatgpt_subscription_active_until,
+    metadata?.subscription_active_until,
+    metadata?.subscriptionActiveUntil,
+    idToken?.chatgpt_subscription_active_until,
+    attributes?.chatgpt_subscription_active_until,
+  ];
+
+  for (const candidate of candidates) {
+    const value = normalizeStringValue(candidate);
+    if (value) return value;
   }
 
   return null;
