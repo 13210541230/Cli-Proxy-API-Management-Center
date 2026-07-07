@@ -142,18 +142,122 @@ func newPoolQuotaChecker(s *store.Store, sender *mail.Sender, cpaBaseURL, mgmtKe
 	}
 }
 
+const (
+	fiveHourWindowSeconds = 18_000
+	weeklyWindowSeconds   = 604_800
+)
+
 // codexUsageResponse mirrors the Codex /backend-api/wham/usage response shape.
 type codexUsageResponse struct {
-	RateLimit *struct {
-		PrimaryWindow   *codexWindow `json:"primary_window"`
-		SecondaryWindow *codexWindow `json:"secondary_window"`
-	} `json:"rate_limit"`
+	RateLimit    *codexRateLimit `json:"rate_limit"`
+	RateLimitAlt *codexRateLimit `json:"rateLimit"`
+}
+
+type codexRateLimit struct {
+	PrimaryWindow    *codexWindow `json:"primary_window"`
+	PrimaryWindowAlt *codexWindow `json:"primaryWindow"`
+	SecondaryWindow    *codexWindow `json:"secondary_window"`
+	SecondaryWindowAlt *codexWindow `json:"secondaryWindow"`
 }
 
 type codexWindow struct {
-	UsedPercent  *float64 `json:"used_percent"`
-	LimitSeconds *float64 `json:"limit_window_seconds"`
-	ResetAt      *float64 `json:"reset_at"`
+	UsedPercent    *float64 `json:"used_percent"`
+	UsedPercentAlt *float64 `json:"usedPercent"`
+	LimitSeconds    *float64 `json:"limit_window_seconds"`
+	LimitSecondsAlt *float64 `json:"limitWindowSeconds"`
+	ResetAt    *float64 `json:"reset_at"`
+	ResetAtAlt *float64 `json:"resetAt"`
+}
+
+func (r codexUsageResponse) rateLimit() *codexRateLimit {
+	if r.RateLimit != nil {
+		return r.RateLimit
+	}
+	return r.RateLimitAlt
+}
+
+func (r *codexRateLimit) classifyWindows() (*codexWindow, *codexWindow) {
+	if r == nil {
+		return nil, nil
+	}
+	primaryWindow := firstCodexWindow(r.PrimaryWindow, r.PrimaryWindowAlt)
+	secondaryWindow := firstCodexWindow(r.SecondaryWindow, r.SecondaryWindowAlt)
+	windows := []*codexWindow{primaryWindow, secondaryWindow}
+
+	var fiveHourWindow *codexWindow
+	var weeklyWindow *codexWindow
+	for _, window := range windows {
+		if window == nil {
+			continue
+		}
+		seconds, ok := window.limitWindowSeconds()
+		if !ok {
+			continue
+		}
+		if seconds == fiveHourWindowSeconds && fiveHourWindow == nil {
+			fiveHourWindow = window
+			continue
+		}
+		if seconds == weeklyWindowSeconds && weeklyWindow == nil {
+			weeklyWindow = window
+		}
+	}
+
+	if fiveHourWindow == nil && primaryWindow != nil && primaryWindow != weeklyWindow {
+		fiveHourWindow = primaryWindow
+	}
+	if weeklyWindow == nil && secondaryWindow != nil && secondaryWindow != fiveHourWindow {
+		weeklyWindow = secondaryWindow
+	}
+	return fiveHourWindow, weeklyWindow
+}
+
+func firstCodexWindow(windows ...*codexWindow) *codexWindow {
+	for _, window := range windows {
+		if window != nil {
+			return window
+		}
+	}
+	return nil
+}
+
+func (w *codexWindow) usedPercent() (float64, bool) {
+	if w == nil {
+		return 0, false
+	}
+	if w.UsedPercent != nil {
+		return *w.UsedPercent, true
+	}
+	if w.UsedPercentAlt != nil {
+		return *w.UsedPercentAlt, true
+	}
+	return 0, false
+}
+
+func (w *codexWindow) limitWindowSeconds() (int64, bool) {
+	if w == nil {
+		return 0, false
+	}
+	if w.LimitSeconds != nil {
+		return int64(*w.LimitSeconds), true
+	}
+	if w.LimitSecondsAlt != nil {
+		return int64(*w.LimitSecondsAlt), true
+	}
+	return 0, false
+}
+
+func (w *codexWindow) resetAt() (int64, bool) {
+	if w == nil {
+		return 0, false
+	}
+	if w.ResetAt != nil {
+		return int64(*w.ResetAt), true
+	}
+	if w.ResetAtAlt != nil {
+		return int64(*w.ResetAtAlt), true
+	}
+	return 0, false
 }
 
 // loadEnabledAuthIndices fetches auth files from CPA and returns a map of
@@ -651,30 +755,24 @@ func (c *poolQuotaChecker) queryAccountQuota(ctx context.Context, authIndex, acc
 		return result
 	}
 
-	if usage.RateLimit == nil {
+	rl := usage.rateLimit()
+	if rl == nil {
 		result.err = "network: no rate_limit in response"
 		return result
 	}
 
-	// Extract 5-hour and weekly windows
-	rl := usage.RateLimit
-	if rl.PrimaryWindow != nil && rl.PrimaryWindow.LimitSeconds != nil && *rl.PrimaryWindow.LimitSeconds == float64(18000) {
-		// This is a 5-hour window
-		if rl.PrimaryWindow.UsedPercent != nil {
-			result.fiveHourUsed = *rl.PrimaryWindow.UsedPercent
-		}
-		if rl.PrimaryWindow.ResetAt != nil {
-			result.fiveHourReset = epochToTimeStr(int64(*rl.PrimaryWindow.ResetAt))
-		}
+	fiveHourWindow, weeklyWindow := rl.classifyWindows()
+	if usedPercent, ok := fiveHourWindow.usedPercent(); ok {
+		result.fiveHourUsed = usedPercent
 	}
-	if rl.SecondaryWindow != nil && rl.SecondaryWindow.LimitSeconds != nil && *rl.SecondaryWindow.LimitSeconds == float64(604800) {
-		// This is a weekly window
-		if rl.SecondaryWindow.UsedPercent != nil {
-			result.weeklyUsed = *rl.SecondaryWindow.UsedPercent
-		}
-		if rl.SecondaryWindow.ResetAt != nil {
-			result.weeklyReset = epochToTimeStr(int64(*rl.SecondaryWindow.ResetAt))
-		}
+	if resetAt, ok := fiveHourWindow.resetAt(); ok {
+		result.fiveHourReset = epochToTimeStr(resetAt)
+	}
+	if usedPercent, ok := weeklyWindow.usedPercent(); ok {
+		result.weeklyUsed = usedPercent
+	}
+	if resetAt, ok := weeklyWindow.resetAt(); ok {
+		result.weeklyReset = epochToTimeStr(resetAt)
 	}
 
 	return result

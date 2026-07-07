@@ -257,6 +257,45 @@ func testConfig(t *testing.T, mode string) config.Config {
 	}
 }
 
+func TestQueryAccountQuotaSupportsCamelCaseAndWindowFallback(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v0/management/api-call":
+			if r.Header.Get("Authorization") != "Bearer management-key" {
+				http.Error(w, "bad key", http.StatusUnauthorized)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{
+				"status_code":200,
+				"body":"{\"rateLimit\":{\"primaryWindow\":{\"usedPercent\":100,\"limitWindowSeconds\":604800,\"resetAt\":1751904000},\"secondaryWindow\":{\"usedPercent\":100,\"limitWindowSeconds\":18000,\"resetAt\":1751328000}}}"
+			}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	checker := newPoolQuotaChecker(nil, nil, upstream.URL, "management-key")
+	result := checker.queryAccountQuota(context.Background(), "auth-1", "account-1")
+
+	if result.err != "" {
+		t.Fatalf("queryAccountQuota returned error: %s", result.err)
+	}
+	if result.fiveHourUsed != 100 {
+		t.Fatalf("fiveHourUsed = %v, want 100", result.fiveHourUsed)
+	}
+	if result.weeklyUsed != 100 {
+		t.Fatalf("weeklyUsed = %v, want 100", result.weeklyUsed)
+	}
+	if result.fiveHourReset == "" {
+		t.Fatal("fiveHourReset should not be empty")
+	}
+	if result.weeklyReset == "" {
+		t.Fatal("weeklyReset should not be empty")
+	}
+}
+
 func waitFor(t *testing.T, condition func() bool) {
 	t.Helper()
 	deadline := time.Now().Add(2 * time.Second)

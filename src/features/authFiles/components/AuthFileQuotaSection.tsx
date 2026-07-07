@@ -200,11 +200,28 @@ export function AuthFileQuotaSection(props: AuthFileQuotaSectionProps) {
           {t(`${config.i18nPrefix}.idle`)}
         </button>
       ) : quotaStatus === 'error' ? (
-        <div className={styles.quotaError}>
-          {t(`${config.i18nPrefix}.load_failed`, {
-            message: quotaErrorMessage
-          })}
-        </div>
+        <>
+          <div className={styles.quotaError}>
+            {t(`${config.i18nPrefix}.load_failed`, {
+              message: quotaErrorMessage
+            })}
+          </div>
+          <div className={styles.quotaCardActions}>
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className={styles.quotaResetCreditButton}
+              onClick={() => void refreshQuotaForFile()}
+              disabled={!canRefreshQuota}
+              title={t(`${config.i18nPrefix}.refresh_button`)}
+              aria-label={t(`${config.i18nPrefix}.refresh_button`)}
+            >
+              <IconRefreshCw />
+              {t(`${config.i18nPrefix}.refresh_button`)}
+            </Button>
+          </div>
+        </>
       ) : quota ? (
         (config.renderQuotaItems(quota, t, { styles, QuotaProgressBar }) as ReactNode)
       ) : (
