@@ -329,7 +329,7 @@ const fetchCodexQuota = async (
 
 // Codex reset credit URLs
 const CODEX_RATE_LIMIT_RESET_CREDITS_URL = 'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits';
-const CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL = 'https://chatgpt.com/backend-api/codex/rate_limit/reset_credits/consume';
+const CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL = 'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume';
 
 type CodexResetCreditsData = {
   availableCount: number | null;

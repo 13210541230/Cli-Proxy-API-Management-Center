@@ -195,7 +195,7 @@ export const CODEX_REQUEST_HEADERS = {
 export const CODEX_RATE_LIMIT_RESET_CREDITS_URL =
   'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits';
 export const CODEX_RATE_LIMIT_RESET_CREDITS_CONSUME_URL =
-  'https://chatgpt.com/backend-api/codex/rate_limit/reset_credits/consume';
+  'https://chatgpt.com/backend-api/wham/rate-limit-reset-credits/consume';
 
 // Kimi API configuration
 export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
