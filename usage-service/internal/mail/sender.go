@@ -305,10 +305,14 @@ td{border:1px solid #ddd;padding:8px}
 <tr><td>触发阈值</td><td><strong>$%d</strong></td></tr>
 </table>`, escapeHTML(userName), thresholdDollars, float64(todayCents)/100, thresholdDollars))
 
-	sb.WriteString(`<div class="hint">
+	sb.WriteString(`<div style="margin:16px 0;padding:12px 16px;background:#fff3e0;border-left:4px solid #ff9800;color:#663c00">
+<p style="margin:0 0 6px"><strong>公共资源使用提醒</strong></p>
+<p style="margin:0">当前账号中转池属于公共资源，请合理分配 Token 使用，避免个人消耗过多影响其他用户正常使用。</p>
+</div>
+<div class="hint">
 <p>建议事项：</p>
 <ul>
-<li>简单任务请使用轻量模型（如 gpt-5.3-codex-spark、gpt-5.4-mini），降低 Token 消耗</li>
+<li>日常任务建议使用 gpt-5.6-luna 或 gpt-5.6-terra；架构设计及需要深度推理的任务请使用 gpt-5.6-sol</li>
 <li>检查是否有异常调用或重复请求</li>
 <li>可在管理面板查看详细的用量明细和配额设置</li>
 </ul>
