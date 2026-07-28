@@ -30,6 +30,11 @@ type KeyActionTarget = {
 
 const DEFAULT_PAUSE_REASON = '企业 Key 管理手动停用';
 
+const normalizeQuotaKeyHash = (value: string): string => {
+  const normalized = value.trim().toLowerCase();
+  return normalized.length === 64 ? normalized.slice(0, 8) : normalized;
+};
+
 const nowMs = () => Date.now();
 
 const formatErrorDetails = (raw?: string) => {
@@ -108,11 +113,11 @@ export function EnterpriseKeysPage() {
   const loadQuotaState = useCallback(async () => {
     const [paused, quota] = await Promise.all([quotaPauseApi.listPaused(), quotaLimitsApi.getConfig()]);
     setQuotaEnabled(!!quota.enabled);
-    setPausedKeyHashes(new Set((paused.entries ?? []).map((entry) => entry.key_hash.toLowerCase())));
+    setPausedKeyHashes(new Set((paused.entries ?? []).map((entry) => normalizeQuotaKeyHash(entry.key_hash))));
     setQuotaOverrides(
       (quota.overrides ?? [])
         .filter((entry) => entry.apply_to === 'api-key')
-        .map((entry) => ({ ...entry, apply_value: entry.apply_value.toLowerCase() }))
+        .map((entry) => ({ ...entry, apply_value: normalizeQuotaKeyHash(entry.apply_value) }))
     );
   }, []);
 
@@ -170,7 +175,7 @@ export function EnterpriseKeysPage() {
 
 
   const keyHashesFromRows = (rows: EnterpriseKeyBinding[]) =>
-    Array.from(new Set(rows.map((row) => row.apiKeyHash.toLowerCase()).filter(Boolean)));
+    Array.from(new Set(rows.map((row) => (row.apiKey ? quotaKeyHash(row.apiKey) : row.apiKeyHash.slice(0, 8).toLowerCase())).filter(Boolean)));
 
   const pauseKeysFromRows = (rows: EnterpriseKeyBinding[]) =>
     Array.from(new Set(rows.filter((row) => row.apiKey).map((row) => row.apiKey.trim())));
@@ -474,7 +479,7 @@ export function EnterpriseKeysPage() {
       const config = await quotaLimitsApi.getConfig();
       const targetSet = new Set(actionTarget.keyHashes);
       const preserved = (config.overrides ?? []).filter(
-        (entry) => entry.apply_to !== 'api-key' || !targetSet.has(entry.apply_value.toLowerCase())
+        (entry) => entry.apply_to !== 'api-key' || !targetSet.has(normalizeQuotaKeyHash(entry.apply_value))
       );
       const nextOverrides = [
         ...preserved,
@@ -486,17 +491,6 @@ export function EnterpriseKeysPage() {
         })),
       ];
       await quotaLimitsApi.updateConfig({ overrides: nextOverrides });
-
-      // 仅当限额显式填 0 时才触发立即停用（避免空值 parse 成 0）
-      const isExplicitZero = quotaDailyCents.trim() === '0' || quotaWeeklyCents.trim() === '0';
-      if (daily === 0 && isExplicitZero) {
-        const expiresIn = quotaDailyCents.trim() === '0' ? 86400 : 604800;
-        await Promise.all(
-          actionTarget.pauseKeys.filter(Boolean).map((apiKey) =>
-            quotaPauseApi.pauseKey(apiKey, '限额为0自动停用', expiresIn)
-          )
-        );
-      }
 
       await loadQuotaState();
       setQuotaModalOpen(false);
@@ -591,11 +585,8 @@ export function EnterpriseKeysPage() {
             >
               批量限额
             </Button>
-            <Button variant="secondary" onClick={() => navigate('/alert-config')}>
-              告警配置
-            </Button>
             <Button variant="secondary" onClick={() => navigate('/quota-limits')}>
-              限额设置
+              限额管理
             </Button>
             <span className={styles.quotaBadge} data-enabled={quotaEnabled}>
               Quota: {quotaEnabled ? '已启用' : '未启用'}
@@ -652,8 +643,10 @@ export function EnterpriseKeysPage() {
             <tbody>
               {filteredRows.map((item) => {
                 const checked = selectedApiKeys.includes(item.apiKey);
-                const keyHash = item.apiKeyHash.toLowerCase();
-                const pauseKeyHash = item.apiKey ? quotaKeyHash(item.apiKey) : keyHash.slice(0, 8);
+                const keyHash = item.apiKey
+                  ? quotaKeyHash(item.apiKey)
+                  : normalizeQuotaKeyHash(item.apiKeyHash);
+                const pauseKeyHash = keyHash;
                 const keyTarget = { label: item.userName || keyHash, keyHashes: [keyHash], pauseKeys: [item.apiKey] };
                 const rowKey = `${item.apiKey || ''}|${item.userName}|${item.departmentId || ''}`;
                 return (

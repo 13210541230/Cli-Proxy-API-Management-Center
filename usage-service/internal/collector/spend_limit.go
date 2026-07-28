@@ -103,7 +103,6 @@ func CheckAndEnforceLimits(s *store.Store, pauseClient *pauseClient) {
 		}
 
 		limit := cfg.LimitForKey(k.KeyHash)
-		overrideLimit, hasOverride := cfg.OverrideForKey(k.KeyHash)
 		exceeded := false
 		var expiresAt time.Time
 		daysUntilMonday := (8 - int(now.Weekday())) % 7
@@ -111,15 +110,9 @@ func CheckAndEnforceLimits(s *store.Store, pauseClient *pauseClient) {
 			daysUntilMonday = 7
 		}
 
-		if hasOverride && overrideLimit.DailyCents == 0 {
+		if limit.DailyCents > 0 && k.TodayCents >= limit.DailyCents {
 			exceeded = true
 			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
-		} else if limit.DailyCents > 0 && k.TodayCents >= limit.DailyCents {
-			exceeded = true
-			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, now.Location())
-		} else if hasOverride && overrideLimit.WeeklyCents == 0 {
-			exceeded = true
-			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, 0, 0, 0, 0, now.Location())
 		} else if limit.WeeklyCents > 0 && k.WeekCents >= limit.WeeklyCents {
 			exceeded = true
 			expiresAt = time.Date(now.Year(), now.Month(), now.Day()+daysUntilMonday, 0, 0, 0, 0, now.Location())

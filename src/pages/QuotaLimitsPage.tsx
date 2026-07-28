@@ -8,7 +8,10 @@ import { Select } from '@/components/ui/Select';
 import { useNotificationStore } from '@/stores';
 import type { NotificationType } from '@/types';
 import { quotaLimitsApi, type QuotaConfig, type SpendLimitEntry } from '@/services/api/quotaLimits';
+import { quotaPauseApi, type PauseEntry } from '@/services/api/quotaPause';
 import { enterpriseKeysApi } from '@/services/api/enterpriseKeys';
+import type { EnterpriseKeyBinding } from '@/types/enterpriseKey';
+import { quotaKeyHash } from '@/utils/apiKeyHash';
 import styles from './QuotaLimitsPage.module.scss';
 
 interface KeyDisplayOption {
@@ -18,6 +21,11 @@ interface KeyDisplayOption {
 
 const buildBindingLabel = (userName: string, email?: string): string =>
   email ? `${userName} (${email})` : userName;
+
+const formatPauseTime = (value: string): string => (value ? new Date(value).toLocaleString() : '-');
+
+const resolvePauseReason = (entry: PauseEntry): string =>
+  entry.reason === 'spend_limit_exceeded' ? '限额超出' : entry.reason || '手动暂停';
 
 export function QuotaLimitsPage() {
   const { t } = useTranslation();
@@ -35,6 +43,13 @@ export function QuotaLimitsPage() {
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [editingOverride, setEditingOverride] = useState<SpendLimitEntry | null>(null);
   const [hashToDisplay, setHashToDisplay] = useState<Record<string, string>>({});
+  const [keyBindings, setKeyBindings] = useState<Map<string, EnterpriseKeyBinding>>(new Map());
+  const [pausedEntries, setPausedEntries] = useState<PauseEntry[]>([]);
+  const [pauseModalOpen, setPauseModalOpen] = useState(false);
+  const [pauseKeyHash, setPauseKeyHash] = useState('');
+  const [pauseReason, setPauseReason] = useState('');
+  const [pauseDurationSec, setPauseDurationSec] = useState('3600');
+  const [pauseLoading, setPauseLoading] = useState(false);
 
   const loadConfig = useCallback(async () => {
     setLoading(true);
@@ -57,21 +72,68 @@ export function QuotaLimitsPage() {
     try {
       const data = await enterpriseKeysApi.listKeyBindings();
       const next: Record<string, string> = {};
+      const bindings = new Map<string, EnterpriseKeyBinding>();
       for (const binding of data.items ?? []) {
         if (binding.apiKeyHash && binding.userName) {
-          next[binding.apiKeyHash] = buildBindingLabel(binding.userName, binding.email);
+          const shortHash = quotaKeyHash(binding.apiKey);
+          next[shortHash] = buildBindingLabel(binding.userName, binding.email);
+          bindings.set(shortHash.toLowerCase(), binding);
         }
       }
       setHashToDisplay(next);
+      setKeyBindings(bindings);
     } catch {
       setHashToDisplay({});
+      setKeyBindings(new Map());
+    }
+  }, []);
+
+  const loadPausedEntries = useCallback(async () => {
+    try {
+      const data = await quotaPauseApi.listPaused();
+      setPausedEntries(data.entries ?? []);
+    } catch {
+      setPausedEntries([]);
     }
   }, []);
 
   useEffect(() => {
     void loadConfig();
     void loadKeyBindings();
-  }, [loadConfig, loadKeyBindings]);
+    void loadPausedEntries();
+  }, [loadConfig, loadKeyBindings, loadPausedEntries]);
+
+  const handleResume = async (keyHash: string) => {
+    setPauseLoading(true);
+    try {
+      await quotaPauseApi.resumeKey(keyHash);
+      await loadPausedEntries();
+      showNotification('已恢复用户', 'success' as NotificationType);
+    } catch (err: unknown) {
+      showNotification(err instanceof Error ? err.message : '恢复失败', 'error' as NotificationType);
+    } finally {
+      setPauseLoading(false);
+    }
+  };
+
+  const handlePause = async () => {
+    if (!pauseKeyHash.trim()) return;
+    setPauseLoading(true);
+    try {
+      const seconds = parseInt(pauseDurationSec, 10) || 0;
+      await quotaPauseApi.pauseKey(pauseKeyHash, pauseReason.trim(), seconds > 0 ? seconds : undefined);
+      await loadPausedEntries();
+      setPauseModalOpen(false);
+      setPauseKeyHash('');
+      setPauseReason('');
+      setPauseDurationSec('3600');
+      showNotification('已暂停用户', 'success' as NotificationType);
+    } catch (err: unknown) {
+      showNotification(err instanceof Error ? err.message : '暂停失败', 'error' as NotificationType);
+    } finally {
+      setPauseLoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -129,6 +191,20 @@ export function QuotaLimitsPage() {
       })),
     [hashToDisplay]
   );
+
+  const pauseKeyOptions = useMemo(
+    () =>
+      Array.from(keyBindings.values())
+        .filter((binding) => binding.apiKey)
+        .map((binding) => ({ value: binding.apiKey, label: buildBindingLabel(binding.userName, binding.email) })),
+    [keyBindings]
+  );
+
+  const resolvePausedUser = (keyHash: string): string => {
+    const normalized = keyHash.toLowerCase();
+    const match = Object.entries(hashToDisplay).find(([hash]) => hash.toLowerCase().startsWith(normalized));
+    return keyBindings.get(normalized)?.userName || (match ? match[1] : keyHash);
+  };
 
   if (loading) return <div className={styles.loading}>{t('common.loading')}</div>;
   if (error) return <div className={styles.error}>{error}</div>;
@@ -199,6 +275,66 @@ export function QuotaLimitsPage() {
           </table>
         )}
       </Card>
+
+      <Card className={styles.section}>
+        <div className={styles.sectionHeader}>
+          <h2>暂停管理</h2>
+          <Button size="sm" onClick={() => setPauseModalOpen(true)}>手动暂停</Button>
+        </div>
+        {pausedEntries.length === 0 ? (
+          <div className={styles.empty}>当前没有暂停用户</div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>用户</th>
+                <th>原因</th>
+                <th>暂停时间</th>
+                <th>恢复时间</th>
+                <th>{t('common.actions')}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pausedEntries.map((entry) => (
+                <tr key={entry.key_hash}>
+                  <td>{resolvePausedUser(entry.key_hash)}</td>
+                  <td>{resolvePauseReason(entry)}</td>
+                  <td>{formatPauseTime(entry.paused_at)}</td>
+                  <td>{entry.expires_at ? formatPauseTime(entry.expires_at) : '永久'}</td>
+                  <td>
+                    <Button size="sm" variant="secondary" disabled={pauseLoading} onClick={() => void handleResume(entry.key_hash)}>
+                      恢复
+                    </Button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </Card>
+
+      <Modal
+        open={pauseModalOpen}
+        onClose={() => setPauseModalOpen(false)}
+        title="手动暂停"
+      >
+        <div className={styles.form}>
+          <label>用户</label>
+          <Select
+            value={pauseKeyHash}
+            onChange={setPauseKeyHash}
+            options={[{ value: '', label: '请选择用户' }, ...pauseKeyOptions]}
+          />
+          <label>原因</label>
+          <Input value={pauseReason} onChange={(e) => setPauseReason(e.target.value)} placeholder="请输入暂停原因" />
+          <label>暂停时长（秒，0 表示永久）</label>
+          <Input type="number" value={pauseDurationSec} onChange={(e) => setPauseDurationSec(e.target.value)} />
+          <div className={styles.formActions}>
+            <Button variant="secondary" onClick={() => setPauseModalOpen(false)}>取消</Button>
+            <Button onClick={() => void handlePause()} disabled={!pauseKeyHash || pauseLoading}>确认暂停</Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal
         open={overrideModalOpen}

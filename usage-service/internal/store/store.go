@@ -118,14 +118,28 @@ func (c SpendLimitConfig) DefaultLimit() SpendLimit {
 }
 
 func (c SpendLimitConfig) OverrideForKey(keyHash string) (SpendLimit, bool) {
-	keyHash = strings.ToLower(strings.TrimSpace(keyHash))
+	keyHash = normalizeSpendLimitKeyHash(keyHash)
 	for _, entry := range c.Overrides {
-		if entry.ApplyTo != "api-key" || strings.ToLower(strings.TrimSpace(entry.ApplyValue)) != keyHash {
+		if entry.ApplyTo != "api-key" || normalizeSpendLimitKeyHash(entry.ApplyValue) != keyHash {
 			continue
 		}
 		return SpendLimit{DailyCents: entry.DailyCents, WeeklyCents: entry.WeeklyCents}, true
 	}
 	return SpendLimit{}, false
+}
+
+func normalizeSpendLimitKeyHash(value string) string {
+	value = strings.ToLower(strings.TrimSpace(value))
+	if len(value) != 64 {
+		return value
+	}
+	for _, char := range value {
+		if (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') {
+			continue
+		}
+		return value
+	}
+	return value[:8]
 }
 
 func (c SpendLimitConfig) LimitForKey(keyHash string) SpendLimit {
@@ -1831,19 +1845,19 @@ func (s *Store) LoadAllUserEmails(ctx context.Context) (map[string]string, error
 
 // AlertConfigStored holds SMTP and alert settings persisted in the DB.
 type AlertConfigStored struct {
-	SMTPHost              string `json:"smtpHost"`
-	SMTPPort              int    `json:"smtpPort"`
-	SMTPUsername          string `json:"smtpUsername"`
-	SMTPPassword          string `json:"smtpPassword,omitempty"`
-	SMTPFrom              string `json:"smtpFrom"`
-	SMTPFromName          string `json:"smtpFromName"`
-	SMTPAuthSecure        bool   `json:"smtpAuthSecure"`        // true = implicit TLS (port 465)
-	SMTPTLSAllowInsecure  bool   `json:"smtpTlsAllowInsecure"`  // skip TLS cert verification
-	AlertEnabled          bool   `json:"alertEnabled"`
-	ThresholdCents        int64  `json:"thresholdCents"`
-	CheckIntervalMS       int    `json:"checkIntervalMs"`
-	PoolCheckEnabled      bool   `json:"poolCheckEnabled"`
-	PoolCheckInterval     int    `json:"poolCheckInterval"` // minutes
+	SMTPHost             string `json:"smtpHost"`
+	SMTPPort             int    `json:"smtpPort"`
+	SMTPUsername         string `json:"smtpUsername"`
+	SMTPPassword         string `json:"smtpPassword,omitempty"`
+	SMTPFrom             string `json:"smtpFrom"`
+	SMTPFromName         string `json:"smtpFromName"`
+	SMTPAuthSecure       bool   `json:"smtpAuthSecure"`       // true = implicit TLS (port 465)
+	SMTPTLSAllowInsecure bool   `json:"smtpTlsAllowInsecure"` // skip TLS cert verification
+	AlertEnabled         bool   `json:"alertEnabled"`
+	ThresholdCents       int64  `json:"thresholdCents"`
+	CheckIntervalMS      int    `json:"checkIntervalMs"`
+	PoolCheckEnabled     bool   `json:"poolCheckEnabled"`
+	PoolCheckInterval    int    `json:"poolCheckInterval"` // minutes
 }
 
 const alertConfigKey = "alert_config"
@@ -1957,21 +1971,21 @@ type PoolQuotaSummary struct {
 	TotalEnabled      int           `json:"totalEnabled"`
 	FiveHourExhausted int           `json:"fiveHourExhausted"`
 	WeeklyExhausted   int           `json:"weeklyExhausted"`
-	FiveHourAvgUsed   float64       `json:"fiveHourAvgUsed"`   // average 5h used% across successful accounts
-	WeeklyAvgUsed     float64       `json:"weeklyAvgUsed"`     // average weekly used% across successful accounts
+	FiveHourAvgUsed   float64       `json:"fiveHourAvgUsed"` // average 5h used% across successful accounts
+	WeeklyAvgUsed     float64       `json:"weeklyAvgUsed"`   // average weekly used% across successful accounts
 	EarliestReset     string        `json:"earliestReset"`
 	UpdatedAtMS       int64         `json:"updatedAtMs"`
-	Accounts          []AccountData `json:"accounts"`          // per-account detail
+	Accounts          []AccountData `json:"accounts"` // per-account detail
 }
 
 // AccountData holds quota data for a single pool account in the persisted summary.
 type AccountData struct {
-	Account      string  `json:"account"`
-	FiveHourUsed float64 `json:"fiveHourUsed"`
-	FiveHourReset string `json:"fiveHourReset"`
-	WeeklyUsed   float64 `json:"weeklyUsed"`
-	WeeklyReset  string  `json:"weeklyReset"`
-	Error        string  `json:"error"`
+	Account       string  `json:"account"`
+	FiveHourUsed  float64 `json:"fiveHourUsed"`
+	FiveHourReset string  `json:"fiveHourReset"`
+	WeeklyUsed    float64 `json:"weeklyUsed"`
+	WeeklyReset   string  `json:"weeklyReset"`
+	Error         string  `json:"error"`
 }
 
 const poolQuotaSummaryKey = "pool_quota_summary"

@@ -57,6 +57,25 @@ func TestSaveAndLoadSpendLimitConfig(t *testing.T) {
 	}
 }
 
+func TestSpendLimitOverrideMatchesFullAndShortAPIKeyHashes(t *testing.T) {
+	cfg := SpendLimitConfig{
+		Overrides: []SpendLimitEntry{{
+			ApplyTo:    "api-key",
+			ApplyValue: "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
+			DailyCents: 100,
+		}},
+	}
+
+	limit, ok := cfg.OverrideForKey("abcdef01")
+	if !ok || limit.DailyCents != 100 {
+		t.Fatalf("short hash lookup = %+v, %v; want daily=100, true", limit, ok)
+	}
+	limit, ok = cfg.OverrideForKey("ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789")
+	if !ok || limit.DailyCents != 100 {
+		t.Fatalf("full hash lookup = %+v, %v; want daily=100, true", limit, ok)
+	}
+}
+
 func TestQueryKeySpend_MatchesCostFormulaAndExcludesFailed(t *testing.T) {
 	db := newSpendLimitTestStore(t)
 	ctx := context.Background()
@@ -231,14 +250,14 @@ func TestQueryUserSpend_CrossTimezoneBoundary(t *testing.T) {
 	// Event at Shanghai Day 1 12:00 CST = UTC 04:00
 	shanghaiNoon := time.Date(2026, 6, 29, 12, 0, 0, 0, cstFixed)
 	_, err = db.InsertEvents(ctx, []usage.Event{{
-		EventHash:    "user-tz-1",
-		TimestampMS:  shanghaiNoon.UnixMilli(),
-		Timestamp:    shanghaiNoon.UTC().Format(time.RFC3339),
-		Model:        "gpt-4",
-		APIKeyHash:   hashTZ,
-		InputTokens:  100000,
-		TotalTokens:  100000,
-		CreatedAtMS:  shanghaiNoon.UnixMilli(),
+		EventHash:   "user-tz-1",
+		TimestampMS: shanghaiNoon.UnixMilli(),
+		Timestamp:   shanghaiNoon.UTC().Format(time.RFC3339),
+		Model:       "gpt-4",
+		APIKeyHash:  hashTZ,
+		InputTokens: 100000,
+		TotalTokens: 100000,
+		CreatedAtMS: shanghaiNoon.UnixMilli(),
 	}})
 	if err != nil {
 		t.Fatalf("insert event: %v", err)

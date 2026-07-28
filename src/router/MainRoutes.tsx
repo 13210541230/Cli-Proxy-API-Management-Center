@@ -23,7 +23,6 @@ import { LogsPage } from '@/pages/LogsPage';
 import { SystemPage } from '@/pages/SystemPage';
 import { EnterpriseKeysPage } from '@/pages/EnterpriseKeysPage';
 import { QuotaLimitsPage } from '@/pages/QuotaLimitsPage';
-import { PausedKeysPage } from '@/pages/PausedKeysPage';
 import { AlertConfigPage } from '@/pages/AlertConfigPage';
 import { ApiKeyUsageSelfServicePage } from '@/pages/ApiKeyUsageSelfServicePage';
 const mainRoutes = [
@@ -84,7 +83,7 @@ const mainRoutes = [
   { path: '/system', element: <SystemPage /> },
 	{ path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
 	{ path: '/quota-limits', element: <QuotaLimitsPage /> },
-	{ path: '/quota-paused', element: <PausedKeysPage /> },
+	{ path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },
 	{ path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
 	{ path: '/alert-config', element: <AlertConfigPage /> },
 	{ path: '*', element: <Navigate to="/" replace /> },
