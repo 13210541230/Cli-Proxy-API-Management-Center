@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -117,6 +118,11 @@ func TestCheckAndEnforceLimitsUsesDefaultAndOverrides(t *testing.T) {
 		if r.URL.Path == "/v0/management/quota/config" {
 			t.Fatal("CheckAndEnforceLimits must not fetch quota config from CPA")
 		}
+		if r.URL.Path == "/v0/management/quota/paused" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+			return
+		}
 		if r.URL.Path != "/v0/management/quota/pause" {
 			http.NotFound(w, r)
 			return
@@ -174,6 +180,11 @@ func TestCheckAndEnforceLimitsUsesDefaultAndOverrides(t *testing.T) {
 func TestCheckAndEnforceLimitsMatchesShortOverrideToFullUsageHash(t *testing.T) {
 	paused := make(map[string]bool)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/quota/paused" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+			return
+		}
 		if r.URL.Path != "/v0/management/quota/pause" {
 			http.NotFound(w, r)
 			return
@@ -222,6 +233,11 @@ func TestCheckAndEnforceLimitsMatchesShortOverrideToFullUsageHash(t *testing.T) 
 func TestCheckAndEnforceLimitsZeroDailyOverrideMeansNoDailyLimit(t *testing.T) {
 	paused := make(map[string]bool)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/quota/paused" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+			return
+		}
 		if r.URL.Path != "/v0/management/quota/pause" {
 			http.NotFound(w, r)
 			return
@@ -271,6 +287,11 @@ func TestCheckAndEnforceLimitsZeroDailyOverrideMeansNoDailyLimit(t *testing.T) {
 func TestCheckAndEnforceLimitsZeroDailyOverrideStillEnforcesWeekly(t *testing.T) {
 	paused := make(map[string]bool)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/quota/paused" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+			return
+		}
 		if r.URL.Path != "/v0/management/quota/pause" {
 			http.NotFound(w, r)
 			return
@@ -323,6 +344,11 @@ func TestCheckAndEnforceLimitsZeroDailyOverrideStillEnforcesWeekly(t *testing.T)
 func TestCheckAndEnforceLimitsZeroDailyDefaultStillEnforcesWeekly(t *testing.T) {
 	paused := make(map[string]bool)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/quota/paused" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+			return
+		}
 		if r.URL.Path != "/v0/management/quota/pause" {
 			http.NotFound(w, r)
 			return
@@ -363,6 +389,237 @@ func TestCheckAndEnforceLimitsZeroDailyDefaultStillEnforcesWeekly(t *testing.T) 
 
 	if !paused["hash-default"] {
 		t.Fatal("weekly default should pause key when daily default is unlimited")
+	}
+}
+
+func TestReconcileSpendLimitsResumesOnlyAutomaticPauses(t *testing.T) {
+	var resumed []string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v0/management/quota/paused":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[{"key_hash":"automatic","reason":"spend_limit_exceeded"},{"key_hash":"manual","reason":"manual pause"}]}`))
+		case "/v0/management/quota/resume":
+			var body struct {
+				KeyHash        string `json:"key_hash"`
+				ExpectedReason string `json:"expected_reason"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode resume body: %v", err)
+			}
+			if body.ExpectedReason != spendLimitExceededReason {
+				t.Fatalf("expected_reason = %q, want %q", body.ExpectedReason, spendLimitExceededReason)
+			}
+			resumed = append(resumed, body.KeyHash)
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	db := newTestStore(t)
+	if err := db.SaveSpendLimitConfig(context.Background(), store.SpendLimitConfig{Enabled: false}); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	if err := ReconcileSpendLimits(db, newPauseClient(upstream.URL, "management-key")); err != nil {
+		t.Fatalf("ReconcileSpendLimits failed: %v", err)
+	}
+	if len(resumed) != 1 || resumed[0] != "automatic" {
+		t.Fatalf("resumed = %#v, want only automatic pause", resumed)
+	}
+}
+
+func TestReconcileSpendLimitsRestoresAutomaticPausesWithoutCurrentSpend(t *testing.T) {
+	var resumed []string
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v0/management/quota/paused":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[{"key_hash":"expired-spend","reason":"spend_limit_exceeded"}]}`))
+		case "/v0/management/quota/resume":
+			var body struct {
+				KeyHash string `json:"key_hash"`
+			}
+			if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+				t.Fatalf("decode resume body: %v", err)
+			}
+			resumed = append(resumed, body.KeyHash)
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	db := newTestStore(t)
+	if err := db.SaveSpendLimitConfig(context.Background(), store.SpendLimitConfig{Enabled: false}); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	if err := ReconcileSpendLimits(db, newPauseClient(upstream.URL, "management-key")); err != nil {
+		t.Fatalf("ReconcileSpendLimits failed: %v", err)
+	}
+	if len(resumed) != 1 || resumed[0] != "expired-spend" {
+		t.Fatalf("resumed = %#v, want automatic pause without current spend", resumed)
+	}
+}
+
+func TestManagerWithSpendLimitSyncSerializesReconciliation(t *testing.T) {
+	var (
+		mu           sync.Mutex
+		automatic    bool
+		pauseStarted = make(chan struct{})
+		releasePause = make(chan struct{})
+		pauseOnce    sync.Once
+	)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		mu.Lock()
+		defer mu.Unlock()
+		switch r.URL.Path {
+		case "/v0/management/quota/paused":
+			w.Header().Set("Content-Type", "application/json")
+			if automatic {
+				_, _ = w.Write([]byte(`{"entries":[{"key_hash":"sync-key","reason":"spend_limit_exceeded"}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+		case "/v0/management/quota/pause":
+			pauseOnce.Do(func() { close(pauseStarted) })
+			mu.Unlock()
+			<-releasePause
+			mu.Lock()
+			automatic = true
+			w.WriteHeader(http.StatusOK)
+		case "/v0/management/quota/resume":
+			automatic = false
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	db := newTestStore(t)
+	ctx := context.Background()
+	if _, err := db.UpsertSyncedModelPrices(ctx, map[string]store.ModelPrice{"gpt-4": {Prompt: 10, Completion: 30, Cache: 5}}); err != nil {
+		t.Fatalf("save prices: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{spendLimitEvent("sync", "sync-key", time.Now())}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	cfg := config.Config{CPAUpstreamURL: upstream.URL, ManagementKey: "management-key"}
+	manager := NewManager(cfg, db, nil, AlertConfig{})
+
+	firstDone := make(chan error, 1)
+	go func() {
+		firstDone <- manager.WithSpendLimitSync(func() error {
+			return db.SaveSpendLimitConfig(ctx, store.SpendLimitConfig{Enabled: true, Default: store.SpendLimit{DailyCents: 1}})
+		})
+	}()
+	<-pauseStarted
+
+	secondDone := make(chan error, 1)
+	go func() {
+		secondDone <- manager.WithSpendLimitSync(func() error {
+			return db.SaveSpendLimitConfig(ctx, store.SpendLimitConfig{Enabled: false})
+		})
+	}()
+	close(releasePause)
+	if err := <-firstDone; err != nil {
+		t.Fatalf("restrictive sync failed: %v", err)
+	}
+	if err := <-secondDone; err != nil {
+		t.Fatalf("relaxed sync failed: %v", err)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if automatic {
+		t.Fatal("latest relaxed configuration must leave the remote key resumed")
+	}
+}
+
+func TestReconcileSpendLimitsReturnsRemoteFailures(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/v0/management/quota/paused" {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+			return
+		}
+		if r.URL.Path == "/v0/management/quota/pause" {
+			http.Error(w, "unavailable", http.StatusServiceUnavailable)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	t.Cleanup(upstream.Close)
+
+	db := newTestStore(t)
+	ctx := context.Background()
+	if _, err := db.UpsertSyncedModelPrices(ctx, map[string]store.ModelPrice{"gpt-4": {Prompt: 10, Completion: 30, Cache: 5}}); err != nil {
+		t.Fatalf("save prices: %v", err)
+	}
+	if err := db.SaveSpendLimitConfig(ctx, store.SpendLimitConfig{Enabled: true, Default: store.SpendLimit{DailyCents: 1}}); err != nil {
+		t.Fatalf("save config: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{spendLimitEvent("remote-failure", "key", time.Now())}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	if err := ReconcileSpendLimits(db, newPauseClient(upstream.URL, "management-key")); err == nil {
+		t.Fatal("expected remote pause failure")
+	}
+}
+
+func TestReconcileSpendLimitsReturnsPausedListAndResumeFailures(t *testing.T) {
+	tests := []struct {
+		name       string
+		pausedCode int
+		resumeCode int
+	}{
+		{name: "paused list", pausedCode: http.StatusServiceUnavailable},
+		{name: "resume", resumeCode: http.StatusServiceUnavailable},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/v0/management/quota/paused":
+					if tt.pausedCode != 0 {
+						http.Error(w, "unavailable", tt.pausedCode)
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = w.Write([]byte(`{"entries":[{"key_hash":"automatic","reason":"spend_limit_exceeded"}]}`))
+				case "/v0/management/quota/resume":
+					http.Error(w, "unavailable", tt.resumeCode)
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			t.Cleanup(upstream.Close)
+
+			db := newTestStore(t)
+			if err := db.SaveSpendLimitConfig(context.Background(), store.SpendLimitConfig{Enabled: false}); err != nil {
+				t.Fatalf("save config: %v", err)
+			}
+			if err := ReconcileSpendLimits(db, newPauseClient(upstream.URL, "management-key")); err == nil {
+				t.Fatal("expected remote reconciliation failure")
+			}
+		})
+	}
+}
+
+func TestSpendLimitExceededUsesShanghaiPeriodBoundary(t *testing.T) {
+	// 该时刻在 UTC 仍是周日，但在上海已是周一，验证不受进程本地时区影响。
+	now := time.Date(2026, time.July, 26, 16, 0, 0, 0, time.UTC)
+
+	exceeded, expiresAt := spendLimitExceeded(store.KeySpend{TodayCents: 1}, store.SpendLimit{DailyCents: 1}, now)
+	if !exceeded || expiresAt.Location() != shanghaiLocation || expiresAt.Day() != 28 {
+		t.Fatalf("daily expiry = %s, want 2026-07-28T00:00:00+08:00", expiresAt)
+	}
+
+	exceeded, expiresAt = spendLimitExceeded(store.KeySpend{WeekCents: 1}, store.SpendLimit{WeeklyCents: 1}, now)
+	if !exceeded || expiresAt.Location() != shanghaiLocation || expiresAt.Day() != 3 || expiresAt.Month() != time.August {
+		t.Fatalf("weekly expiry = %s, want 2026-08-03T00:00:00+08:00", expiresAt)
 	}
 }
 

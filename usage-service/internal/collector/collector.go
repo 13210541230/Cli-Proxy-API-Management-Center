@@ -46,21 +46,23 @@ type Manager struct {
 	store            *store.Store
 	snapshotResolver *authSnapshotResolver
 	mu               sync.Mutex
-	cancel           context.CancelFunc
-	status           Status
-	runtimeCfg       RuntimeConfig
-	mailSender       *mail.Sender
-	alertCfg         AlertConfig
-	alertMu          sync.RWMutex
+	// spendLimitMu 将配置写入与对 CLIProxyAPI 的协调串行化，避免旧规则在新配置成功后覆盖外部暂停状态。
+	spendLimitMu sync.Mutex
+	cancel       context.CancelFunc
+	status       Status
+	runtimeCfg   RuntimeConfig
+	mailSender   *mail.Sender
+	alertCfg     AlertConfig
+	alertMu      sync.RWMutex
 }
 
 // AlertConfig controls the periodic spend alert check that sends email
 // notifications when a user's daily spend crosses a threshold multiple.
 type AlertConfig struct {
-	Enabled         bool
-	ThresholdCents  int64
-	CheckInterval   time.Duration
-	PoolAlertEnabled bool
+	Enabled           bool
+	ThresholdCents    int64
+	CheckInterval     time.Duration
+	PoolAlertEnabled  bool
 	PoolCheckInterval time.Duration
 }
 
@@ -211,7 +213,7 @@ func (m *Manager) setStatus(update func(*Status)) {
 }
 
 func (m *Manager) run(ctx context.Context, cfg RuntimeConfig) {
-	go m.spendLimitTicker(ctx, cfg)
+	go m.spendLimitTicker(ctx)
 	go m.alertTicker(ctx, cfg)
 
 	mode := collectorMode(valueOr(cfg.CollectorMode, m.base.CollectorMode))
@@ -598,20 +600,54 @@ func (m *Manager) alertTicker(ctx context.Context, cfg RuntimeConfig) {
 	}
 }
 
-// spendLimitTicker periodically checks all keys' spend against limits and pauses over-limit keys.
-func (m *Manager) spendLimitTicker(ctx context.Context, cfg RuntimeConfig) {
+// WithSpendLimitSync 串行化配置持久化和协调，确保成功保存后的外部状态只由该次最新配置决定。
+func (m *Manager) WithSpendLimitSync(save func() error) error {
+	m.spendLimitMu.Lock()
+	defer m.spendLimitMu.Unlock()
+	if err := save(); err != nil {
+		return err
+	}
+	return m.reconcileSpendLimitsLocked()
+}
+
+// ReconcileSpendLimits 使用当前运行连接同步自动暂停状态，并与配置保存及定时兜底共享同一串行入口。
+func (m *Manager) ReconcileSpendLimits() error {
+	m.spendLimitMu.Lock()
+	defer m.spendLimitMu.Unlock()
+	return m.reconcileSpendLimitsLocked()
+}
+
+func (m *Manager) reconcileSpendLimitsLocked() error {
+	m.mu.Lock()
+	cfg := m.runtimeCfg
+	m.mu.Unlock()
+	if cfg.CPAUpstreamURL == "" {
+		cfg.CPAUpstreamURL = m.base.CPAUpstreamURL
+	}
+	if cfg.ManagementKey == "" {
+		cfg.ManagementKey = m.base.ManagementKey
+	}
+	return ReconcileSpendLimits(m.store, newPauseClient(cfg.CPAUpstreamURL, cfg.ManagementKey))
+}
+
+// spendLimitTicker 定期复用保存路径的协调逻辑，作为即时同步的兜底。
+func (m *Manager) spendLimitTicker(ctx context.Context) {
 	ticker := time.NewTicker(30 * time.Second)
 	defer ticker.Stop()
 
-	client := newPauseClient(cfg.CPAUpstreamURL, cfg.ManagementKey)
-	CheckAndEnforceLimits(m.store, client)
+	reconcile := func() {
+		if err := m.ReconcileSpendLimits(); err != nil {
+			log.Printf("spend-limit: reconcile failed: %v", err)
+		}
+	}
+	reconcile()
 
 	for {
 		select {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			CheckAndEnforceLimits(m.store, client)
+			reconcile()
 		}
 	}
 }

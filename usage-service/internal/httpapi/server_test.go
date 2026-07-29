@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/seakee/cpa-manager/usage-service/internal/collector"
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
@@ -642,6 +643,269 @@ func TestModelPricesSyncFromLiteLLMFormat(t *testing.T) {
 	}
 }
 
+func TestQuotaConfigSaveImmediatelyReconciles(t *testing.T) {
+	requests := make([]string, 0, 6)
+	automaticPaused := false
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v0/management/quota/paused":
+			w.Header().Set("Content-Type", "application/json")
+			if automaticPaused {
+				_, _ = w.Write([]byte(`{"entries":[{"key_hash":"quota-key","reason":"spend_limit_exceeded"}]}`))
+				return
+			}
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+		case "/v0/management/quota/pause":
+			requests = append(requests, "pause")
+			automaticPaused = true
+			w.WriteHeader(http.StatusOK)
+		case "/v0/management/quota/resume":
+			requests = append(requests, "resume")
+			automaticPaused = false
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CPAUpstreamURL: upstream.URL, ManagementKey: "management-key", Queue: "usage", PopSide: "right", CORSOrigins: []string{"*"}}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	ctx := context.Background()
+	if _, err := db.UpsertSyncedModelPrices(ctx, map[string]store.ModelPrice{"gpt-4": {Prompt: 10, Completion: 30, Cache: 5}}); err != nil {
+		t.Fatalf("save prices: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{{EventHash: "quota-event", TimestampMS: time.Now().UnixMilli(), Timestamp: time.Now().UTC().Format(time.RFC3339), Model: "gpt-4", APIKeyHash: "quota-key", InputTokens: 100000, TotalTokens: 100000, CreatedAtMS: time.Now().UnixMilli()}}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+
+	// 先设置宽松默认值，再验证新增、收紧、放宽、删除和禁用都在 PUT 返回前同步。
+	putQuotaConfig(t, handler, `{"enabled":true,"default":{"daily_cents":1000,"weekly_cents":0}}`, http.StatusOK)
+	putQuotaConfig(t, handler, `{"overrides":[{"apply_to":"api-key","apply_value":"quota-key","daily_cents":1,"weekly_cents":0}]}`, http.StatusOK)
+	putQuotaConfig(t, handler, `{"overrides":[{"apply_to":"api-key","apply_value":"quota-key","daily_cents":1000,"weekly_cents":0}]}`, http.StatusOK)
+	putQuotaConfig(t, handler, `{"overrides":[{"apply_to":"api-key","apply_value":"quota-key","daily_cents":1,"weekly_cents":0}]}`, http.StatusOK)
+	putQuotaConfig(t, handler, `{"overrides":[]}`, http.StatusOK)
+	putQuotaConfig(t, handler, `{"overrides":[{"apply_to":"api-key","apply_value":"quota-key","daily_cents":1,"weekly_cents":0}]}`, http.StatusOK)
+	putQuotaConfig(t, handler, `{"enabled":false}`, http.StatusOK)
+	if strings.Join(requests, ",") != "pause,resume,pause,resume,pause,resume" {
+		t.Fatalf("quota requests = %#v, want each config change reconciled immediately", requests)
+	}
+}
+
+func TestQuotaConfigSaveReturnsFailureAndPersistsForRetry(t *testing.T) {
+	fail := true
+	pauseCalls := 0
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/v0/management/quota/paused":
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"entries":[]}`))
+		case "/v0/management/quota/pause":
+			pauseCalls++
+			if fail {
+				http.Error(w, "unavailable", http.StatusServiceUnavailable)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	t.Cleanup(upstream.Close)
+
+	cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CPAUpstreamURL: upstream.URL, ManagementKey: "management-key", Queue: "usage", PopSide: "right", CORSOrigins: []string{"*"}}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	ctx := context.Background()
+	if _, err := db.UpsertSyncedModelPrices(ctx, map[string]store.ModelPrice{"gpt-4": {Prompt: 10, Completion: 30, Cache: 5}}); err != nil {
+		t.Fatalf("save prices: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{{EventHash: "retry-event", TimestampMS: time.Now().UnixMilli(), Timestamp: time.Now().UTC().Format(time.RFC3339), Model: "gpt-4", APIKeyHash: "retry-key", InputTokens: 100000, TotalTokens: 100000, CreatedAtMS: time.Now().UnixMilli()}}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+	body := `{"enabled":true,"default":{"daily_cents":1,"weekly_cents":0}}`
+	putQuotaConfig(t, handler, body, http.StatusBadGateway)
+	persisted, ok, err := db.LoadSpendLimitConfig(ctx)
+	if err != nil || !ok || !persisted.Enabled || persisted.Default.DailyCents != 1 {
+		t.Fatalf("persisted config = %#v, ok=%v, err=%v", persisted, ok, err)
+	}
+	fail = false
+	putQuotaConfig(t, handler, body, http.StatusOK)
+	if pauseCalls != 2 {
+		t.Fatalf("pause calls = %d, want retry", pauseCalls)
+	}
+}
+
+func TestQuotaConfigSaveReturnsPausedListAndResumeFailuresForRetry(t *testing.T) {
+	tests := []struct {
+		name string
+		path string
+	}{
+		{name: "paused list", path: "/v0/management/quota/paused"},
+		{name: "conditional resume", path: "/v0/management/quota/resume"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fail := true
+			calls := 0
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/v0/management/quota/paused":
+					calls++
+					if fail && tt.path == r.URL.Path {
+						http.Error(w, "unavailable", http.StatusServiceUnavailable)
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if tt.path == "/v0/management/quota/resume" {
+						_, _ = w.Write([]byte(`{"entries":[{"key_hash":"automatic","reason":"spend_limit_exceeded"}]}`))
+						return
+					}
+					_, _ = w.Write([]byte(`{"entries":[]}`))
+				case "/v0/management/quota/resume":
+					calls++
+					var body struct {
+						ExpectedReason string `json:"expected_reason"`
+					}
+					if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+						t.Fatalf("decode resume body: %v", err)
+					}
+					if body.ExpectedReason != "spend_limit_exceeded" {
+						t.Fatalf("expected_reason = %q", body.ExpectedReason)
+					}
+					if fail && tt.path == r.URL.Path {
+						http.Error(w, "unavailable", http.StatusServiceUnavailable)
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			t.Cleanup(upstream.Close)
+
+			cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CPAUpstreamURL: upstream.URL, ManagementKey: "management-key", Queue: "usage", PopSide: "right", CORSOrigins: []string{"*"}}
+			db, err := store.Open(cfg.DBPath)
+			if err != nil {
+				t.Fatalf("open store: %v", err)
+			}
+			t.Cleanup(func() { _ = db.Close() })
+			handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+
+			putQuotaConfig(t, handler, `{"enabled":false}`, http.StatusBadGateway)
+			persisted, ok, err := db.LoadSpendLimitConfig(context.Background())
+			if err != nil || !ok || persisted.Enabled {
+				t.Fatalf("persisted config = %#v, ok=%v, err=%v", persisted, ok, err)
+			}
+			fail = false
+			putQuotaConfig(t, handler, `{"enabled":false}`, http.StatusOK)
+			wantCalls := 2
+			if tt.path == "/v0/management/quota/resume" {
+				wantCalls = 4 // 每次协调都先读取 paused，再尝试条件恢复。
+			}
+			if calls != wantCalls {
+				t.Fatalf("synchronization calls = %d, want %d after retry", calls, wantCalls)
+			}
+		})
+	}
+}
+
+func TestQuotaConfigSaveReturnsNetworkFailuresForRetry(t *testing.T) {
+	tests := []struct {
+		name     string
+		failPath string
+	}{
+		{name: "paused list", failPath: "/v0/management/quota/paused"},
+		{name: "conditional resume", failPath: "/v0/management/quota/resume"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			failing := true
+			pausedCalls := 0
+			resumeCalls := 0
+			upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				switch r.URL.Path {
+				case "/v0/management/quota/paused":
+					pausedCalls++
+					if failing && tt.failPath == r.URL.Path {
+						conn, _, err := w.(http.Hijacker).Hijack()
+						if err != nil {
+							t.Errorf("hijack paused response: %v", err)
+							return
+						}
+						_ = conn.Close()
+						return
+					}
+					w.Header().Set("Content-Type", "application/json")
+					if tt.failPath == "/v0/management/quota/resume" {
+						_, _ = w.Write([]byte(`{"entries":[{"key_hash":"automatic","reason":"spend_limit_exceeded"}]}`))
+						return
+					}
+					_, _ = w.Write([]byte(`{"entries":[]}`))
+				case "/v0/management/quota/resume":
+					resumeCalls++
+					if failing && tt.failPath == r.URL.Path {
+						conn, _, err := w.(http.Hijacker).Hijack()
+						if err != nil {
+							t.Errorf("hijack resume response: %v", err)
+							return
+						}
+						_ = conn.Close()
+						return
+					}
+					w.WriteHeader(http.StatusOK)
+				default:
+					http.NotFound(w, r)
+				}
+			}))
+			t.Cleanup(upstream.Close)
+
+			cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CPAUpstreamURL: upstream.URL, ManagementKey: "management-key", Queue: "usage", PopSide: "right", CORSOrigins: []string{"*"}}
+			db, err := store.Open(cfg.DBPath)
+			if err != nil {
+				t.Fatalf("open store: %v", err)
+			}
+			t.Cleanup(func() { _ = db.Close() })
+			handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+
+			body := `{"enabled":false}`
+			putQuotaConfig(t, handler, body, http.StatusBadGateway)
+			persisted, ok, err := db.LoadSpendLimitConfig(context.Background())
+			if err != nil || !ok || persisted.Enabled {
+				t.Fatalf("persisted config = %#v, ok=%v, err=%v", persisted, ok, err)
+			}
+			failing = false
+			putQuotaConfig(t, handler, body, http.StatusOK)
+			if pausedCalls != 2 {
+				t.Fatalf("paused calls = %d, want 2 after retry", pausedCalls)
+			}
+			if tt.failPath == "/v0/management/quota/resume" && resumeCalls != 2 {
+				t.Fatalf("resume calls = %d, want 2 after retry", resumeCalls)
+			}
+		})
+	}
+}
+
+func putQuotaConfig(t *testing.T, handler http.Handler, body string, wantStatus int) {
+	t.Helper()
+	req := httptest.NewRequest(http.MethodPut, "/v0/management/quota/config", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != wantStatus {
+		t.Fatalf("quota config status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+}
+
 func TestUsageQueryFiltersByRangeAndAPIKeyHash(t *testing.T) {
 	cfg := config.Config{
 		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
@@ -929,7 +1193,6 @@ func closeFloat(left float64, right float64) bool {
 	return math.Abs(left-right) < 0.0000001
 }
 
-
 func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
 	cfg := config.Config{
 		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
@@ -1029,16 +1292,16 @@ func TestEnterpriseUsageReportJSONResponse(t *testing.T) {
 		FromMs int64 `json:"fromMs"`
 		ToMs   int64 `json:"toMs"`
 		Items  []struct {
-			APIKeyHash       string   `json:"apiKey"`
-			UserName         string   `json:"userName"`
-			DepartmentName   string   `json:"departmentName"`
-			Email            string   `json:"email"`
-			TotalTokens      int64    `json:"totalTokens"`
-			TotalRequests    int64    `json:"totalRequests"`
-			FailedRequests   int64    `json:"failedRequests"`
-			CachedTokens     int64    `json:"cachedTokens"`
-			TotalCacheTokens int64    `json:"totalCacheTokens"`
-			CacheHitRate     float64  `json:"cacheHitRate"`
+			APIKeyHash       string  `json:"apiKey"`
+			UserName         string  `json:"userName"`
+			DepartmentName   string  `json:"departmentName"`
+			Email            string  `json:"email"`
+			TotalTokens      int64   `json:"totalTokens"`
+			TotalRequests    int64   `json:"totalRequests"`
+			FailedRequests   int64   `json:"failedRequests"`
+			CachedTokens     int64   `json:"cachedTokens"`
+			TotalCacheTokens int64   `json:"totalCacheTokens"`
+			CacheHitRate     float64 `json:"cacheHitRate"`
 			Models           []struct {
 				Model            string  `json:"model"`
 				TotalTokens      int64   `json:"totalTokens"`

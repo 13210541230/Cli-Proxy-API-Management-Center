@@ -633,8 +633,28 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 		if req.Overrides != nil {
 			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
 		}
-		if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
-			writeError(w, http.StatusInternalServerError, err)
+		if s.collector == nil {
+			if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
+				writeError(w, http.StatusInternalServerError, err)
+				return
+			}
+			writeError(w, http.StatusServiceUnavailable, errors.New("spend-limit reconciler is unavailable"))
+			return
+		}
+		// 保存与远程协调必须在同一临界区，防止 ticker 或旧 PUT 在本次成功响应后写回过期决策。
+		saved := false
+		if err := s.collector.WithSpendLimitSync(func() error {
+			if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
+				return err
+			}
+			saved = true
+			return nil
+		}); err != nil {
+			status := http.StatusBadGateway
+			if !saved {
+				status = http.StatusInternalServerError
+			}
+			writeError(w, status, err)
 			return
 		}
 		s.writeSpendLimitConfig(w, current)
