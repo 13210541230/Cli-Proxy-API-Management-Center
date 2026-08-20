@@ -66,11 +66,15 @@ export function useRequestMonitoringAvailability(): RequestMonitoringAvailabilit
 
       for (const candidate of candidates) {
         try {
-          const info = await usageServiceApi.getInfo(candidate);
-          if (!isUsageServiceId(info.service)) {
-            continue;
+          if (!hasConfiguredUsageService || candidate !== usageServiceBase) {
+            const info = await usageServiceApi.getInfo(candidate);
+            if (!isUsageServiceId(info.service)) {
+              continue;
+            }
           }
-          const response = await usageServiceApi.getManagerConfig(candidate, managementKey);
+          const response = await usageServiceApi.getManagerConfig(candidate, managementKey, {
+            includeCpaUsage: false,
+          });
           const collectorEnabled = response.config.collector?.enabled !== false;
           const hasCPAConnection = Boolean(
             response.config.cpaConnection?.cpaBaseUrl &&

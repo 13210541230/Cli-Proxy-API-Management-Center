@@ -90,7 +90,6 @@ describe('accountOverviewQuotaTargets', () => {
               type: 'codex',
               authIndex: '1',
               label: 'Codex',
-              account: 'account@example.com',
             },
           ],
           toggleableFileNames: ['codex-without-account.json'],

@@ -808,7 +808,7 @@ func TestQuotaConfigSaveReturnsPausedListAndResumeFailuresForRetry(t *testing.T)
 			}
 			fail = false
 			putQuotaConfig(t, handler, `{"enabled":false}`, http.StatusOK)
-			wantCalls := 2
+			wantCalls := 3 // 首次 503 会对 paused 列表自动重试一次。
 			if tt.path == "/v0/management/quota/resume" {
 				wantCalls = 4 // 每次协调都先读取 paused，再尝试条件恢复。
 			}

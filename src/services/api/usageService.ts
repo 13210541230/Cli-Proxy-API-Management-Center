@@ -113,6 +113,10 @@ export interface ManagerConfigResponse {
   cpaUsage?: CPAUsageConfig;
 }
 
+export interface ManagerConfigRequestOptions {
+  includeCpaUsage?: boolean;
+}
+
 export interface ModelPricesResponse {
   prices: Record<string, ModelPrice>;
 }
@@ -154,6 +158,7 @@ export interface UsageQueryParams {
   apiKeyHash?: string;
 }
 
+const USAGE_SERVICE_INFO_TIMEOUT_MS = 2 * 1000;
 const USAGE_SERVICE_TIMEOUT_MS = 15 * 1000;
 const USAGE_SERVICE_TRANSFER_TIMEOUT_MS = 60 * 1000;
 export const USAGE_SERVICE_ID = 'cpa-manager';
@@ -278,7 +283,7 @@ export const usageServiceApi = {
   getInfo: async (base: string): Promise<UsageServiceInfo> => {
     return withUsageServiceError(async () => {
       const response = await axios.get<UsageServiceInfo>(buildUrl(base, '/usage-service/info'), {
-        timeout: USAGE_SERVICE_TIMEOUT_MS,
+        timeout: USAGE_SERVICE_INFO_TIMEOUT_MS,
       });
       return response.data;
     });
@@ -294,7 +299,8 @@ export const usageServiceApi = {
 
   getManagerConfig: async (
     base: string,
-    managementKey?: string
+    managementKey?: string,
+    options?: ManagerConfigRequestOptions
   ): Promise<ManagerConfigResponse> => {
     return withUsageServiceError(async () => {
       const response = await axios.get<ManagerConfigResponse>(
@@ -302,6 +308,7 @@ export const usageServiceApi = {
         {
           timeout: USAGE_SERVICE_TIMEOUT_MS,
           headers: authHeaders(managementKey),
+          params: options?.includeCpaUsage === false ? { includeCpaUsage: 'false' } : undefined,
         }
       );
       return response.data;
@@ -339,13 +346,15 @@ export const usageServiceApi = {
   getUsage: async (
     base: string,
     managementKey?: string,
-    params?: UsageQueryParams
+    params?: UsageQueryParams,
+    signal?: AbortSignal
   ): Promise<UsagePayload> => {
     return withUsageServiceError(async () => {
       const response = await axios.get<UsagePayload>(buildUrl(base, '/v0/management/usage'), {
         timeout: USAGE_SERVICE_TIMEOUT_MS,
         headers: authHeaders(managementKey),
         params,
+        signal,
       });
       return response.data;
     });

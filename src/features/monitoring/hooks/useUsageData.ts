@@ -54,6 +54,13 @@ export function useUsageData(): UseUsageDataReturn {
   const [usageServiceAvailable, setUsageServiceAvailable] = useState(false);
   const requestIdRef = useRef(0);
   const aliasRequestIdRef = useRef(0);
+  const usageAbortControllerRef = useRef<AbortController | null>(null);
+  const serviceResolutionRef = useRef<{
+    key: string;
+    base: string;
+    checkedAt: number;
+    promise?: Promise<string>;
+  } | null>(null);
 
   const resolveUsageServiceBase = useCallback(async (): Promise<string> => {
     if (usageServiceEnabled && usageServiceBase) {
@@ -67,19 +74,31 @@ export function useUsageData(): UseUsageDataReturn {
           .filter(Boolean)
       )
     );
-
-    for (const candidate of candidates) {
-      try {
-        const info = await usageServiceApi.getInfo(candidate);
-        if (isUsageServiceId(info.service)) {
-          return candidate;
-        }
-      } catch {
-        // The regular CPA management API does not expose Usage Service metadata.
-      }
+    const key = candidates.join('|');
+    const cached = serviceResolutionRef.current;
+    if (cached?.key === key) {
+      if (cached.promise) return cached.promise;
+      if (Date.now() - cached.checkedAt < 30_000) return cached.base;
     }
 
-    return '';
+    const promise = (async () => {
+      for (const candidate of candidates) {
+        try {
+          const info = await usageServiceApi.getInfo(candidate);
+          if (isUsageServiceId(info.service)) {
+            return candidate;
+          }
+        } catch {
+          // The regular CPA management API does not expose Usage Service metadata.
+        }
+      }
+      return '';
+    })();
+    serviceResolutionRef.current = { key, base: '', checkedAt: Date.now(), promise };
+
+    const base = await promise;
+    serviceResolutionRef.current = { key, base, checkedAt: Date.now() };
+    return base;
   }, [apiBase, usageServiceBase, usageServiceEnabled]);
 
   const getModelPricesFromApi = useCallback(async (): Promise<ModelPricesResponse> => {
@@ -179,6 +198,9 @@ export function useUsageData(): UseUsageDataReturn {
     requestIdRef.current = requestId;
     setLoading(true);
     setError('');
+    usageAbortControllerRef.current?.abort();
+    const controller = new AbortController();
+    usageAbortControllerRef.current = controller;
 
     try {
       const serviceBase = await resolveUsageServiceBase();
@@ -189,12 +211,19 @@ export function useUsageData(): UseUsageDataReturn {
         return;
       }
       setUsageServiceAvailable(true);
-      const payload = await usageServiceApi.getUsage(serviceBase, managementKey, params);
+      const payload = await usageServiceApi.getUsage(
+        serviceBase,
+        managementKey,
+        params,
+        controller.signal
+      );
       if (requestIdRef.current !== requestId) return;
       setUsage(payload ?? null);
       setLastRefreshedAt(new Date());
     } catch (err) {
-      if (requestIdRef.current !== requestId) return;
+      if (requestIdRef.current !== requestId || usageAbortControllerRef.current?.signal.aborted) {
+        return;
+      }
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       if (requestIdRef.current === requestId) {
@@ -206,8 +235,8 @@ export function useUsageData(): UseUsageDataReturn {
   useEffect(() => {
     void loadModelPricesFromStorage();
     void loadApiKeyAliases();
-    void loadUsage();
-  }, [loadApiKeyAliases, loadModelPricesFromStorage, loadUsage]);
+    return () => usageAbortControllerRef.current?.abort();
+  }, [loadApiKeyAliases, loadModelPricesFromStorage]);
 
   const setModelPrices = useCallback(
     async (prices: Record<string, ModelPrice>) => {

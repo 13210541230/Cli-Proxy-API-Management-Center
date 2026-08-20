@@ -1,30 +1,105 @@
+import { lazy } from 'react';
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
-import { DashboardPage } from '@/pages/DashboardPage';
-import { AiProvidersPage } from '@/pages/AiProvidersPage';
-import { AiProvidersAmpcodeEditPage } from '@/pages/AiProvidersAmpcodeEditPage';
-import { AiProvidersClaudeEditLayout } from '@/pages/AiProvidersClaudeEditLayout';
-import { AiProvidersClaudeEditPage } from '@/pages/AiProvidersClaudeEditPage';
-import { AiProvidersClaudeModelsPage } from '@/pages/AiProvidersClaudeModelsPage';
-import { AiProvidersCodexEditPage } from '@/pages/AiProvidersCodexEditPage';
-import { AiProvidersGeminiEditPage } from '@/pages/AiProvidersGeminiEditPage';
-import { AiProvidersOpenAIEditLayout } from '@/pages/AiProvidersOpenAIEditLayout';
-import { AiProvidersOpenAIEditPage } from '@/pages/AiProvidersOpenAIEditPage';
-import { AiProvidersOpenAIModelsPage } from '@/pages/AiProvidersOpenAIModelsPage';
-import { AiProvidersVertexEditPage } from '@/pages/AiProvidersVertexEditPage';
-import { AuthFilesPage } from '@/pages/AuthFilesPage';
-import { AuthFilesOAuthExcludedEditPage } from '@/pages/AuthFilesOAuthExcludedEditPage';
-import { AuthFilesOAuthModelAliasEditPage } from '@/pages/AuthFilesOAuthModelAliasEditPage';
-import { OAuthPage } from '@/pages/OAuthPage';
-import { QuotaPage } from '@/pages/QuotaPage';
-import { MonitoringCenterPage } from '@/pages/MonitoringCenterPage';
-import { CodexInspectionPage } from '@/pages/CodexInspectionPage';
-import { ConfigPage } from '@/pages/ConfigPage';
-import { LogsPage } from '@/pages/LogsPage';
-import { SystemPage } from '@/pages/SystemPage';
-import { EnterpriseKeysPage } from '@/pages/EnterpriseKeysPage';
-import { QuotaLimitsPage } from '@/pages/QuotaLimitsPage';
-import { AlertConfigPage } from '@/pages/AlertConfigPage';
-import { ApiKeyUsageSelfServicePage } from '@/pages/ApiKeyUsageSelfServicePage';
+
+const DashboardPage = lazy(() =>
+  import('@/pages/DashboardPage').then(({ DashboardPage }) => ({ default: DashboardPage }))
+);
+const AiProvidersPage = lazy(() =>
+  import('@/pages/AiProvidersPage').then(({ AiProvidersPage }) => ({ default: AiProvidersPage }))
+);
+const AiProvidersAmpcodeEditPage = lazy(() =>
+  import('@/pages/AiProvidersAmpcodeEditPage').then(({ AiProvidersAmpcodeEditPage }) => ({
+    default: AiProvidersAmpcodeEditPage,
+  }))
+);
+const AiProvidersClaudeEditLayout = lazy(() =>
+  import('@/pages/AiProvidersClaudeEditLayout').then(({ AiProvidersClaudeEditLayout }) => ({
+    default: AiProvidersClaudeEditLayout,
+  }))
+);
+const AiProvidersClaudeEditPage = lazy(() =>
+  import('@/pages/AiProvidersClaudeEditPage').then(({ AiProvidersClaudeEditPage }) => ({
+    default: AiProvidersClaudeEditPage,
+  }))
+);
+const AiProvidersClaudeModelsPage = lazy(() =>
+  import('@/pages/AiProvidersClaudeModelsPage').then(({ AiProvidersClaudeModelsPage }) => ({
+    default: AiProvidersClaudeModelsPage,
+  }))
+);
+const AiProvidersCodexEditPage = lazy(() =>
+  import('@/pages/AiProvidersCodexEditPage').then(({ AiProvidersCodexEditPage }) => ({
+    default: AiProvidersCodexEditPage,
+  }))
+);
+const AiProvidersGeminiEditPage = lazy(() =>
+  import('@/pages/AiProvidersGeminiEditPage').then(({ AiProvidersGeminiEditPage }) => ({
+    default: AiProvidersGeminiEditPage,
+  }))
+);
+const AiProvidersOpenAIEditLayout = lazy(() =>
+  import('@/pages/AiProvidersOpenAIEditLayout').then(({ AiProvidersOpenAIEditLayout }) => ({
+    default: AiProvidersOpenAIEditLayout,
+  }))
+);
+const AiProvidersOpenAIEditPage = lazy(() =>
+  import('@/pages/AiProvidersOpenAIEditPage').then(({ AiProvidersOpenAIEditPage }) => ({
+    default: AiProvidersOpenAIEditPage,
+  }))
+);
+const AiProvidersOpenAIModelsPage = lazy(() =>
+  import('@/pages/AiProvidersOpenAIModelsPage').then(({ AiProvidersOpenAIModelsPage }) => ({
+    default: AiProvidersOpenAIModelsPage,
+  }))
+);
+const AiProvidersVertexEditPage = lazy(() =>
+  import('@/pages/AiProvidersVertexEditPage').then(({ AiProvidersVertexEditPage }) => ({
+    default: AiProvidersVertexEditPage,
+  }))
+);
+const AuthFilesPage = lazy(() =>
+  import('@/pages/AuthFilesPage').then(({ AuthFilesPage }) => ({ default: AuthFilesPage }))
+);
+const AuthFilesOAuthExcludedEditPage = lazy(() =>
+  import('@/pages/AuthFilesOAuthExcludedEditPage').then(({ AuthFilesOAuthExcludedEditPage }) => ({
+    default: AuthFilesOAuthExcludedEditPage,
+  }))
+);
+const AuthFilesOAuthModelAliasEditPage = lazy(() =>
+  import('@/pages/AuthFilesOAuthModelAliasEditPage').then(({ AuthFilesOAuthModelAliasEditPage }) => ({
+    default: AuthFilesOAuthModelAliasEditPage,
+  }))
+);
+const OAuthPage = lazy(() => import('@/pages/OAuthPage').then(({ OAuthPage }) => ({ default: OAuthPage })));
+const QuotaPage = lazy(() => import('@/pages/QuotaPage').then(({ QuotaPage }) => ({ default: QuotaPage })));
+const MonitoringCenterPage = lazy(() =>
+  import('@/pages/MonitoringCenterPage').then(({ MonitoringCenterPage }) => ({
+    default: MonitoringCenterPage,
+  }))
+);
+const CodexInspectionPage = lazy(() =>
+  import('@/pages/CodexInspectionPage').then(({ CodexInspectionPage }) => ({
+    default: CodexInspectionPage,
+  }))
+);
+const ConfigPage = lazy(() => import('@/pages/ConfigPage').then(({ ConfigPage }) => ({ default: ConfigPage })));
+const LogsPage = lazy(() => import('@/pages/LogsPage').then(({ LogsPage }) => ({ default: LogsPage })));
+const SystemPage = lazy(() => import('@/pages/SystemPage').then(({ SystemPage }) => ({ default: SystemPage })));
+const EnterpriseKeysPage = lazy(() =>
+  import('@/pages/EnterpriseKeysPage').then(({ EnterpriseKeysPage }) => ({ default: EnterpriseKeysPage }))
+);
+const QuotaLimitsPage = lazy(() =>
+  import('@/pages/QuotaLimitsPage').then(({ QuotaLimitsPage }) => ({ default: QuotaLimitsPage }))
+);
+const AlertConfigPage = lazy(() =>
+  import('@/pages/AlertConfigPage').then(({ AlertConfigPage }) => ({ default: AlertConfigPage }))
+);
+const ApiKeyUsageSelfServicePage = lazy(() =>
+  import('@/pages/ApiKeyUsageSelfServicePage').then(({ ApiKeyUsageSelfServicePage }) => ({
+    default: ApiKeyUsageSelfServicePage,
+  }))
+);
+
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
   { path: '/dashboard', element: <DashboardPage /> },
@@ -81,13 +156,14 @@ const mainRoutes = [
   { path: '/config', element: <ConfigPage /> },
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
-	{ path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
-	{ path: '/quota-limits', element: <QuotaLimitsPage /> },
-	{ path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },
-	{ path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
-	{ path: '/alert-config', element: <AlertConfigPage /> },
-	{ path: '*', element: <Navigate to="/" replace /> },
+  { path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
+  { path: '/quota-limits', element: <QuotaLimitsPage /> },
+  { path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },
+  { path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
+  { path: '/alert-config', element: <AlertConfigPage /> },
+  { path: '*', element: <Navigate to="/" replace /> },
 ];
+
 export function MainRoutes({ location }: { location?: Location }) {
   return useRoutes(mainRoutes, location);
 }

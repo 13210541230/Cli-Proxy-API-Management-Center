@@ -1,19 +1,26 @@
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Outlet, RouterProvider, createHashRouter } from 'react-router-dom';
 import { LoginPage } from '@/pages/LoginPage';
-import { ApiKeyUsageSelfServicePage } from '@/pages/ApiKeyUsageSelfServicePage';
 import { NotificationContainer } from '@/components/common/NotificationContainer';
 import { ConfirmationModal } from '@/components/common/ConfirmationModal';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProtectedRoute } from '@/router/ProtectedRoute';
 import { useLanguageStore, useThemeStore } from '@/stores';
 
+const ApiKeyUsageSelfServicePage = lazy(() =>
+  import('@/pages/ApiKeyUsageSelfServicePage').then(({ ApiKeyUsageSelfServicePage }) => ({
+    default: ApiKeyUsageSelfServicePage,
+  }))
+);
+
 function RootShell() {
   return (
     <>
       <NotificationContainer />
       <ConfirmationModal />
-      <Outlet />
+      <Suspense fallback={<div className="page-loading">Loading...</div>}>
+        <Outlet />
+      </Suspense>
     </>
   );
 }

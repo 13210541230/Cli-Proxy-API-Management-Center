@@ -1892,7 +1892,7 @@ export function MonitoringCenterPage() {
   const [customDraftStartInput, setCustomDraftStartInput] = useState(getTodayStartInputValue);
   const [customDraftEndInput, setCustomDraftEndInput] = useState(getCurrentInputValue);
   const [searchInput, setSearchInput] = useState('');
-  const [autoRefreshMs, setAutoRefreshMs] = useState('5000');
+  const [autoRefreshMs, setAutoRefreshMs] = useState('30000');
   const [selectedAccount, setSelectedAccount] = useState('all');
   const [selectedProvider, setSelectedProvider] = useState('all');
   const [selectedModel, setSelectedModel] = useState('all');
@@ -2000,7 +2000,6 @@ export function MonitoringCenterPage() {
     apiKeyAliases,
     usageServiceAvailable,
     setModelPrices,
-    loadApiKeyAliases,
     syncModelPrices,
     exportUsage,
     importUsage,
@@ -2040,9 +2039,22 @@ export function MonitoringCenterPage() {
     searchApiKeyHash: deferredSearchApiKeyHash,
   });
 
-  const refreshAll = useCallback(async () => {
-    await Promise.all([loadUsage(usageQueryParams), loadApiKeyAliases(), refreshMeta(false)]);
-  }, [loadApiKeyAliases, loadUsage, refreshMeta, usageQueryParams]);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const refreshAll = useCallback((): Promise<void> => {
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
+    }
+
+    const request = Promise.all([loadUsage(usageQueryParams), refreshMeta(false)])
+      .then(() => undefined)
+      .finally(() => {
+        if (refreshInFlightRef.current === request) {
+          refreshInFlightRef.current = null;
+        }
+      });
+    refreshInFlightRef.current = request;
+    return request;
+  }, [loadUsage, refreshMeta, usageQueryParams]);
 
   const setCurrentAccountPage = useCallback(
     (page: number) => {

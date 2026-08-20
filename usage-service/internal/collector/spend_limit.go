@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -54,6 +55,39 @@ type pausedKey struct {
 	Expired bool   `json:"-"`
 }
 
+type quotaHTTPError struct {
+	method string
+	path   string
+	status int
+	body   string
+}
+
+func (e *quotaHTTPError) Error() string {
+	if e.body != "" {
+		return fmt.Sprintf("quota request %s %s returned status %d: %s", e.method, e.path, e.status, e.body)
+	}
+	return fmt.Sprintf("quota request %s %s returned status %d", e.method, e.path, e.status)
+}
+
+func isRetryableQuotaError(err error) bool {
+	var quotaErr *quotaHTTPError
+	if !errors.As(err, &quotaErr) {
+		return false
+	}
+	if quotaErr.path == "/v0/management/quota/paused" && quotaErr.status == http.StatusInternalServerError {
+		// The upstream quota handler currently maps a transient SQLite/store
+		// failure to 500. This GET is safe to retry and the response is only
+		// used for reconciliation, never for an end-user request.
+		return true
+	}
+	switch quotaErr.status {
+	case http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout, http.StatusTooManyRequests:
+		return true
+	default:
+		return false
+	}
+}
+
 func (c *pauseClient) PauseKey(keyHash, reason string, expiresAt time.Time) error {
 	expiresIn := int64(time.Until(expiresAt).Seconds())
 	if expiresIn < 0 {
@@ -81,14 +115,27 @@ func (c *pauseClient) PausedKeys() ([]pausedKey, error) {
 			ExpiresAt string `json:"expires_at"`
 		} `json:"entries"`
 	}
-	if err := c.doJSON(http.MethodGet, "/v0/management/quota/paused", nil, &result); err != nil {
+	var err error
+	for attempt := 0; attempt < 2; attempt++ {
+		result.Entries = nil
+		err = c.doJSON(http.MethodGet, "/v0/management/quota/paused", nil, &result)
+		if err == nil {
+			break
+		}
+		if attempt == 0 && isRetryableQuotaError(err) {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		return nil, err
+	}
+	if err != nil {
 		return nil, err
 	}
 	entries := make([]pausedKey, 0, len(result.Entries))
 	for _, entry := range result.Entries {
 		paused := pausedKey{KeyHash: entry.KeyHash, Reason: entry.Reason}
 		if entry.ExpiresAt != "" {
-			if expiresAt, err := time.Parse(time.RFC3339, entry.ExpiresAt); err == nil {
+			if expiresAt, err := time.Parse(time.RFC3339, entry.ExpiresAt); err == nil && !expiresAt.IsZero() {
 				paused.Expired = !expiresAt.After(time.Now())
 			}
 		}
@@ -124,7 +171,13 @@ func (c *pauseClient) doJSON(method, path string, body any, result any) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("quota request %s %s returned status %d", method, path, resp.StatusCode)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		return &quotaHTTPError{
+			method: method,
+			path:   path,
+			status: resp.StatusCode,
+			body:   strings.TrimSpace(string(body)),
+		}
 	}
 	if result != nil {
 		if err := json.NewDecoder(resp.Body).Decode(result); err != nil {
@@ -141,19 +194,42 @@ func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	keys, err := s.QueryKeySpend(ctx)
-	if err != nil {
-		return fmt.Errorf("query key spend: %w", err)
-	}
-	// 未保存配置没有 usage-service 可恢复的自动暂停；其他情形必须读取暂停记录保护手动暂停。
-	if !ok && len(keys) == 0 {
-		return nil
+	// 没有持久化规则时保留旧的恢复语义，但只做索引支持的存在性检查，
+	// 不再为一次恢复动作聚合整张 usage_events 表。
+	if !ok {
+		hasSpend, err := s.HasCurrentKeySpend(ctx)
+		if err != nil {
+			return fmt.Errorf("check key spend: %w", err)
+		}
+		if !hasSpend {
+			return nil
+		}
 	}
 	paused, err := client.PausedKeys()
 	if err != nil {
 		return fmt.Errorf("list paused keys: %w", err)
 	}
 	automatic := make(map[string]bool, len(paused))
+	if !cfg.Enabled {
+		for _, entry := range paused {
+			if entry.Reason != spendLimitExceededReason || entry.Expired {
+				continue
+			}
+			keyHash := normalizePauseKeyHash(entry.KeyHash)
+			automatic[keyHash] = true
+		}
+		for keyHash := range automatic {
+			if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
+				return fmt.Errorf("resume key %s: %w", keyHash, err)
+			}
+		}
+		return nil
+	}
+
+	keys, err := s.QueryKeySpend(ctx)
+	if err != nil {
+		return fmt.Errorf("query key spend: %w", err)
+	}
 	keysByHash := make(map[string]store.KeySpend, len(keys)+len(paused))
 	for _, key := range keys {
 		if key.KeyHash != "" {

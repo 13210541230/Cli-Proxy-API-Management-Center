@@ -270,7 +270,9 @@ func (s *Server) handleManagerConfig(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		var cpaUsage *cpaUsageConfig
-		if cfg.CPAConnection.CPABaseURL != "" && cfg.CPAConnection.ManagementKey != "" {
+		if r.URL.Query().Get("includeCpaUsage") != "false" &&
+			cfg.CPAConnection.CPABaseURL != "" &&
+			cfg.CPAConnection.ManagementKey != "" {
 			if usageCfg, err := fetchCPAUsageConfig(
 				r.Context(),
 				cfg.CPAConnection.CPABaseURL,

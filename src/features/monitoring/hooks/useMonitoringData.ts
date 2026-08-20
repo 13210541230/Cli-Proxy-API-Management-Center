@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { authFilesApi } from '@/services/api/authFiles';
 import { apiClient } from '@/services/api/client';
 import type { ApiKeyAlias } from '@/services/api/usageService';
@@ -1603,19 +1603,31 @@ export function useMonitoringData({
   const [channels, setChannels] = useState<MonitoringChannelMeta[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
 
   const refreshMeta = useCallback(
-    async (showLoading: boolean = true) => {
+    (showLoading: boolean = true): Promise<void> => {
+      if (refreshInFlightRef.current) {
+        return refreshInFlightRef.current;
+      }
       if (showLoading) {
         setLoading(true);
         setError('');
       }
 
-      const payload = await loadMonitoringMetaPayload(config);
-      setAuthFiles(payload.authFiles);
-      setChannels(payload.channels);
-      setError(payload.error);
-      setLoading(false);
+      const request = loadMonitoringMetaPayload(config).then((payload) => {
+        setAuthFiles(payload.authFiles);
+        setChannels(payload.channels);
+        setError(payload.error);
+        setLoading(false);
+      });
+      const trackedRequest = request.finally(() => {
+        if (refreshInFlightRef.current === trackedRequest) {
+          refreshInFlightRef.current = null;
+        }
+      });
+      refreshInFlightRef.current = trackedRequest;
+      return trackedRequest;
     },
     [config]
   );

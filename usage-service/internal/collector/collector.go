@@ -631,22 +631,42 @@ func (m *Manager) reconcileSpendLimitsLocked() error {
 }
 
 // spendLimitTicker 定期复用保存路径的协调逻辑，作为即时同步的兜底。
-func (m *Manager) spendLimitTicker(ctx context.Context) {
-	ticker := time.NewTicker(30 * time.Second)
-	defer ticker.Stop()
+func nextSpendLimitRetryDelay(current time.Duration) time.Duration {
+	if current <= 0 {
+		return 30 * time.Second
+	}
+	next := current * 2
+	if next > 5*time.Minute {
+		return 5 * time.Minute
+	}
+	return next
+}
 
+func (m *Manager) spendLimitTicker(ctx context.Context) {
+	retryDelay := time.Duration(0)
 	reconcile := func() {
 		if err := m.ReconcileSpendLimits(); err != nil {
 			log.Printf("spend-limit: reconcile failed: %v", err)
+			retryDelay = nextSpendLimitRetryDelay(retryDelay)
+			return
 		}
+		retryDelay = 0
 	}
 	reconcile()
 
 	for {
+		delay := 30 * time.Second
+		if retryDelay > 0 {
+			delay = retryDelay
+		}
+		timer := time.NewTimer(delay)
 		select {
 		case <-ctx.Done():
+			if !timer.Stop() {
+				<-timer.C
+			}
 			return
-		case <-ticker.C:
+		case <-timer.C:
 			reconcile()
 		}
 	}

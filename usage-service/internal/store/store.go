@@ -429,22 +429,60 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 	return nil
 }
 
-func (s *Store) ensureEnterpriseSchema() error {
-	bindingMigrations := []string{
-		`alter table enterprise_key_bindings add column api_key_hash text not null default ''`,
-		`alter table enterprise_key_bindings add column user_name text not null default ''`,
-		`alter table enterprise_key_bindings add column department_id text not null default ''`,
-		`alter table enterprise_key_bindings add column source text not null default ''`,
-		`alter table enterprise_key_bindings add column department_resolved_by text not null default ''`,
-		`alter table enterprise_key_bindings add column updated_by text`,
-		`alter table enterprise_key_bindings add column created_at_ms integer not null default 0`,
-		`alter table enterprise_key_bindings add column updated_at_ms integer not null default 0`,
-		`alter table enterprise_key_bindings add column email text not null default ''`,
+type tableColumn struct {
+	name       string
+	definition string
+}
+
+// ensureTableColumns checks the schema once before issuing ALTER TABLE. The old
+// implementation attempted every migration on every startup and relied on
+// parsing "duplicate column" errors, which is surprisingly expensive with a
+// large SQLite database.
+func (s *Store) ensureTableColumns(table string, columns []tableColumn) error {
+	rows, err := s.db.Query(`pragma table_info(` + table + `)`)
+	if err != nil {
+		return err
 	}
-	for _, stmt := range bindingMigrations {
-		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+	defer rows.Close()
+
+	existing := make(map[string]struct{}, len(columns))
+	for rows.Next() {
+		var cid, notNull, primaryKey int
+		var name, columnType string
+		var defaultValue any
+		if err := rows.Scan(&cid, &name, &columnType, &notNull, &defaultValue, &primaryKey); err != nil {
 			return err
 		}
+		existing[name] = struct{}{}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	for _, column := range columns {
+		if _, ok := existing[column.name]; ok {
+			continue
+		}
+		if _, err := s.db.Exec(`alter table ` + table + ` add column ` + column.definition); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) ensureEnterpriseSchema() error {
+	if err := s.ensureTableColumns("enterprise_key_bindings", []tableColumn{
+		{name: "api_key_hash", definition: "api_key_hash text not null default ''"},
+		{name: "user_name", definition: "user_name text not null default ''"},
+		{name: "department_id", definition: "department_id text not null default ''"},
+		{name: "source", definition: "source text not null default ''"},
+		{name: "department_resolved_by", definition: "department_resolved_by text not null default ''"},
+		{name: "updated_by", definition: "updated_by text"},
+		{name: "created_at_ms", definition: "created_at_ms integer not null default 0"},
+		{name: "updated_at_ms", definition: "updated_at_ms integer not null default 0"},
+		{name: "email", definition: "email text not null default ''"},
+	}); err != nil {
+		return err
 	}
 	if _, err := s.db.Exec(`create index if not exists idx_enterprise_key_bindings_api_key_hash on enterprise_key_bindings(api_key_hash)`); err != nil {
 		return err
@@ -455,22 +493,22 @@ func (s *Store) ensureEnterpriseSchema() error {
 	if _, err := s.db.Exec(`create index if not exists idx_enterprise_key_bindings_department_id on enterprise_key_bindings(department_id)`); err != nil {
 		return err
 	}
-	importHistoryMigrations := []string{
-		`alter table enterprise_import_history add column total_rows integer not null default 0`,
-		`alter table enterprise_import_history add column passed_rows integer not null default 0`,
-		`alter table enterprise_import_history add column warning_rows integer not null default 0`,
-		`alter table enterprise_import_history add column error_rows integer not null default 0`,
-		`alter table enterprise_import_history add column status text not null default ''`,
-		`alter table enterprise_import_history add column updated_by text`,
-		`alter table enterprise_import_history add column created_at_ms integer not null default 0`,
-		`alter table enterprise_import_history add column updated_at_ms integer not null default 0`,
-		`alter table enterprise_import_history add column csv_filename text not null default ''`,
-		`alter table enterprise_import_history add column error_details text not null default ''`,
+	if _, err := s.db.Exec(`create index if not exists idx_enterprise_key_bindings_source_user_name on enterprise_key_bindings(source, user_name)`); err != nil {
+		return err
 	}
-	for _, stmt := range importHistoryMigrations {
-		if _, err := s.db.Exec(stmt); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
-			return err
-		}
+	if err := s.ensureTableColumns("enterprise_import_history", []tableColumn{
+		{name: "total_rows", definition: "total_rows integer not null default 0"},
+		{name: "passed_rows", definition: "passed_rows integer not null default 0"},
+		{name: "warning_rows", definition: "warning_rows integer not null default 0"},
+		{name: "error_rows", definition: "error_rows integer not null default 0"},
+		{name: "status", definition: "status text not null default ''"},
+		{name: "updated_by", definition: "updated_by text"},
+		{name: "created_at_ms", definition: "created_at_ms integer not null default 0"},
+		{name: "updated_at_ms", definition: "updated_at_ms integer not null default 0"},
+		{name: "csv_filename", definition: "csv_filename text not null default ''"},
+		{name: "error_details", definition: "error_details text not null default ''"},
+	}); err != nil {
+		return err
 	}
 	now := time.Now().UnixMilli()
 	if _, err := s.db.Exec(`insert into enterprise_departments(
@@ -1624,13 +1662,32 @@ func (s *Store) LoadSpendLimitConfig(ctx context.Context) (SpendLimitConfig, boo
 }
 
 // Cost formula matches the management panel's calculateCost() in src/utils/usage.ts:
-//   prompt_cost = max(input_tokens - max(cached_tokens, cache_tokens), 0) * prompt_price / 1_000_000
-//   completion_cost = output_tokens * completion_price / 1_000_000
-//   cache_cost = max(cached_tokens, cache_tokens) * cache_price / 1_000_000
-//   total_cents = (prompt_cost + completion_cost + cache_cost) * 100
+//
+//	prompt_cost = max(input_tokens - max(cached_tokens, cache_tokens), 0) * prompt_price / 1_000_000
+//	completion_cost = output_tokens * completion_price / 1_000_000
+//	cache_cost = max(cached_tokens, cache_tokens) * cache_price / 1_000_000
+//	total_cents = (prompt_cost + completion_cost + cache_cost) * 100
+//
 // Failed requests are excluded from spend-limit enforcement.
 func (s *Store) QueryKeySpend(ctx context.Context) ([]KeySpend, error) {
 	return s.queryKeySpendAt(ctx, time.Now())
+}
+
+// HasCurrentKeySpend cheaply checks the same event scope used by QueryKeySpend
+// without aggregating costs. It is used only for legacy no-config reconciliation.
+func (s *Store) HasCurrentKeySpend(ctx context.Context) (bool, error) {
+	localNow := time.Now().In(shanghaiLoc)
+	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, shanghaiLoc)
+	daysSinceMonday := (int(dayStart.Weekday()) + 6) % 7
+	weekStart := dayStart.AddDate(0, 0, -daysSinceMonday)
+
+	var exists bool
+	err := s.db.QueryRowContext(ctx, `
+		select exists(
+			select 1 from usage_events
+			where api_key_hash != '' and failed = 0 and timestamp_ms >= ?
+		)`, weekStart.UnixMilli()).Scan(&exists)
+	return exists, err
 }
 
 func (s *Store) queryKeySpendAt(ctx context.Context, now time.Time) ([]KeySpend, error) {
@@ -1639,79 +1696,54 @@ func (s *Store) queryKeySpendAt(ctx context.Context, now time.Time) ([]KeySpend,
 	daysSinceMonday := (int(dayStart.Weekday()) + 6) % 7
 	weekStart := dayStart.AddDate(0, 0, -daysSinceMonday)
 
-	todayMap, err := s.queryKeySpendSince(ctx, dayStart.UnixMilli())
+	rows, err := s.db.QueryContext(ctx, keySpendWindowQuery, dayStart.UnixMilli(), weekStart.UnixMilli())
 	if err != nil {
-		return nil, fmt.Errorf("query today spend: %w", err)
+		return nil, fmt.Errorf("query spend window: %w", err)
 	}
-	weekMap, err := s.queryKeySpendSince(ctx, weekStart.UnixMilli())
-	if err != nil {
-		return nil, fmt.Errorf("query week spend: %w", err)
-	}
+	defer rows.Close()
 
-	allKeys := make(map[string]bool)
-	for h := range todayMap {
-		allKeys[h] = true
+	result := make([]KeySpend, 0)
+	for rows.Next() {
+		var spend KeySpend
+		if err := rows.Scan(&spend.KeyHash, &spend.TodayCents, &spend.WeekCents); err != nil {
+			return nil, err
+		}
+		result = append(result, spend)
 	}
-	for h := range weekMap {
-		allKeys[h] = true
-	}
-
-	result := make([]KeySpend, 0, len(allKeys))
-	for h := range allKeys {
-		result = append(result, KeySpend{
-			KeyHash:    h,
-			TodayCents: todayMap[h],
-			WeekCents:  weekMap[h],
-		})
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return result, nil
 }
 
-func (s *Store) queryKeySpendSince(ctx context.Context, startMS int64) (map[string]int64, error) {
-	query := `
-		with priced_events as (
-			select ue.api_key_hash,
-				case when coalesce(ue.cached_tokens, 0) > coalesce(ue.cache_tokens, 0)
-					then coalesce(ue.cached_tokens, 0)
-					else coalesce(ue.cache_tokens, 0)
-				end as cache_tokens,
-				ue.input_tokens,
-				ue.output_tokens,
-				coalesce(mp.prompt_per_1m, 0) as prompt_per_1m,
-				coalesce(mp.completion_per_1m, 0) as completion_per_1m,
-				coalesce(mp.cache_per_1m, 0) as cache_per_1m
-			from usage_events ue
-			left join model_prices mp on ue.model = mp.model
-			where ue.api_key_hash != ''
-			  and ue.failed = 0
-			  and ue.timestamp_ms >= ?
-		)
-		select api_key_hash,
-			coalesce(round(sum(
-				cast(max(input_tokens - cache_tokens, 0) as real) * prompt_per_1m
-				+ cast(output_tokens as real) * completion_per_1m
-				+ cast(cache_tokens as real) * cache_per_1m
-			) / 1000000.0 * 100), 0) as cents
-		from priced_events
-		group by api_key_hash
-	`
-	rows, err := s.db.QueryContext(ctx, query, startMS)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	result := make(map[string]int64)
-	for rows.Next() {
-		var hash string
-		var cents int64
-		if err := rows.Scan(&hash, &cents); err != nil {
-			return nil, err
-		}
-		result[hash] = cents
-	}
-	return result, rows.Err()
-}
+// keySpendWindowQuery aggregates the daily and weekly windows in one pass.
+// The weekly range contains the daily range, so running two independent
+// aggregates would scan the same large usage_events subset twice.
+const keySpendWindowQuery = `
+	select ue.api_key_hash,
+		coalesce(round(sum(case when ue.timestamp_ms >= ? then
+			cast(max(
+				ue.input_tokens - max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)),
+				0
+			) as real) * coalesce(mp.prompt_per_1m, 0)
+			+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
+			+ cast(max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)) as real) * coalesce(mp.cache_per_1m, 0)
+		else 0 end) / 1000000.0 * 100), 0) as today_cents,
+		coalesce(round(sum(
+			cast(max(
+				ue.input_tokens - max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)),
+				0
+			) as real) * coalesce(mp.prompt_per_1m, 0)
+			+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
+			+ cast(max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)) as real) * coalesce(mp.cache_per_1m, 0)
+		) / 1000000.0 * 100), 0) as week_cents
+	from usage_events ue
+	left join model_prices mp on ue.model = mp.model
+	where ue.api_key_hash != ''
+	  and ue.failed = 0
+	  and ue.timestamp_ms >= ?
+	group by ue.api_key_hash
+`
 
 // UserSpend holds aggregated spend (in cents) for a single user across all their keys.
 type UserSpend struct {
@@ -1722,43 +1754,34 @@ type UserSpend struct {
 
 // QueryUserSpend queries spend aggregated by user (via enterprise_key_bindings).
 // Same cost formula as QueryKeySpend: only successful requests, local calendar day.
+const userSpendQuery = `
+	select ekb.user_name, ekb.email,
+		coalesce(round(sum(
+			cast(max(
+				ue.input_tokens - max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)),
+				0
+			) as real) * coalesce(mp.prompt_per_1m, 0)
+			+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
+			+ cast(max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)) as real) * coalesce(mp.cache_per_1m, 0)
+		) / 1000000.0 * 100), 0) as today_cents
+	from usage_events ue
+	left join model_prices mp on ue.model = mp.model
+	inner join enterprise_key_bindings ekb on ue.api_key_hash = ekb.api_key_hash
+	where ue.failed = 0
+	  and ue.api_key_hash != ''
+	  and ue.timestamp_ms >= ?
+	  and ekb.user_name != ''
+	  and ekb.email != ''
+	group by ekb.user_name, ekb.email
+	having today_cents > 0
+	order by today_cents desc
+`
+
 func (s *Store) QueryUserSpend(ctx context.Context) ([]UserSpend, error) {
 	localNow := time.Now().In(shanghaiLoc)
 	dayStart := time.Date(localNow.Year(), localNow.Month(), localNow.Day(), 0, 0, 0, 0, shanghaiLoc)
 
-	query := `
-		with priced_events as (
-			select ue.api_key_hash,
-				cast(max(ue.input_tokens -
-					case when coalesce(ue.cached_tokens, 0) > coalesce(ue.cache_tokens, 0)
-						then coalesce(ue.cached_tokens, 0)
-						else coalesce(ue.cache_tokens, 0)
-					end, 0) as real) * coalesce(mp.prompt_per_1m, 0)
-				+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
-				+ cast(case when coalesce(ue.cached_tokens, 0) > coalesce(ue.cache_tokens, 0)
-					then coalesce(ue.cached_tokens, 0)
-					else coalesce(ue.cache_tokens, 0)
-				end as real) * coalesce(mp.cache_per_1m, 0) as raw_cost
-			from usage_events ue
-			left join model_prices mp on ue.model = mp.model
-			where ue.failed = 0
-			  and ue.api_key_hash != ''
-			  and ue.timestamp_ms >= ?
-		),
-		user_events as (
-			select ekb.user_name, ekb.email, pe.raw_cost
-			from priced_events pe
-			inner join enterprise_key_bindings ekb on pe.api_key_hash = ekb.api_key_hash
-			where ekb.user_name != '' and ekb.email != ''
-		)
-		select user_name, email,
-			coalesce(round(sum(raw_cost) / 1000000.0 * 100), 0) as today_cents
-		from user_events
-		group by user_name, email
-		having today_cents > 0
-		order by today_cents desc
-	`
-	rows, err := s.db.QueryContext(ctx, query, dayStart.UnixMilli())
+	rows, err := s.db.QueryContext(ctx, userSpendQuery, dayStart.UnixMilli())
 	if err != nil {
 		return nil, err
 	}

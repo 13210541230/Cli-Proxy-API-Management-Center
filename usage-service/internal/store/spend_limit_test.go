@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -110,6 +111,54 @@ func TestQueryKeySpend_MatchesCostFormulaAndExcludesFailed(t *testing.T) {
 	result := findSpend(t, db, ctx, now, "hash-spend")
 	if result.TodayCents != 120 || result.WeekCents != 120 {
 		t.Fatalf("spend = %+v, want today/week 120 cents", result)
+	}
+}
+
+func TestQueryKeySpendDoesNotMaterializeAllPricedEvents(t *testing.T) {
+	db := newSpendLimitTestStore(t)
+	rows, err := db.db.Query(`explain query plan `+keySpendWindowQuery, time.Now().UnixMilli(), time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("explain query plan failed: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, parent, notUsed int
+		var detail string
+		if err := rows.Scan(&id, &parent, &notUsed, &detail); err != nil {
+			t.Fatalf("scan query plan: %v", err)
+		}
+		if strings.Contains(strings.ToLower(detail), "materialize priced_events") ||
+			strings.Contains(strings.ToLower(detail), "co-routine priced_events") {
+			t.Fatalf("spend query materializes the full priced_events CTE: %s", detail)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("read query plan: %v", err)
+	}
+}
+
+func TestQueryUserSpendDoesNotMaterializeAllPricedEvents(t *testing.T) {
+	db := newSpendLimitTestStore(t)
+	rows, err := db.db.Query(`explain query plan `+userSpendQuery, time.Now().UnixMilli())
+	if err != nil {
+		t.Fatalf("explain user spend query plan failed: %v", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, parent, notUsed int
+		var detail string
+		if err := rows.Scan(&id, &parent, &notUsed, &detail); err != nil {
+			t.Fatalf("scan user spend query plan: %v", err)
+		}
+		if strings.Contains(strings.ToLower(detail), "materialize priced_events") ||
+			strings.Contains(strings.ToLower(detail), "co-routine priced_events") {
+			t.Fatalf("user spend query materializes the full priced_events CTE: %s", detail)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		t.Fatalf("read user spend query plan: %v", err)
 	}
 }
 

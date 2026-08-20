@@ -112,6 +112,90 @@ func TestManagerFallsBackToRESPWhenHTTPQueueUnsupported(t *testing.T) {
 	})
 }
 
+func TestSpendLimitRetryDelayBacksOff(t *testing.T) {
+	if got := nextSpendLimitRetryDelay(0); got != 30*time.Second {
+		t.Fatalf("initial retry delay = %s, want 30s", got)
+	}
+	if got := nextSpendLimitRetryDelay(30 * time.Second); got != time.Minute {
+		t.Fatalf("second retry delay = %s, want 1m", got)
+	}
+	if got := nextSpendLimitRetryDelay(5 * time.Minute); got != 5*time.Minute {
+		t.Fatalf("retry delay cap = %s, want 5m", got)
+	}
+}
+
+func TestPausedKeysRetriesTransientBadGateway(t *testing.T) {
+	var calls int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v0/management/quota/paused" {
+			http.NotFound(w, r)
+			return
+		}
+		if atomic.AddInt32(&calls, 1) == 1 {
+			http.Error(w, "upstream unavailable", http.StatusBadGateway)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"entries":[]}`))
+	}))
+	t.Cleanup(upstream.Close)
+
+	if _, err := newPauseClient(upstream.URL, "management-key").PausedKeys(); err != nil {
+		t.Fatalf("PausedKeys should recover from a transient 502: %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Fatalf("PausedKeys calls = %d, want 2", got)
+	}
+}
+
+func TestPausedKeysIncludesRemoteErrorBody(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "quota backend is unavailable", http.StatusBadGateway)
+	}))
+	t.Cleanup(upstream.Close)
+
+	_, err := newPauseClient(upstream.URL, "management-key").PausedKeys()
+	if err == nil || !strings.Contains(err.Error(), "quota backend is unavailable") {
+		t.Fatalf("error = %v, want remote response body", err)
+	}
+}
+
+func TestPausedKeysRetriesTransientInternalFailure(t *testing.T) {
+	var calls int32
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if atomic.AddInt32(&calls, 1) == 1 {
+			http.Error(w, "temporary quota store failure", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"entries":[]}`))
+	}))
+	t.Cleanup(upstream.Close)
+
+	if _, err := newPauseClient(upstream.URL, "management-key").PausedKeys(); err != nil {
+		t.Fatalf("PausedKeys should recover from a transient 500: %v", err)
+	}
+	if got := atomic.LoadInt32(&calls); got != 2 {
+		t.Fatalf("PausedKeys calls = %d, want 2", got)
+	}
+}
+
+func TestPausedKeysTreatsZeroExpiryAsPermanent(t *testing.T) {
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"entries":[{"key_hash":"manual-key","reason":"manual pause","expires_at":"0001-01-01T00:00:00Z"}]}`))
+	}))
+	t.Cleanup(upstream.Close)
+
+	entries, err := newPauseClient(upstream.URL, "management-key").PausedKeys()
+	if err != nil {
+		t.Fatalf("PausedKeys failed: %v", err)
+	}
+	if len(entries) != 1 || entries[0].Expired {
+		t.Fatalf("permanent pause = %#v, want one non-expired entry", entries)
+	}
+}
+
 func TestCheckAndEnforceLimitsUsesDefaultAndOverrides(t *testing.T) {
 	paused := make(map[string]bool)
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
