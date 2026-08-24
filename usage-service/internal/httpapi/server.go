@@ -90,9 +90,11 @@ type apiKeyAliasesRequest struct {
 }
 
 type quotaConfigRequest struct {
-	Enabled   *bool                   `json:"enabled"`
-	Default   *store.SpendLimit       `json:"default"`
-	Overrides []store.SpendLimitEntry `json:"overrides"`
+	Enabled        *bool                   `json:"enabled"`
+	Default        *store.SpendLimit       `json:"default"`
+	Overrides      []store.SpendLimitEntry `json:"overrides"`
+	ExceededAction *string                 `json:"exceeded_action"`
+	FallbackModel  *string                 `json:"fallback_model"`
 }
 
 type enterpriseDepartmentsRequest struct {
@@ -635,6 +637,43 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 		if req.Overrides != nil {
 			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
 		}
+		if req.ExceededAction != nil {
+			action := strings.ToLower(strings.TrimSpace(*req.ExceededAction))
+			if action != store.ExceededActionPause && action != store.ExceededActionDowngrade {
+				writeError(w, http.StatusBadRequest, errors.New("exceeded_action must be pause or downgrade"))
+				return
+			}
+			current.ExceededAction = action
+		}
+		if req.FallbackModel != nil {
+			model := strings.TrimSpace(*req.FallbackModel)
+			if model == "" {
+				writeError(w, http.StatusBadRequest, errors.New("fallback_model is required"))
+				return
+			}
+			current.FallbackModel = model
+		}
+		current.ExceededAction = current.EffectiveExceededAction()
+		current.FallbackModel = current.EffectiveFallbackModel()
+		if current.ExceededAction == store.ExceededActionDowngrade {
+			setup, ok, setupErr := s.resolveSetup(r.Context())
+			if setupErr != nil {
+				writeError(w, http.StatusInternalServerError, setupErr)
+				return
+			}
+			if !ok || strings.TrimSpace(setup.CPAUpstreamURL) == "" || strings.TrimSpace(setup.ManagementKey) == "" {
+				writeError(w, http.StatusServiceUnavailable, errors.New("CPA connection is required for downgrade mode"))
+				return
+			}
+			if validateErr := collector.ValidateFallbackModel(setup.CPAUpstreamURL, setup.ManagementKey, current.FallbackModel); validateErr != nil {
+				status := http.StatusBadGateway
+				if remoteStatus, isRemote := collector.QuotaHTTPStatus(validateErr); isRemote && remoteStatus >= 400 && remoteStatus < 500 {
+					status = http.StatusBadRequest
+				}
+				writeError(w, status, validateErr)
+				return
+			}
+		}
 		if s.collector == nil {
 			if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
 				writeError(w, http.StatusInternalServerError, err)
@@ -729,10 +768,12 @@ func (s *Server) writeSpendLimitConfig(w http.ResponseWriter, cfg store.SpendLim
 		overrides = []store.SpendLimitEntry{}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"enabled":   cfg.Enabled,
-		"db_path":   s.cfg.DBPath,
-		"default":   cfg.DefaultLimit(),
-		"overrides": overrides,
+		"enabled":         cfg.Enabled,
+		"db_path":         s.cfg.DBPath,
+		"default":         cfg.DefaultLimit(),
+		"overrides":       overrides,
+		"exceeded_action": cfg.EffectiveExceededAction(),
+		"fallback_model":  cfg.EffectiveFallbackModel(),
 	})
 }
 

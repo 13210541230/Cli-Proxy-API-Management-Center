@@ -102,12 +102,36 @@ type SpendLimitEntry struct {
 }
 
 // SpendLimitConfig holds the quota limits read from settings.
+const (
+	ExceededActionPause     = "pause"
+	ExceededActionDowngrade = "downgrade"
+	DefaultFallbackModel    = "gpt-5.6-luna"
+)
+
 type SpendLimitConfig struct {
-	Enabled     bool              `json:"enabled"`
-	DailyCents  int64             `json:"daily_cents,omitempty"`
-	WeeklyCents int64             `json:"weekly_cents,omitempty"`
-	Default     SpendLimit        `json:"default"`
-	Overrides   []SpendLimitEntry `json:"overrides,omitempty"`
+	Enabled        bool              `json:"enabled"`
+	DailyCents     int64             `json:"daily_cents,omitempty"`
+	WeeklyCents    int64             `json:"weekly_cents,omitempty"`
+	Default        SpendLimit        `json:"default"`
+	Overrides      []SpendLimitEntry `json:"overrides,omitempty"`
+	ExceededAction string            `json:"exceeded_action,omitempty"`
+	FallbackModel  string            `json:"fallback_model,omitempty"`
+}
+
+func (c SpendLimitConfig) EffectiveExceededAction() string {
+	action := strings.ToLower(strings.TrimSpace(c.ExceededAction))
+	if action == ExceededActionDowngrade {
+		return ExceededActionDowngrade
+	}
+	return ExceededActionPause
+}
+
+func (c SpendLimitConfig) EffectiveFallbackModel() string {
+	model := strings.TrimSpace(c.FallbackModel)
+	if model == "" {
+		return DefaultFallbackModel
+	}
+	return model
 }
 
 func (c SpendLimitConfig) DefaultLimit() SpendLimit {

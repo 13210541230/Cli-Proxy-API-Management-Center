@@ -17,6 +17,8 @@ export interface QuotaConfig {
   db_path: string;
   default: SpendLimit;
   overrides: SpendLimitEntry[];
+  exceeded_action: 'pause' | 'downgrade';
+  fallback_model: string;
 }
 
 export const quotaLimitsApi = {

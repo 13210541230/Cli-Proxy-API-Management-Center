@@ -50,9 +50,27 @@ var shanghaiLocation = func() *time.Location {
 }()
 
 type pausedKey struct {
-	KeyHash string `json:"key_hash"`
-	Reason  string `json:"reason"`
-	Expired bool   `json:"-"`
+	KeyHash   string `json:"key_hash"`
+	Reason    string `json:"reason"`
+	ExpiresAt time.Time
+	Expired   bool `json:"-"`
+}
+
+type downgradedKey struct {
+	KeyHash       string `json:"key_hash"`
+	Reason        string `json:"reason"`
+	FallbackModel string `json:"fallback_model"`
+	ExpiresAt     string `json:"expires_at"`
+	ExpiresAtTime time.Time
+	Expired       bool `json:"-"`
+}
+
+type automaticQuotaState struct {
+	Action        string
+	KeyHash       string
+	Reason        string
+	FallbackModel string
+	ExpiresAt     time.Time
 }
 
 type quotaHTTPError struct {
@@ -74,10 +92,10 @@ func isRetryableQuotaError(err error) bool {
 	if !errors.As(err, &quotaErr) {
 		return false
 	}
-	if quotaErr.path == "/v0/management/quota/paused" && quotaErr.status == http.StatusInternalServerError {
-		// The upstream quota handler currently maps a transient SQLite/store
-		// failure to 500. This GET is safe to retry and the response is only
-		// used for reconciliation, never for an end-user request.
+	if quotaErr.status >= http.StatusInternalServerError {
+		// Management quota reads and writes are idempotent from the reconciler's
+		// perspective. Retry all upstream 5xx responses; validation/client errors
+		// remain visible and are not retried as if they were transport failures.
 		return true
 	}
 	switch quotaErr.status {
@@ -136,12 +154,87 @@ func (c *pauseClient) PausedKeys() ([]pausedKey, error) {
 		paused := pausedKey{KeyHash: entry.KeyHash, Reason: entry.Reason}
 		if entry.ExpiresAt != "" {
 			if expiresAt, err := time.Parse(time.RFC3339, entry.ExpiresAt); err == nil && !expiresAt.IsZero() {
+				paused.ExpiresAt = expiresAt
 				paused.Expired = !expiresAt.After(time.Now())
 			}
 		}
 		entries = append(entries, paused)
 	}
 	return entries, nil
+}
+
+func (c *pauseClient) DowngradeKey(keyHash, reason, fallbackModel string, expiresAt time.Time) error {
+	expiresIn := int64(time.Until(expiresAt).Seconds())
+	if expiresAt.IsZero() || expiresIn < 0 {
+		expiresIn = 0
+	}
+	return c.doJSON(http.MethodPost, "/v0/management/quota/downgrade", map[string]any{
+		"key_hash":           normalizePauseKeyHash(keyHash),
+		"reason":             reason,
+		"fallback_model":     strings.TrimSpace(fallbackModel),
+		"expires_in_seconds": expiresIn,
+	}, nil)
+}
+
+func (c *pauseClient) ResumeDowngradeKey(keyHash, expectedReason string) error {
+	return c.doJSON(http.MethodPost, "/v0/management/quota/downgrade/resume", map[string]any{
+		"key_hash":        normalizePauseKeyHash(keyHash),
+		"expected_reason": expectedReason,
+	}, nil)
+}
+
+func (c *pauseClient) DowngradedKeys() ([]downgradedKey, error) {
+	var result struct {
+		Entries []downgradedKey `json:"entries"`
+	}
+	var err error
+	for attempt := 0; attempt < 2; attempt++ {
+		result.Entries = nil
+		err = c.doJSON(http.MethodGet, "/v0/management/quota/downgraded", nil, &result)
+		if err == nil {
+			break
+		}
+		if attempt == 0 && isRetryableQuotaError(err) {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+		return nil, err
+	}
+	if err != nil {
+		return nil, err
+	}
+	for idx := range result.Entries {
+		entry := &result.Entries[idx]
+		if entry.ExpiresAt == "" {
+			continue
+		}
+		if expiresAt, parseErr := time.Parse(time.RFC3339, entry.ExpiresAt); parseErr == nil && !expiresAt.IsZero() {
+			entry.ExpiresAtTime = expiresAt
+			entry.Expired = !expiresAt.After(time.Now())
+		}
+	}
+	return result.Entries, nil
+}
+
+func (c *pauseClient) ValidateFallbackModel(fallbackModel string) error {
+	return c.doJSON(http.MethodPost, "/v0/management/quota/validate-model", map[string]any{
+		"fallback_model": strings.TrimSpace(fallbackModel),
+	}, nil)
+}
+
+// ValidateFallbackModel checks a fallback model through CPA before it is persisted.
+func ValidateFallbackModel(baseURL, managementKey, fallbackModel string) error {
+	return newPauseClient(baseURL, managementKey).ValidateFallbackModel(fallbackModel)
+}
+
+// QuotaHTTPStatus returns the upstream HTTP status when err came from CPA's
+// quota management API.
+func QuotaHTTPStatus(err error) (int, bool) {
+	var quotaErr *quotaHTTPError
+	if !errors.As(err, &quotaErr) {
+		return 0, false
+	}
+	return quotaErr.status, true
 }
 
 // doJSON 统一处理已认证的 CLIProxyAPI 限额管理请求，并将非 2xx 视为同步失败。
@@ -187,15 +280,13 @@ func (c *pauseClient) doJSON(method, path string, body any, result any) error {
 	return nil
 }
 
-// ReconcileSpendLimits 根据 usage-service 的持久化规则和当前消费，协调自动暂停状态。
+// ReconcileSpendLimits coordinates automatic pause/downgrade state for the current spend window.
 func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 	ctx := context.Background()
 	cfg, ok, err := s.LoadSpendLimitConfig(ctx)
 	if err != nil {
 		return fmt.Errorf("load config: %w", err)
 	}
-	// 没有持久化规则时保留旧的恢复语义，但只做索引支持的存在性检查，
-	// 不再为一次恢复动作聚合整张 usage_events 表。
 	if !ok {
 		hasSpend, err := s.HasCurrentKeySpend(ctx)
 		if err != nil {
@@ -205,67 +296,140 @@ func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 			return nil
 		}
 	}
+
 	paused, err := client.PausedKeys()
 	if err != nil {
 		return fmt.Errorf("list paused keys: %w", err)
 	}
-	automatic := make(map[string]bool, len(paused))
-	if !cfg.Enabled {
-		for _, entry := range paused {
-			if entry.Reason != spendLimitExceededReason || entry.Expired {
-				continue
-			}
-			keyHash := normalizePauseKeyHash(entry.KeyHash)
-			automatic[keyHash] = true
+	// Older CPA versions do not expose downgrade endpoints. Keep the legacy
+	// pause mode usable against them, while explicit downgrade mode surfaces the
+	// incompatibility instead of silently falling back to pause.
+	downgraded, err := client.DowngradedKeys()
+	if err != nil {
+		if cfg.EffectiveExceededAction() != store.ExceededActionPause || !isNotFoundQuotaError(err) {
+			return fmt.Errorf("list downgraded keys: %w", err)
 		}
-		for keyHash := range automatic {
-			if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
-				return fmt.Errorf("resume key %s: %w", keyHash, err)
-			}
+		downgraded = nil
+	}
+
+	pausedAutomatic := make(map[string]pausedKey, len(paused))
+	for _, entry := range paused {
+		if entry.Reason == spendLimitExceededReason && !entry.Expired {
+			pausedAutomatic[normalizePauseKeyHash(entry.KeyHash)] = entry
 		}
-		return nil
+	}
+	downgradedAutomatic := make(map[string]downgradedKey, len(downgraded))
+	for _, entry := range downgraded {
+		if entry.Reason == spendLimitExceededReason && !entry.Expired {
+			downgradedAutomatic[normalizePauseKeyHash(entry.KeyHash)] = entry
+		}
 	}
 
 	keys, err := s.QueryKeySpend(ctx)
 	if err != nil {
 		return fmt.Errorf("query key spend: %w", err)
 	}
-	keysByHash := make(map[string]store.KeySpend, len(keys)+len(paused))
+	keysByHash := make(map[string]store.KeySpend, len(keys)+len(pausedAutomatic)+len(downgradedAutomatic))
 	for _, key := range keys {
 		if key.KeyHash != "" {
 			keysByHash[normalizePauseKeyHash(key.KeyHash)] = key
 		}
 	}
-	for _, entry := range paused {
-		if entry.Reason != spendLimitExceededReason || entry.Expired {
-			continue
+	for keyHash := range pausedAutomatic {
+		if _, exists := keysByHash[keyHash]; !exists {
+			keysByHash[keyHash] = store.KeySpend{KeyHash: keyHash}
 		}
-		keyHash := normalizePauseKeyHash(entry.KeyHash)
-		automatic[keyHash] = true
+	}
+	for keyHash := range downgradedAutomatic {
 		if _, exists := keysByHash[keyHash]; !exists {
 			keysByHash[keyHash] = store.KeySpend{KeyHash: keyHash}
 		}
 	}
 
 	now := time.Now()
+	desiredAction := store.ExceededActionPause
+	if cfg.Enabled && cfg.EffectiveExceededAction() == store.ExceededActionDowngrade {
+		desiredAction = store.ExceededActionDowngrade
+	}
 	for keyHash, key := range keysByHash {
 		limit := store.SpendLimit{}
 		if ok && cfg.Enabled {
-			// 必须复用配置的哈希匹配和覆盖优先级，避免在协调器复制规则。
 			limit = cfg.LimitForKey(key.KeyHash)
 		}
 		exceeded, expiresAt := spendLimitExceeded(key, limit, now)
-		if exceeded {
+		action := ""
+		if exceeded && cfg.Enabled {
+			action = desiredAction
+		}
+		fallbackModel := cfg.EffectiveFallbackModel()
+		if action == store.ExceededActionDowngrade {
+			log.Printf("spend-limit: downgrading key %s to %s (today=%dc weekly=%dc limit daily=%dc weekly=%dc)",
+				keyHash, fallbackModel, key.TodayCents, key.WeekCents, limit.DailyCents, limit.WeeklyCents)
+		} else if action == store.ExceededActionPause {
 			log.Printf("spend-limit: pausing key %s (today=%dc weekly=%dc limit daily=%dc weekly=%dc)",
 				keyHash, key.TodayCents, key.WeekCents, limit.DailyCents, limit.WeeklyCents)
-			if err := client.PauseKey(key.KeyHash, spendLimitExceededReason, expiresAt); err != nil {
-				return fmt.Errorf("pause key %s: %w", keyHash, err)
-			}
-			continue
 		}
-		if automatic[keyHash] {
-			if err := client.ResumeKey(key.KeyHash, spendLimitExceededReason); err != nil {
-				return fmt.Errorf("resume key %s: %w", keyHash, err)
+		if err := reconcileAutomaticState(client, keyHash, action, fallbackModel, expiresAt, pausedAutomatic[keyHash], downgradedAutomatic[keyHash]); err != nil {
+			return fmt.Errorf("reconcile key %s: %w", keyHash, err)
+		}
+	}
+	return nil
+}
+
+func isNotFoundQuotaError(err error) bool {
+	var quotaErr *quotaHTTPError
+	return errors.As(err, &quotaErr) && quotaErr.status == http.StatusNotFound
+}
+
+// reconcileAutomaticState clears the old automatic state before writing the
+// new one. If the write fails, it restores the old state so the last successful
+// protection remains active.
+func reconcileAutomaticState(client *pauseClient, keyHash, action, fallbackModel string, expiresAt time.Time, oldPause pausedKey, oldDowngrade downgradedKey) error {
+	hasPause := oldPause.KeyHash != ""
+	hasDowngrade := oldDowngrade.KeyHash != ""
+	switch action {
+	case store.ExceededActionPause:
+		if hasDowngrade {
+			if err := client.ResumeDowngradeKey(keyHash, spendLimitExceededReason); err != nil {
+				return fmt.Errorf("remove previous downgrade: %w", err)
+			}
+		}
+		if err := client.PauseKey(keyHash, spendLimitExceededReason, expiresAt); err != nil {
+			if hasDowngrade {
+				if restoreErr := client.DowngradeKey(keyHash, spendLimitExceededReason, oldDowngrade.FallbackModel, oldDowngrade.ExpiresAtTime); restoreErr != nil {
+					return fmt.Errorf("pause: %w; restore downgrade: %v", err, restoreErr)
+				}
+			}
+			return fmt.Errorf("pause: %w", err)
+		}
+	case store.ExceededActionDowngrade:
+		if hasPause {
+			if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
+				return fmt.Errorf("remove previous pause: %w", err)
+			}
+		}
+		if err := client.DowngradeKey(keyHash, spendLimitExceededReason, fallbackModel, expiresAt); err != nil {
+			if hasPause {
+				if restoreErr := client.PauseKey(keyHash, spendLimitExceededReason, oldPause.ExpiresAt); restoreErr != nil {
+					return fmt.Errorf("downgrade: %w; restore pause: %v", err, restoreErr)
+				}
+			}
+			return fmt.Errorf("downgrade: %w", err)
+		}
+	default:
+		if hasPause {
+			if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
+				return fmt.Errorf("resume pause: %w", err)
+			}
+		}
+		if hasDowngrade {
+			if err := client.ResumeDowngradeKey(keyHash, spendLimitExceededReason); err != nil {
+				if hasPause {
+					if restoreErr := client.PauseKey(keyHash, spendLimitExceededReason, oldPause.ExpiresAt); restoreErr != nil {
+						return fmt.Errorf("resume downgrade: %w; restore pause: %v", err, restoreErr)
+					}
+				}
+				return fmt.Errorf("resume downgrade: %w", err)
 			}
 		}
 	}

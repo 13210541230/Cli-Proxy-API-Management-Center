@@ -1898,7 +1898,7 @@ export function MonitoringCenterPage() {
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedChannel, setSelectedChannel] = useState('all');
   const [selectedApiKeyHash, setSelectedApiKeyHash] = useState('all');
-  const [apiKeySummarySortKey, setApiKeySummarySortKey] = useState<ApiKeySummarySortKey>('tokens');
+  const [apiKeySummarySortKey, setApiKeySummarySortKey] = useState<ApiKeySummarySortKey>('cost');
   const [apiKeySummaryTopN, setApiKeySummaryTopN] = useState('20');
   const [apiKeyTrendMetric, setApiKeyTrendMetric] = useState<ApiKeyTrendMetric>('tokens');
   const [apiKeyTrendTopN, setApiKeyTrendTopN] = useState('5');

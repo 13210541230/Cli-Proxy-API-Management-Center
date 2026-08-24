@@ -91,6 +91,11 @@ const EnterpriseKeysPage = lazy(() =>
 const QuotaLimitsPage = lazy(() =>
   import('@/pages/QuotaLimitsPage').then(({ QuotaLimitsPage }) => ({ default: QuotaLimitsPage }))
 );
+const QuotaDowngradePage = lazy(() =>
+  import('@/pages/QuotaDowngradePage').then(({ QuotaDowngradePage }) => ({
+    default: QuotaDowngradePage,
+  }))
+);
 const AlertConfigPage = lazy(() =>
   import('@/pages/AlertConfigPage').then(({ AlertConfigPage }) => ({ default: AlertConfigPage }))
 );
@@ -158,6 +163,7 @@ const mainRoutes = [
   { path: '/system', element: <SystemPage /> },
   { path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
   { path: '/quota-limits', element: <QuotaLimitsPage /> },
+  { path: '/quota-downgrade', element: <QuotaDowngradePage /> },
   { path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },
   { path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
   { path: '/alert-config', element: <AlertConfigPage /> },

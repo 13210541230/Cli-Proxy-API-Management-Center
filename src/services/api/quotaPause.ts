@@ -23,6 +23,19 @@ export interface PausedKeysResponse {
   entries: PauseEntry[];
 }
 
+export interface DowngradeEntry {
+  key_hash: string;
+  reason: string;
+  fallback_model: string;
+  downgraded_at: string;
+  expires_at: string;
+  created_at: string;
+}
+
+export interface DowngradedKeysResponse {
+  entries: DowngradeEntry[];
+}
+
 export const quotaPauseApi = {
   pauseKey: (keyHash: string, reason: string, expiresInSeconds?: number) =>
     apiClient.post<{ status: string }>('/quota/pause', {
@@ -35,4 +48,17 @@ export const quotaPauseApi = {
     apiClient.post<{ status: string }>('/quota/resume', { key_hash: normalizePauseKeyHash(keyHash) }),
 
   listPaused: () => apiClient.get<PausedKeysResponse>('/quota/paused'),
+
+  downgradeKey: (keyHash: string, reason: string, fallbackModel: string, expiresInSeconds?: number) =>
+    apiClient.post<{ status: string }>('/quota/downgrade', {
+      key_hash: normalizePauseKeyHash(keyHash),
+      reason,
+      fallback_model: fallbackModel.trim(),
+      expires_in_seconds: expiresInSeconds ?? 0,
+    }),
+
+  resumeDowngradeKey: (keyHash: string) =>
+    apiClient.post<{ status: string }>('/quota/downgrade/resume', { key_hash: normalizePauseKeyHash(keyHash) }),
+
+  listDowngraded: () => apiClient.get<DowngradedKeysResponse>('/quota/downgraded'),
 };
