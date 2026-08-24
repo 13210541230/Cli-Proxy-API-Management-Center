@@ -17,7 +17,9 @@ export interface QuotaConfig {
   db_path: string;
   default: SpendLimit;
   overrides: SpendLimitEntry[];
-  exceeded_action: 'pause' | 'downgrade';
+}
+
+export interface DowngradeQuotaConfig extends QuotaConfig {
   fallback_model: string;
 }
 
@@ -26,4 +28,9 @@ export const quotaLimitsApi = {
 
   updateConfig: (cfg: Partial<QuotaConfig>) =>
     apiClient.put<{ status: string }>('/quota/config', cfg),
+
+  getDowngradeConfig: () => apiClient.get<DowngradeQuotaConfig>('/quota/downgrade-config'),
+
+  updateDowngradeConfig: (cfg: Partial<DowngradeQuotaConfig>) =>
+    apiClient.put<{ status: string }>('/quota/downgrade-config', cfg),
 };

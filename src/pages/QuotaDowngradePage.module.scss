@@ -50,6 +50,22 @@
   }
 }
 
+.toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+
+  input[type='checkbox'] {
+    width: 18px;
+    height: 18px;
+  }
+
+  span {
+    font-weight: 500;
+  }
+}
+
 .table {
   width: 100%;
   border-collapse: collapse;
@@ -84,6 +100,28 @@
   padding: 20px;
   text-align: center;
   color: var(--text-muted, #999);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  label {
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+}
+
+.formActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.valueCell {
+  font-weight: 500;
 }
 
 .valueHash {

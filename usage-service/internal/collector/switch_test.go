@@ -56,7 +56,7 @@ func TestReconcileAutomaticStateClearsPauseBeforeDowngrade(t *testing.T) {
 	}
 }
 
-func TestReconcileAutomaticStateRestoresPauseWhenDowngradeWriteFails(t *testing.T) {
+func TestReconcileIndependentDowngradeDoesNotCompensatePause(t *testing.T) {
 	pauseWrites := 0
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -92,7 +92,7 @@ func TestReconcileAutomaticStateRestoresPauseWhenDowngradeWriteFails(t *testing.
 	if err := ReconcileSpendLimits(db, newPauseClient(upstream.URL, "management-key")); err == nil {
 		t.Fatal("ReconcileSpendLimits() error = nil, want downgrade failure")
 	}
-	if pauseWrites != 1 {
-		t.Fatalf("pause compensation writes = %d, want 1", pauseWrites)
+	if pauseWrites != 0 {
+		t.Fatalf("pause compensation writes = %d, want 0", pauseWrites)
 	}
 }

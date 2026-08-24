@@ -173,7 +173,11 @@ func (c SpendLimitConfig) LimitForKey(keyHash string) SpendLimit {
 	return c.DefaultLimit()
 }
 
-const spendLimitConfigKey = "quota_config"
+const (
+	spendLimitConfigKey          = "quota_config" // Legacy combined quota configuration.
+	pauseSpendLimitConfigKey     = "quota_pause_config"
+	downgradeSpendLimitConfigKey = "quota_downgrade_config"
+)
 
 const UngroupedDepartmentID = "__ungrouped__"
 
@@ -1649,26 +1653,82 @@ func (s *Store) UsageReport(ctx context.Context, fromMS, toMS int64) ([]UsageRep
 	return result, nil
 }
 
-// SaveSpendLimitConfig persists the quota limit config to the settings table.
+// SaveSpendLimitConfig persists the legacy combined quota config. New code
+// should save pause and downgrade policies independently.
 func (s *Store) SaveSpendLimitConfig(ctx context.Context, cfg SpendLimitConfig) error {
+	return s.saveSpendLimitConfig(ctx, spendLimitConfigKey, cfg)
+}
+
+// LoadSpendLimitConfig reads the legacy combined quota config.
+func (s *Store) LoadSpendLimitConfig(ctx context.Context) (SpendLimitConfig, bool, error) {
+	cfg, ok, err := s.loadSpendLimitConfig(ctx, spendLimitConfigKey)
+	if err != nil || ok {
+		return cfg, ok, err
+	}
+	return s.loadSpendLimitConfig(ctx, pauseSpendLimitConfigKey)
+}
+
+// SavePauseSpendLimitConfig persists the limits used by automatic pause enforcement.
+func (s *Store) SavePauseSpendLimitConfig(ctx context.Context, cfg SpendLimitConfig) error {
+	cfg.ExceededAction = ""
+	cfg.FallbackModel = ""
+	return s.saveSpendLimitConfig(ctx, pauseSpendLimitConfigKey, cfg)
+}
+
+// LoadPauseSpendLimitConfig loads the pause policy. A legacy config explicitly
+// configured for downgrade is not treated as a pause policy during migration.
+func (s *Store) LoadPauseSpendLimitConfig(ctx context.Context) (SpendLimitConfig, bool, error) {
+	cfg, ok, err := s.loadSpendLimitConfig(ctx, pauseSpendLimitConfigKey)
+	if err != nil || ok {
+		return cfg, ok, err
+	}
+	legacy, legacyOK, err := s.loadSpendLimitConfig(ctx, spendLimitConfigKey)
+	if err != nil || !legacyOK || legacy.EffectiveExceededAction() == ExceededActionDowngrade {
+		return SpendLimitConfig{}, false, err
+	}
+	return legacy, true, nil
+}
+
+// SaveDowngradeSpendLimitConfig persists the independent model downgrade policy.
+func (s *Store) SaveDowngradeSpendLimitConfig(ctx context.Context, cfg SpendLimitConfig) error {
+	cfg.ExceededAction = ExceededActionDowngrade
+	if strings.TrimSpace(cfg.FallbackModel) == "" {
+		cfg.FallbackModel = DefaultFallbackModel
+	}
+	return s.saveSpendLimitConfig(ctx, downgradeSpendLimitConfigKey, cfg)
+}
+
+// LoadDowngradeSpendLimitConfig loads the downgrade policy, including a legacy
+// combined config whose action was explicitly set to downgrade.
+func (s *Store) LoadDowngradeSpendLimitConfig(ctx context.Context) (SpendLimitConfig, bool, error) {
+	cfg, ok, err := s.loadSpendLimitConfig(ctx, downgradeSpendLimitConfigKey)
+	if err != nil || ok {
+		return cfg, ok, err
+	}
+	legacy, legacyOK, err := s.loadSpendLimitConfig(ctx, spendLimitConfigKey)
+	if err != nil || !legacyOK || legacy.EffectiveExceededAction() != ExceededActionDowngrade {
+		return SpendLimitConfig{}, false, err
+	}
+	return legacy, true, nil
+}
+
+func (s *Store) saveSpendLimitConfig(ctx context.Context, key string, cfg SpendLimitConfig) error {
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
 	}
 	_, err = s.db.ExecContext(ctx,
 		`insert into settings(key, value, updated_at_ms)
-		 values(?, ?, ?)
-		 on conflict(key) do update set value = excluded.value, updated_at_ms = excluded.updated_at_ms`,
-		spendLimitConfigKey, string(data), time.Now().UnixMilli(),
+			 values(?, ?, ?)
+			 on conflict(key) do update set value = excluded.value, updated_at_ms = excluded.updated_at_ms`,
+		key, string(data), time.Now().UnixMilli(),
 	)
 	return err
 }
 
-// LoadSpendLimitConfig reads the quota limit config from the settings table.
-// Returns (cfg, false, nil) when no config is stored.
-func (s *Store) LoadSpendLimitConfig(ctx context.Context) (SpendLimitConfig, bool, error) {
+func (s *Store) loadSpendLimitConfig(ctx context.Context, key string) (SpendLimitConfig, bool, error) {
 	var raw string
-	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, spendLimitConfigKey).Scan(&raw)
+	err := s.db.QueryRowContext(ctx, `select value from settings where key = ?`, key).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
 		return SpendLimitConfig{}, false, nil
 	}

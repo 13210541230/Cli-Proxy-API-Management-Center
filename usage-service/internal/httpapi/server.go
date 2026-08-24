@@ -90,11 +90,16 @@ type apiKeyAliasesRequest struct {
 }
 
 type quotaConfigRequest struct {
-	Enabled        *bool                   `json:"enabled"`
-	Default        *store.SpendLimit       `json:"default"`
-	Overrides      []store.SpendLimitEntry `json:"overrides"`
-	ExceededAction *string                 `json:"exceeded_action"`
-	FallbackModel  *string                 `json:"fallback_model"`
+	Enabled   *bool                   `json:"enabled"`
+	Default   *store.SpendLimit       `json:"default"`
+	Overrides []store.SpendLimitEntry `json:"overrides"`
+}
+
+type downgradeQuotaConfigRequest struct {
+	Enabled       *bool                   `json:"enabled"`
+	Default       *store.SpendLimit       `json:"default"`
+	Overrides     []store.SpendLimitEntry `json:"overrides"`
+	FallbackModel *string                 `json:"fallback_model"`
 }
 
 type enterpriseDepartmentsRequest struct {
@@ -169,6 +174,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/api-key-aliases") {
 		s.withCORS(s.handleAPIKeyAliases)(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/v0/management/quota/downgrade-config") {
+		s.withCORS(s.handleQuotaDowngradeConfig)(w, r)
 		return
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/quota/config") {
@@ -600,23 +609,21 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 	if !s.authorizeIfConfigured(w, r) {
 		return
 	}
-
-	path := strings.TrimRight(r.URL.Path, "/")
-	if path != "/v0/management/quota/config" {
+	if strings.TrimRight(r.URL.Path, "/") != "/v0/management/quota/config" {
 		methodNotAllowed(w)
 		return
 	}
 
 	switch r.Method {
 	case http.MethodGet:
-		cfg, _, err := s.loadSpendLimitConfig(r.Context())
+		cfg, _, err := s.loadPauseSpendLimitConfig(r.Context())
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
 		s.writeSpendLimitConfig(w, cfg)
 	case http.MethodPut:
-		current, _, err := s.loadSpendLimitConfig(r.Context())
+		current, _, err := s.loadPauseSpendLimitConfig(r.Context())
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
 			return
@@ -637,25 +644,62 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 		if req.Overrides != nil {
 			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
 		}
-		if req.ExceededAction != nil {
-			action := strings.ToLower(strings.TrimSpace(*req.ExceededAction))
-			if action != store.ExceededActionPause && action != store.ExceededActionDowngrade {
-				writeError(w, http.StatusBadRequest, errors.New("exceeded_action must be pause or downgrade"))
-				return
-			}
-			current.ExceededAction = action
+		if err := s.saveSpendLimitConfigWithSync(r.Context(), current, false); err != nil {
+			writeError(w, http.StatusBadGateway, err)
+			return
+		}
+		s.writeSpendLimitConfig(w, current)
+	default:
+		methodNotAllowed(w)
+	}
+}
+
+func (s *Server) handleQuotaDowngradeConfig(w http.ResponseWriter, r *http.Request) {
+	if !s.authorizeIfConfigured(w, r) {
+		return
+	}
+	if strings.TrimRight(r.URL.Path, "/") != "/v0/management/quota/downgrade-config" {
+		methodNotAllowed(w)
+		return
+	}
+
+	switch r.Method {
+	case http.MethodGet:
+		cfg, _, err := s.loadDowngradeSpendLimitConfig(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		s.writeDowngradeSpendLimitConfig(w, cfg)
+	case http.MethodPut:
+		current, _, err := s.loadDowngradeSpendLimitConfig(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		var req downgradeQuotaConfigRequest
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		if req.Enabled != nil {
+			current.Enabled = *req.Enabled
+		}
+		if req.Default != nil {
+			current.Default = *req.Default
+			current.DailyCents = 0
+			current.WeeklyCents = 0
+		}
+		if req.Overrides != nil {
+			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
 		}
 		if req.FallbackModel != nil {
-			model := strings.TrimSpace(*req.FallbackModel)
-			if model == "" {
-				writeError(w, http.StatusBadRequest, errors.New("fallback_model is required"))
-				return
-			}
-			current.FallbackModel = model
+			current.FallbackModel = strings.TrimSpace(*req.FallbackModel)
 		}
-		current.ExceededAction = current.EffectiveExceededAction()
-		current.FallbackModel = current.EffectiveFallbackModel()
-		if current.ExceededAction == store.ExceededActionDowngrade {
+		if strings.TrimSpace(current.FallbackModel) == "" {
+			current.FallbackModel = store.DefaultFallbackModel
+		}
+		if current.Enabled {
 			setup, ok, setupErr := s.resolveSetup(r.Context())
 			if setupErr != nil {
 				writeError(w, http.StatusInternalServerError, setupErr)
@@ -674,34 +718,43 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		}
-		if s.collector == nil {
-			if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
-				writeError(w, http.StatusInternalServerError, err)
-				return
-			}
-			writeError(w, http.StatusServiceUnavailable, errors.New("spend-limit reconciler is unavailable"))
+		if err := s.saveSpendLimitConfigWithSync(r.Context(), current, true); err != nil {
+			writeError(w, http.StatusBadGateway, err)
 			return
 		}
-		// 保存与远程协调必须在同一临界区，防止 ticker 或旧 PUT 在本次成功响应后写回过期决策。
-		saved := false
-		if err := s.collector.WithSpendLimitSync(func() error {
-			if err := s.store.SaveSpendLimitConfig(r.Context(), current); err != nil {
-				return err
-			}
-			saved = true
-			return nil
-		}); err != nil {
-			status := http.StatusBadGateway
-			if !saved {
-				status = http.StatusInternalServerError
-			}
-			writeError(w, status, err)
-			return
-		}
-		s.writeSpendLimitConfig(w, current)
+		s.writeDowngradeSpendLimitConfig(w, current)
 	default:
 		methodNotAllowed(w)
 	}
+}
+
+func (s *Server) saveSpendLimitConfigWithSync(ctx context.Context, cfg store.SpendLimitConfig, downgrade bool) error {
+	if s.collector == nil {
+		if downgrade {
+			return s.store.SaveDowngradeSpendLimitConfig(ctx, cfg)
+		}
+		return s.store.SavePauseSpendLimitConfig(ctx, cfg)
+	}
+	saved := false
+	err := s.collector.WithSpendLimitSync(func() error {
+		var err error
+		if downgrade {
+			err = s.store.SaveDowngradeSpendLimitConfig(ctx, cfg)
+		} else {
+			err = s.store.SavePauseSpendLimitConfig(ctx, cfg)
+		}
+		if err == nil {
+			saved = true
+		}
+		return err
+	})
+	if err != nil {
+		if saved {
+			return fmt.Errorf("quota synchronization failed: %w", err)
+		}
+		return err
+	}
+	return nil
 }
 
 // handleAlertConfig handles GET/PUT /v0/management/alert/config for SMTP and alert settings.
@@ -750,8 +803,8 @@ func (s *Server) handleAlertConfig(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *Server) loadSpendLimitConfig(ctx context.Context) (store.SpendLimitConfig, bool, error) {
-	cfg, ok, err := s.store.LoadSpendLimitConfig(ctx)
+func (s *Server) loadPauseSpendLimitConfig(ctx context.Context) (store.SpendLimitConfig, bool, error) {
+	cfg, ok, err := s.store.LoadPauseSpendLimitConfig(ctx)
 	if err != nil {
 		return store.SpendLimitConfig{}, false, err
 	}
@@ -762,18 +815,43 @@ func (s *Server) loadSpendLimitConfig(ctx context.Context) (store.SpendLimitConf
 	return cfg, ok, nil
 }
 
+func (s *Server) loadDowngradeSpendLimitConfig(ctx context.Context) (store.SpendLimitConfig, bool, error) {
+	cfg, ok, err := s.store.LoadDowngradeSpendLimitConfig(ctx)
+	if err != nil {
+		return store.SpendLimitConfig{}, false, err
+	}
+	if !ok {
+		cfg.Default = store.SpendLimit{}
+		cfg.Overrides = []store.SpendLimitEntry{}
+		cfg.FallbackModel = store.DefaultFallbackModel
+	}
+	return cfg, ok, nil
+}
+
 func (s *Server) writeSpendLimitConfig(w http.ResponseWriter, cfg store.SpendLimitConfig) {
 	overrides := cfg.Overrides
 	if overrides == nil {
 		overrides = []store.SpendLimitEntry{}
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
-		"enabled":         cfg.Enabled,
-		"db_path":         s.cfg.DBPath,
-		"default":         cfg.DefaultLimit(),
-		"overrides":       overrides,
-		"exceeded_action": cfg.EffectiveExceededAction(),
-		"fallback_model":  cfg.EffectiveFallbackModel(),
+		"enabled":   cfg.Enabled,
+		"db_path":   s.cfg.DBPath,
+		"default":   cfg.DefaultLimit(),
+		"overrides": overrides,
+	})
+}
+
+func (s *Server) writeDowngradeSpendLimitConfig(w http.ResponseWriter, cfg store.SpendLimitConfig) {
+	overrides := cfg.Overrides
+	if overrides == nil {
+		overrides = []store.SpendLimitEntry{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"enabled":        cfg.Enabled,
+		"db_path":        s.cfg.DBPath,
+		"default":        cfg.DefaultLimit(),
+		"overrides":      overrides,
+		"fallback_model": cfg.EffectiveFallbackModel(),
 	})
 }
 

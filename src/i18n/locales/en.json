@@ -2075,8 +2075,8 @@
     "no_key_bindings": "No enterprise key bindings. Add user bindings in Enterprise Key Management first."
   },
   "quota_downgrade": {
-    "title": "Over-limit Management",
-    "policy_title": "Over-limit Action",
+    "title": "Model Downgrade Limits",
+    "policy_title": "Downgrade Limits",
     "exceeded_action": "After reaching the limit",
     "action_pause": "Pause requests",
     "action_downgrade": "Downgrade requests",
@@ -2095,8 +2095,8 @@
     "restore_success": "Original model routing restored",
     "restore_failed": "Restore failed",
     "fallback_model_required": "Enter a fallback model before enabling downgrade.",
-    "save_success": "Over-limit behavior saved",
-    "save_failed": "Failed to save over-limit action",
+    "save_success": "Downgrade limits saved",
+    "save_failed": "Failed to save downgrade limits",
     "load_failed": "Failed to load over-limit management data"
   },
   "language": {

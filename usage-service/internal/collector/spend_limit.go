@@ -280,14 +280,19 @@ func (c *pauseClient) doJSON(method, path string, body any, result any) error {
 	return nil
 }
 
-// ReconcileSpendLimits coordinates automatic pause/downgrade state for the current spend window.
+// ReconcileSpendLimits coordinates the independent automatic pause and
+// downgrade policies for the current spend window.
 func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 	ctx := context.Background()
-	cfg, ok, err := s.LoadSpendLimitConfig(ctx)
+	pauseCfg, pauseConfigured, err := s.LoadPauseSpendLimitConfig(ctx)
 	if err != nil {
-		return fmt.Errorf("load config: %w", err)
+		return fmt.Errorf("load pause config: %w", err)
 	}
-	if !ok {
+	downgradeCfg, downgradeConfigured, err := s.LoadDowngradeSpendLimitConfig(ctx)
+	if err != nil {
+		return fmt.Errorf("load downgrade config: %w", err)
+	}
+	if !pauseConfigured && !downgradeConfigured {
 		hasSpend, err := s.HasCurrentKeySpend(ctx)
 		if err != nil {
 			return fmt.Errorf("check key spend: %w", err)
@@ -301,12 +306,11 @@ func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 	if err != nil {
 		return fmt.Errorf("list paused keys: %w", err)
 	}
-	// Older CPA versions do not expose downgrade endpoints. Keep the legacy
-	// pause mode usable against them, while explicit downgrade mode surfaces the
-	// incompatibility instead of silently falling back to pause.
 	downgraded, err := client.DowngradedKeys()
 	if err != nil {
-		if cfg.EffectiveExceededAction() != store.ExceededActionPause || !isNotFoundQuotaError(err) {
+		// Older CPA versions do not expose downgrade endpoints. This is safe
+		// only while no independent downgrade policy is configured.
+		if (downgradeConfigured && downgradeCfg.Enabled) || !isNotFoundQuotaError(err) {
 			return fmt.Errorf("list downgraded keys: %w", err)
 		}
 		downgraded = nil
@@ -347,30 +351,29 @@ func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 	}
 
 	now := time.Now()
-	desiredAction := store.ExceededActionPause
-	if cfg.Enabled && cfg.EffectiveExceededAction() == store.ExceededActionDowngrade {
-		desiredAction = store.ExceededActionDowngrade
-	}
 	for keyHash, key := range keysByHash {
-		limit := store.SpendLimit{}
-		if ok && cfg.Enabled {
-			limit = cfg.LimitForKey(key.KeyHash)
+		pauseExceeded := false
+		var pauseExpiresAt time.Time
+		if pauseConfigured && pauseCfg.Enabled {
+			pauseExceeded, pauseExpiresAt = spendLimitExceeded(key, pauseCfg.LimitForKey(key.KeyHash), now)
 		}
-		exceeded, expiresAt := spendLimitExceeded(key, limit, now)
-		action := ""
-		if exceeded && cfg.Enabled {
-			action = desiredAction
+		if pauseExceeded {
+			log.Printf("spend-limit: pausing key %s", keyHash)
 		}
-		fallbackModel := cfg.EffectiveFallbackModel()
-		if action == store.ExceededActionDowngrade {
-			log.Printf("spend-limit: downgrading key %s to %s (today=%dc weekly=%dc limit daily=%dc weekly=%dc)",
-				keyHash, fallbackModel, key.TodayCents, key.WeekCents, limit.DailyCents, limit.WeeklyCents)
-		} else if action == store.ExceededActionPause {
-			log.Printf("spend-limit: pausing key %s (today=%dc weekly=%dc limit daily=%dc weekly=%dc)",
-				keyHash, key.TodayCents, key.WeekCents, limit.DailyCents, limit.WeeklyCents)
+		if err := reconcileAutomaticPause(client, keyHash, pauseExceeded, pauseExpiresAt, pausedAutomatic[keyHash]); err != nil {
+			return fmt.Errorf("reconcile pause for key %s: %w", keyHash, err)
 		}
-		if err := reconcileAutomaticState(client, keyHash, action, fallbackModel, expiresAt, pausedAutomatic[keyHash], downgradedAutomatic[keyHash]); err != nil {
-			return fmt.Errorf("reconcile key %s: %w", keyHash, err)
+
+		downgradeExceeded := false
+		var downgradeExpiresAt time.Time
+		if downgradeConfigured && downgradeCfg.Enabled {
+			downgradeExceeded, downgradeExpiresAt = spendLimitExceeded(key, downgradeCfg.LimitForKey(key.KeyHash), now)
+		}
+		if downgradeExceeded {
+			log.Printf("spend-limit: downgrading key %s to %s", keyHash, downgradeCfg.EffectiveFallbackModel())
+		}
+		if err := reconcileAutomaticDowngrade(client, keyHash, downgradeExceeded, downgradeCfg.EffectiveFallbackModel(), downgradeExpiresAt, downgradedAutomatic[keyHash]); err != nil {
+			return fmt.Errorf("reconcile downgrade for key %s: %w", keyHash, err)
 		}
 	}
 	return nil
@@ -381,57 +384,34 @@ func isNotFoundQuotaError(err error) bool {
 	return errors.As(err, &quotaErr) && quotaErr.status == http.StatusNotFound
 }
 
-// reconcileAutomaticState clears the old automatic state before writing the
-// new one. If the write fails, it restores the old state so the last successful
-// protection remains active.
-func reconcileAutomaticState(client *pauseClient, keyHash, action, fallbackModel string, expiresAt time.Time, oldPause pausedKey, oldDowngrade downgradedKey) error {
-	hasPause := oldPause.KeyHash != ""
-	hasDowngrade := oldDowngrade.KeyHash != ""
-	switch action {
-	case store.ExceededActionPause:
-		if hasDowngrade {
-			if err := client.ResumeDowngradeKey(keyHash, spendLimitExceededReason); err != nil {
-				return fmt.Errorf("remove previous downgrade: %w", err)
-			}
-		}
+func reconcileAutomaticPause(client *pauseClient, keyHash string, exceeded bool, expiresAt time.Time, existing pausedKey) error {
+	if exceeded {
 		if err := client.PauseKey(keyHash, spendLimitExceededReason, expiresAt); err != nil {
-			if hasDowngrade {
-				if restoreErr := client.DowngradeKey(keyHash, spendLimitExceededReason, oldDowngrade.FallbackModel, oldDowngrade.ExpiresAtTime); restoreErr != nil {
-					return fmt.Errorf("pause: %w; restore downgrade: %v", err, restoreErr)
-				}
-			}
 			return fmt.Errorf("pause: %w", err)
 		}
-	case store.ExceededActionDowngrade:
-		if hasPause {
-			if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
-				return fmt.Errorf("remove previous pause: %w", err)
-			}
-		}
+		return nil
+	}
+	if existing.KeyHash == "" {
+		return nil
+	}
+	if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
+		return fmt.Errorf("resume: %w", err)
+	}
+	return nil
+}
+
+func reconcileAutomaticDowngrade(client *pauseClient, keyHash string, exceeded bool, fallbackModel string, expiresAt time.Time, existing downgradedKey) error {
+	if exceeded {
 		if err := client.DowngradeKey(keyHash, spendLimitExceededReason, fallbackModel, expiresAt); err != nil {
-			if hasPause {
-				if restoreErr := client.PauseKey(keyHash, spendLimitExceededReason, oldPause.ExpiresAt); restoreErr != nil {
-					return fmt.Errorf("downgrade: %w; restore pause: %v", err, restoreErr)
-				}
-			}
 			return fmt.Errorf("downgrade: %w", err)
 		}
-	default:
-		if hasPause {
-			if err := client.ResumeKey(keyHash, spendLimitExceededReason); err != nil {
-				return fmt.Errorf("resume pause: %w", err)
-			}
-		}
-		if hasDowngrade {
-			if err := client.ResumeDowngradeKey(keyHash, spendLimitExceededReason); err != nil {
-				if hasPause {
-					if restoreErr := client.PauseKey(keyHash, spendLimitExceededReason, oldPause.ExpiresAt); restoreErr != nil {
-						return fmt.Errorf("resume downgrade: %w; restore pause: %v", err, restoreErr)
-					}
-				}
-				return fmt.Errorf("resume downgrade: %w", err)
-			}
-		}
+		return nil
+	}
+	if existing.KeyHash == "" {
+		return nil
+	}
+	if err := client.ResumeDowngradeKey(keyHash, spendLimitExceededReason); err != nil {
+		return fmt.Errorf("resume downgrade: %w", err)
 	}
 	return nil
 }
