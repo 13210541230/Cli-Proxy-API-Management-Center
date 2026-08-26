@@ -23,6 +23,14 @@ export interface EnterpriseKeyBinding {
   updatedAtMs: number;
 }
 
+/** Non-secret enterprise-key fields used for audit metadata joins. */
+export interface EnterpriseKeyMetadata {
+  apiKeyHash: string;
+  userName: string;
+  email?: string;
+  departmentId: string;
+}
+
 export interface EnterpriseImportHistory {
   taskId: string;
   csvFileName: string;

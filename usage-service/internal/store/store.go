@@ -220,6 +220,14 @@ type EnterpriseKeyBinding struct {
 	UpdatedAtMS          int64  `json:"updatedAtMs"`
 }
 
+// EnterpriseKeyMetadata contains only non-secret fields needed for audit joins.
+type EnterpriseKeyMetadata struct {
+	APIKeyHash   string `json:"apiKeyHash"`
+	UserName     string `json:"userName"`
+	DepartmentID string `json:"departmentId"`
+	Email        string `json:"email"`
+}
+
 type EnterpriseImportHistory struct {
 	TaskID       string `json:"taskId"`
 	CSVFileName  string `json:"csvFileName"`
@@ -1369,6 +1377,25 @@ func (s *Store) LoadEnterpriseKeyBindings(ctx context.Context) ([]EnterpriseKeyB
 			return nil, err
 		}
 		item.UpdatedBy = updatedBy.String
+		items = append(items, item)
+	}
+	return items, rows.Err()
+}
+
+// LoadEnterpriseKeyMetadata returns audit-join fields without loading raw API keys.
+func (s *Store) LoadEnterpriseKeyMetadata(ctx context.Context) ([]EnterpriseKeyMetadata, error) {
+	rows, err := s.db.QueryContext(ctx, `select api_key_hash, user_name, department_id, email
+		from enterprise_key_bindings order by updated_at_ms desc, api_key_hash asc`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	items := make([]EnterpriseKeyMetadata, 0)
+	for rows.Next() {
+		var item EnterpriseKeyMetadata
+		if err := rows.Scan(&item.APIKeyHash, &item.UserName, &item.DepartmentID, &item.Email); err != nil {
+			return nil, err
+		}
 		items = append(items, item)
 	}
 	return items, rows.Err()

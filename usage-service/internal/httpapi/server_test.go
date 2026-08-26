@@ -1189,6 +1189,55 @@ func TestEnterpriseKeyBindingsGenerateReturnsEmail(t *testing.T) {
 	}
 }
 
+func TestEnterpriseKeyMetadataEndpointExcludesRawKey(t *testing.T) {
+	cfg := config.Config{
+		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
+		Queue:       "usage",
+		PopSide:     "right",
+		CORSOrigins: []string{"*"},
+	}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := db.UpsertEnterpriseKeyBindings(context.Background(), []store.EnterpriseKeyBinding{{
+		APIKey:       "secret-enterprise-key",
+		UserName:     "zhangsan",
+		DepartmentID: "dept_sh",
+		Email:        "zs@example.com",
+	}}); err != nil {
+		t.Fatalf("upsert key binding: %v", err)
+	}
+
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+	req := httptest.NewRequest(http.MethodGet, "/v0/management/enterprise/key-bindings/metadata", nil)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	body := rr.Body.String()
+	if strings.Contains(body, "secret-enterprise-key") || strings.Contains(body, "\"apiKey\"") {
+		t.Fatalf("metadata response contains raw key: %s", body)
+	}
+	var response struct {
+		Items []struct {
+			APIKeyHash   string `json:"apiKeyHash"`
+			UserName     string `json:"userName"`
+			DepartmentID string `json:"departmentId"`
+			Email        string `json:"email"`
+		} `json:"items"`
+	}
+	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if len(response.Items) != 1 || response.Items[0].UserName != "zhangsan" || response.Items[0].Email != "zs@example.com" || response.Items[0].APIKeyHash == "" {
+		t.Fatalf("metadata response = %#v", response.Items)
+	}
+}
+
 func closeFloat(left float64, right float64) bool {
 	return math.Abs(left-right) < 0.0000001
 }

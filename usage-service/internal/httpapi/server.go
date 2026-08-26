@@ -1103,6 +1103,13 @@ func (s *Server) handleEnterpriseKeyBindings(w http.ResponseWriter, r *http.Requ
 	path := strings.TrimRight(r.URL.Path, "/")
 	const basePath = "/v0/management/enterprise/key-bindings"
 	switch {
+	case path == basePath+"/metadata" && r.Method == http.MethodGet:
+		items, err := s.store.LoadEnterpriseKeyMetadata(r.Context())
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"items": items})
 	case path == basePath && r.Method == http.MethodGet:
 		setup, ok, err := s.resolveSetup(r.Context())
 		if err != nil {

@@ -1,0 +1,315 @@
+.page {
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+  color: var(--text-primary);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 30px;
+}
+
+.description {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.noticeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.notice {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--warning-color) 35%, var(--border-color));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--warning-color) 8%, var(--bg-primary));
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.notice strong {
+  color: var(--text-primary);
+}
+
+.neutralNotice {
+  border-color: var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.filterCard,
+.listCard {
+  min-width: 0;
+  padding: 18px;
+}
+
+.filterHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.filterHeader h2 {
+  margin: 0;
+  font-size: 17px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.filters > :global(.form-group) {
+  min-width: 0;
+}
+
+.selectField {
+  display: grid;
+  align-content: start;
+  gap: 5px;
+  min-width: 0;
+}
+
+.selectField label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.filters > :global(.form-group:nth-child(5)),
+.filters > :global(.form-group:nth-child(6)) {
+  align-self: end;
+}
+
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table th,
+.table td {
+  padding: 12px 10px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  vertical-align: top;
+  white-space: nowrap;
+}
+
+.table th {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.table td small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-secondary);
+  white-space: normal;
+}
+
+.table code,
+.metadata code {
+  color: var(--text-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+
+.securitySignal {
+  color: var(--warning-color) !important;
+  font-weight: 700;
+}
+
+.outcome {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.success {
+  background: color-mix(in srgb, var(--success-color) 14%, transparent);
+  color: var(--success-color);
+}
+
+.failed,
+.rejected {
+  background: color-mix(in srgb, var(--error-color) 12%, transparent);
+  color: var(--error-color);
+}
+
+.rejected {
+  background: color-mix(in srgb, var(--warning-color) 14%, transparent);
+  color: var(--warning-color);
+}
+
+.state,
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 130px;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+.state.warning {
+  border: 1px solid color-mix(in srgb, var(--warning-color) 30%, var(--border-color));
+  border-radius: 10px;
+  color: var(--warning-color);
+}
+
+.state.error {
+  border: 1px solid color-mix(in srgb, var(--error-color) 30%, var(--border-color));
+  border-radius: 10px;
+  color: var(--error-color);
+}
+
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 14px;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.paginationActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.detail {
+  display: grid;
+  gap: 20px;
+}
+
+.metadata {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.metadata > div {
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.metadata dt {
+  margin-bottom: 4px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.metadata dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.textPanel {
+  display: grid;
+  gap: 10px;
+}
+
+.textPanel h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.textPanel pre {
+  max-height: 360px;
+  overflow: auto;
+  margin: 0;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+  font: inherit;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.unavailableText,
+.emptyText {
+  display: grid;
+  gap: 5px;
+  padding: 16px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+}
+
+.unavailableText strong {
+  color: var(--warning-color);
+}
+
+.truncated {
+  color: var(--warning-color);
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .noticeGrid,
+  .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .header,
+  .pagination {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .noticeGrid,
+  .filters,
+  .metadata {
+    grid-template-columns: 1fr;
+  }
+
+  .paginationActions {
+    justify-content: space-between;
+  }
+}

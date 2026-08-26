@@ -23,6 +23,7 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
+  IconFileText,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -48,6 +49,7 @@ const sidebarIcons: Record<string, ReactNode> = {
 	config: <IconSidebarConfig size={18} />,
 	logs: <IconSidebarLogs size={18} />,
 	system: <IconSidebarSystem size={18} />,
+	requestAudit: <IconFileText size={18} />,
 };
 
 // Header action icons - smaller size for header buttons
@@ -393,6 +395,7 @@ export function MainLayout() {
     { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
     { path: '/enterprise-keys', label: t('nav.enterprise_keys'), icon: sidebarIcons.config },
+    { path: '/request-audit', label: t('nav.request_audit'), icon: sidebarIcons.requestAudit },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },

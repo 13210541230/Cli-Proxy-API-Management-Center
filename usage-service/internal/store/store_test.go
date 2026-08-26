@@ -252,6 +252,38 @@ func TestStoreEnterpriseMetadataPersistence(t *testing.T) {
 	}
 }
 
+func TestStoreEnterpriseKeyMetadataExcludesRawKey(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	ctx := context.Background()
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []EnterpriseKeyBinding{{
+		APIKey:       "secret-enterprise-key",
+		UserName:     "zhangsan",
+		DepartmentID: "dept_sh",
+		Email:        "zs@example.com",
+	}}); err != nil {
+		t.Fatalf("upsert key binding: %v", err)
+	}
+
+	items, err := db.LoadEnterpriseKeyMetadata(ctx)
+	if err != nil {
+		t.Fatalf("load key metadata: %v", err)
+	}
+	if len(items) != 1 {
+		t.Fatalf("len(metadata) = %d, want 1", len(items))
+	}
+	if items[0].UserName != "zhangsan" || items[0].Email != "zs@example.com" {
+		t.Fatalf("metadata = %#v", items[0])
+	}
+	if items[0].APIKeyHash == "" || items[0].APIKeyHash == "secret-enterprise-key" {
+		t.Fatalf("metadata hash = %q", items[0].APIKeyHash)
+	}
+}
+
 func TestStoreEnterpriseSchemaMigrationIsIdempotent(t *testing.T) {
 	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
 	if err != nil {

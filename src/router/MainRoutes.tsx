@@ -88,6 +88,9 @@ const SystemPage = lazy(() => import('@/pages/SystemPage').then(({ SystemPage })
 const EnterpriseKeysPage = lazy(() =>
   import('@/pages/EnterpriseKeysPage').then(({ EnterpriseKeysPage }) => ({ default: EnterpriseKeysPage }))
 );
+const RequestAuditPage = lazy(() =>
+  import('@/pages/RequestAuditPage').then(({ RequestAuditPage }) => ({ default: RequestAuditPage }))
+);
 const QuotaLimitsPage = lazy(() =>
   import('@/pages/QuotaLimitsPage').then(({ QuotaLimitsPage }) => ({ default: QuotaLimitsPage }))
 );
@@ -162,6 +165,7 @@ const mainRoutes = [
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
   { path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
+  { path: '/request-audit', element: <RequestAuditPage /> },
   { path: '/quota-limits', element: <QuotaLimitsPage /> },
   { path: '/quota-downgrade', element: <QuotaDowngradePage /> },
   { path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },

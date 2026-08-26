@@ -3,6 +3,7 @@ import type {
   EnterpriseDepartment,
   EnterpriseImportHistory,
   EnterpriseKeyBinding,
+  EnterpriseKeyMetadata,
   KeyGenPreviewItem,
 } from '@/types/enterpriseKey';
 
@@ -46,6 +47,9 @@ export const enterpriseKeysApi = {
 
   listKeyBindings: () =>
     apiClient.get<EnterpriseKeyBindingsResponse>(`${BASE}/key-bindings`),
+
+  listKeyMetadata: () =>
+    apiClient.get<{ items: EnterpriseKeyMetadata[] }>(`${BASE}/key-bindings/metadata`),
 
   createKeyBinding: (data: { userName: string; departmentId: string; apiKey?: string; email?: string }) =>
     apiClient.post<EnterpriseKeyBinding>(`${BASE}/key-bindings`, data),
