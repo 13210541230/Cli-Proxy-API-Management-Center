@@ -224,6 +224,7 @@ export function RequestAuditView({
               <div><dt>{t('request_audit.source_format')}</dt><dd>{detail.source_format || '—'}</dd></div>
               <div><dt>{t('request_audit.request_id')}</dt><dd><code>{detail.request_id || '—'}</code></dd></div>
               <div><dt>{t('request_audit.status')}</dt><dd><span className={`${styles.outcome} ${outcomeClass(detail.outcome)}`}>{t(outcomeLabelKey(detail.outcome), { defaultValue: detail.outcome || t('common.unknown_error') })}</span> {detail.status_code || '—'}{detail.security_signal === 'cyber_policy' && <small className={styles.securitySignal}>{t('request_audit.security_signal_cyber_policy')}</small>}</dd></div>
+              {detail.security_signal === 'cyber_policy' && detail.security_message && <div><dt>{t('request_audit.upstream_message')}</dt><dd>{detail.security_message}</dd></div>}
             </dl>
             <div className={styles.textPanel}>
               <h3>{t('request_audit.user_text')}</h3>

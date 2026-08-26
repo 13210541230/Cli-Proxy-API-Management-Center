@@ -569,6 +569,7 @@
     "security_signal": "Security signal",
     "all_security_signals": "All security signals",
     "security_signal_cyber_policy": "OpenAI cyber policy",
+    "upstream_message": "Upstream policy message",
     "username": "Username",
     "email": "Email",
     "department": "Department",

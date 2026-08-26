@@ -571,6 +571,7 @@
     "security_signal": "安全信号",
     "all_security_signals": "全部安全信号",
     "security_signal_cyber_policy": "OpenAI 网络安全策略",
+    "upstream_message": "上游策略消息",
     "username": "用户名",
     "email": "邮箱",
     "department": "部门",

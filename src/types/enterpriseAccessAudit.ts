@@ -35,6 +35,7 @@ export interface EnterpriseAccessAuditRecord {
   text_unavailable_reason?: string;
   text_truncated: boolean;
   security_signal?: string;
+  security_message?: string;
 }
 
 export interface EnterpriseAccessAuditPagination {
