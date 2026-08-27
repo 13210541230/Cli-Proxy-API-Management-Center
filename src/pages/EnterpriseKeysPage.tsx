@@ -639,12 +639,13 @@ export function EnterpriseKeysPage() {
               />
             </div>
             <div className={styles.actionRow}>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                setEditingDepartments(managedDepartments);
-                setDepartmentModalOpen(true);
-              }}
+              <div className={styles.actionGroup}>
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setEditingDepartments(managedDepartments);
+                    setDepartmentModalOpen(true);
+                  }}
             >
               部门管理
             </Button>
@@ -666,6 +667,8 @@ export function EnterpriseKeysPage() {
               <IconRefreshCw size={14} />
               刷新
             </Button>
+              </div>
+              <div className={styles.actionGroup}>
             <Button variant="danger" onClick={handleBatchDeleteKeys} disabled={selectedApiKeys.length === 0}>
               <IconTrash2 size={14} />
               批量删除
@@ -684,6 +687,8 @@ export function EnterpriseKeysPage() {
             >
               批量停用
             </Button>
+              </div>
+              <div className={styles.actionGroup}>
             <Button
               variant="secondary"
               onClick={openBatchPolicyEditor}
@@ -733,6 +738,7 @@ export function EnterpriseKeysPage() {
                 启用 Quota
               </Button>
             )}
+              </div>
             </div>
           </div>
         }
