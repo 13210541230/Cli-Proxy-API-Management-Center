@@ -3,27 +3,90 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: $spacing-lg;
+  gap: 20px;
+  min-width: 0;
 }
 
 .title {
   margin: 0;
-  font-size: 28px;
-  font-weight: 700;
   color: var(--text-primary);
+  font-size: clamp(24px, 2vw, 30px);
+  font-weight: 750;
+  letter-spacing: -0.025em;
 }
 
 .toolbar {
   display: flex;
+  flex: 0 1 100%;
   align-items: center;
-  gap: $spacing-sm;
+  gap: 8px;
   flex-wrap: wrap;
-  min-width: 420px;
+  width: 100%;
+  min-width: 0;
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, var(--primary-color) 18%);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-secondary) 78%, var(--primary-color) 4%);
 }
+
+.filterRow,
+.actionRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.filterRow {
+  flex: 1 1 420px;
+  min-width: min(100%, 420px);
+}
+
+.filterRow > :global(.wrap) {
+  flex: 0 1 190px;
+  min-width: 160px;
+}
+
+.filterRow > :global(.form-group) {
+  flex: 1 1 280px;
+  min-width: 220px;
+  margin: 0;
+}
+
+.filterRow .searchInput {
+  width: 100%;
+  min-width: 0;
+}
+
+.actionRow {
+  flex: 1 1 720px;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.actionRow > :global(.btn) {
+  flex: 0 0 auto;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.actionRow > :global(.btn-danger) {
+  background: color-mix(in srgb, var(--color-danger) 88%, var(--bg-primary));
+}
+
+.actionRow > :global(.btn-primary) {
+  box-shadow: 0 8px 18px -14px color-mix(in srgb, var(--primary-color) 72%, transparent);
+}
+
 
 .quotaBadge {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
+  min-height: 32px;
   padding: 4px 10px;
   border-radius: $radius-sm;
   border: 1px solid var(--border-color);
@@ -55,19 +118,21 @@
 
 .tableWrapper {
   overflow: auto;
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
+  border: 1px solid color-mix(in srgb, var(--border-color) 88%, var(--primary-color) 12%);
+  border-radius: 14px;
+  background: var(--bg-primary);
 }
 
 .table {
   width: 100%;
-  min-width: 1248px;
+  min-width: 1424px;
   table-layout: fixed;
   border-collapse: collapse;
 
   th,
   td {
-    padding: 10px 12px;
+    padding: 13px 14px;
+    height: 56px;
     border-bottom: 1px solid var(--border-color);
     text-align: left;
     vertical-align: middle;
@@ -83,12 +148,25 @@
   }
 
   th:nth-child(1) { width: 48px; }
-  th:nth-child(2) { width: 160px; }
+  th:nth-child(2) { width: 150px; }
   th:nth-child(3) { width: 220px; }
-  th:nth-child(4) { width: 360px; }
+  th:nth-child(4) { width: 300px; }
   th:nth-child(5) { width: 160px; }
-  th:nth-child(6) { width: 220px; }
-  th:nth-child(7) { width: 300px; }
+  th:nth-child(6) { width: 210px; }
+  th:nth-child(7) { width: 336px; }
+
+  tbody tr {
+    transition: background-color $transition-fast;
+
+    &:hover {
+      background: color-mix(in srgb, var(--primary-color) 4%, var(--bg-primary));
+    }
+  }
+
+  td:last-child {
+    overflow: visible;
+    white-space: normal;
+  }
 }
 
 .mono {
@@ -96,9 +174,16 @@
 }
 
 .selectionMeta {
-  margin-top: $spacing-sm;
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  margin-top: 12px;
+  padding: 5px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-full;
+  background: var(--bg-secondary);
   color: var(--text-secondary);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .policySummary {
@@ -135,14 +220,28 @@
 }
 
 .rowActions {
-  display: flex;
-  gap: $spacing-xs;
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
   align-items: center;
-  flex-wrap: wrap;
+  justify-content: start;
+  gap: 6px;
+  min-width: 0;
+}
+
+.rowActions > :last-child {
+  grid-column: 1;
+}
+
+.rowActions :global(.btn) {
+  min-height: 34px;
+  padding: 7px 9px;
+  font-size: 12px;
 }
 
 .searchInput {
   min-width: 220px;
+  height: 40px;
+  box-sizing: border-box;
 }
 
 .actionTarget {
@@ -211,17 +310,25 @@
 }
 
 .historyList {
-  display: flex;
-  flex-direction: column;
-  gap: $spacing-sm;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .historyItem {
-  border: 1px solid var(--border-color);
-  border-radius: $radius-md;
-  padding: 10px 12px;
   display: grid;
-  gap: 4px;
+  gap: 6px;
+  padding: 13px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  font-size: 13px;
+
+  > :first-child {
+    color: var(--text-primary);
+    font-weight: 650;
+  }
 }
 
 .errorDetails {
@@ -250,6 +357,30 @@
   .toolbar {
     min-width: 0;
     width: 100%;
+  }
+
+  .filterRow,
+  .actionRow {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .filterRow {
+    flex-wrap: wrap;
+  }
+
+  .filterRow > :global(.wrap),
+  .filterRow > :global(.form-group) {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .actionRow {
+    justify-content: flex-start;
+  }
+
+  .rowActions {
+    grid-template-columns: repeat(2, max-content);
   }
 
   .rowInputs,

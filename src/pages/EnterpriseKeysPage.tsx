@@ -615,28 +615,33 @@ export function EnterpriseKeysPage() {
         title="Key 列表"
         extra={
           <div className={styles.toolbar}>
-            <Select
-              value={selectedDepartmentId}
+            <div className={styles.filterRow}>
+              <Select
+                value={selectedDepartmentId}
               options={departmentOptions}
               onChange={(value) => {
                 setSelectedDepartmentId(value);
                 clearSelection();
               }}
               ariaLabel="部门筛选"
-            />
-            <Input
-              className={styles.searchInput}
+              className={styles.departmentFilter}
+                fullWidth={false}
+              />
+              <Input
+                className={styles.searchInput}
               value={searchQuery}
               onChange={(e) => {
                 setSearchQuery(e.target.value);
                 clearSelection();
               }}
-              placeholder="搜索用户、邮箱或 Key"
-              aria-label="搜索用户"
-            />
-            <Button
-              variant="secondary"
-              onClick={() => {
+                placeholder="搜索用户、邮箱或 Key"
+                aria-label="搜索用户"
+              />
+            </div>
+            <div className={styles.actionRow}>
+              <Button
+                variant="secondary"
+                onClick={() => {
                 setEditingDepartments(managedDepartments);
                 setDepartmentModalOpen(true);
               }}
@@ -728,6 +733,7 @@ export function EnterpriseKeysPage() {
                 启用 Quota
               </Button>
             )}
+            </div>
           </div>
         }
       >
