@@ -1,4 +1,5 @@
 import { lazy } from 'react';
+import { usePluginStore } from '@/stores';
 import { Navigate, useRoutes, type Location } from 'react-router-dom';
 
 const DashboardPage = lazy(() =>
@@ -108,6 +109,22 @@ const ApiKeyUsageSelfServicePage = lazy(() =>
   }))
 );
 
+function RequestAuditRoute() {
+  const capability = usePluginStore((state) => state.enterpriseAccessAudit);
+  if (capability === 'idle' || capability === 'loading') {
+    return <div className="page-loading">加载中…</div>;
+  }
+  if (capability !== 'enabled') {
+    return (
+      <div className="page-not-found" role="status">
+        <h1>404</h1>
+        <p>页面不存在</p>
+      </div>
+    );
+  }
+  return <RequestAuditPage />;
+}
+
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
   { path: '/dashboard', element: <DashboardPage /> },
@@ -165,7 +182,7 @@ const mainRoutes = [
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
   { path: '/enterprise-keys', element: <EnterpriseKeysPage /> },
-  { path: '/request-audit', element: <RequestAuditPage /> },
+  { path: '/request-audit', element: <RequestAuditRoute /> },
   { path: '/quota-limits', element: <QuotaLimitsPage /> },
   { path: '/quota-downgrade', element: <QuotaDowngradePage /> },
   { path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },

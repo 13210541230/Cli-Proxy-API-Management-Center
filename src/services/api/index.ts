@@ -20,3 +20,4 @@ export * from './quotaPause';
 export * from './quotaLimits';
 export * from './selfUsage';
 export * from './enterpriseAccessAudit';
+export * from './plugins';

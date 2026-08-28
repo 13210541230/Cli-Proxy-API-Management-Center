@@ -547,6 +547,8 @@
     "retention_unavailable": "Retention setting is unavailable.",
     "expiry_notice": "Records are automatically removed after the retention period.",
     "disabled_audit_notice": "Keys with audit disabled do not create new text records.",
+    "capture_scope_notice": "For multi-turn requests, only the latest user message is stored; assistant, system, tool, and media content is excluded.",
+    "storage_notice": "Audit text is written to one log file per Key hash; policies and settings remain in SQLite.",
     "metadata_unavailable": "Enterprise key metadata is unavailable; owner filters may not match.",
     "exclusions_title": "Phase 1 exclusions",
     "exclusions_body": "Realtime/WebSocket, image, video, and count_tokens are excluded. Numeric prompts may be metadata-only.",

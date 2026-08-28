@@ -23,7 +23,6 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
-  IconFileText,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -32,6 +31,7 @@ import {
   useLanguageStore,
   useNotificationStore,
   useThemeStore,
+  usePluginStore,
 } from '@/stores';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAvailability';
@@ -49,7 +49,6 @@ const sidebarIcons: Record<string, ReactNode> = {
 	config: <IconSidebarConfig size={18} />,
 	logs: <IconSidebarLogs size={18} />,
 	system: <IconSidebarSystem size={18} />,
-	requestAudit: <IconFileText size={18} />,
 };
 
 // Header action icons - smaller size for header buttons
@@ -223,6 +222,7 @@ export function MainLayout() {
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
   const clearCache = useConfigStore((state) => state.clearCache);
   const requestMonitoringAvailability = useRequestMonitoringAvailability();
+  const fetchPlugins = usePluginStore((state) => state.fetchPlugins);
 
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
@@ -391,11 +391,16 @@ export function MainLayout() {
     });
   }, [fetchConfig]);
 
+  useEffect(() => {
+    fetchPlugins().catch(() => {
+      // Optional plugin capabilities must never block the official panel.
+    });
+  }, [fetchPlugins]);
+
   const navItems = [
     { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
     { path: '/enterprise-keys', label: t('nav.enterprise_keys'), icon: sidebarIcons.config },
-    { path: '/request-audit', label: t('nav.request_audit'), icon: sidebarIcons.requestAudit },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },

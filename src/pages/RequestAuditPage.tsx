@@ -145,6 +145,8 @@ export function RequestAuditView({
           <span>{settings ? t('request_audit.retention_value', { days: settings.retention_days }) : t('request_audit.retention_unavailable')}</span>
           <span>{t('request_audit.expiry_notice')}</span>
           <span>{t('request_audit.disabled_audit_notice')}</span>
+          <span>{t('request_audit.capture_scope_notice')}</span>
+          <span>{t('request_audit.storage_notice')}</span>
           {metadataError && <span role="status">{t('request_audit.metadata_unavailable')}</span>}
         </div>
         <div className={styles.notice}>

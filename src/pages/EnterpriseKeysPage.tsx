@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { IconDownload, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
-import { useEnterpriseAccessAuditStore, useEnterpriseKeyStore, useNotificationStore } from '@/stores';
+import { useEnterpriseAccessAuditStore, useEnterpriseKeyStore, useNotificationStore, usePluginStore } from '@/stores';
 import { quotaLimitsApi, type SpendLimitEntry } from '@/services/api/quotaLimits';
 import { EnterpriseAccessPolicyEditor, type EnterpriseAccessPolicyEditorTarget } from '@/components/enterpriseAccessAudit/EnterpriseAccessPolicyEditor';
 import { buildEnterprisePolicyMutationPlan } from '@/components/enterpriseAccessAudit/policyDraft';
@@ -84,6 +84,9 @@ export function EnterpriseKeysPage() {
     updatePoliciesBatch,
   } = useEnterpriseAccessAuditStore();
   const { showNotification, showConfirmation } = useNotificationStore();
+  const enterpriseAccessAuditEnabled = usePluginStore(
+    (state) => state.enterpriseAccessAudit === 'enabled'
+  );
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -140,8 +143,19 @@ export function EnterpriseKeysPage() {
   }, []);
 
   useEffect(() => {
-    void Promise.all([fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState(), loadPolicies()]).catch(() => {});
-  }, [fetchDepartments, fetchImportHistory, fetchKeyBindings, loadPolicies, loadQuotaState]);
+    const requests = [fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState()];
+    if (enterpriseAccessAuditEnabled) {
+      requests.push(loadPolicies());
+    }
+    void Promise.all(requests).catch(() => {});
+  }, [
+    enterpriseAccessAuditEnabled,
+    fetchDepartments,
+    fetchImportHistory,
+    fetchKeyBindings,
+    loadPolicies,
+    loadQuotaState,
+  ]);
 
   const departmentRows = useMemo(() => {
     if (selectedDepartmentId === 'all') {
@@ -312,7 +326,11 @@ export function EnterpriseKeysPage() {
 
   const refreshAll = async () => {
     try {
-      await Promise.all([fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState(), loadPolicies()]);
+      const requests = [fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState()];
+      if (enterpriseAccessAuditEnabled) {
+        requests.push(loadPolicies());
+      }
+      await Promise.all(requests);
       clearSelection();
       showNotification('企业 Key 数据已刷新', 'success');
     } catch {
@@ -689,13 +707,15 @@ export function EnterpriseKeysPage() {
             </Button>
               </div>
               <div className={styles.actionGroup}>
-            <Button
-              variant="secondary"
-              onClick={openBatchPolicyEditor}
-              disabled={selectedPolicyRows.length === 0 || policyStatus !== 'ready' || policyMutating}
-            >
-              批量策略
-            </Button>
+            {enterpriseAccessAuditEnabled && (
+              <Button
+                variant="secondary"
+                onClick={openBatchPolicyEditor}
+                disabled={selectedPolicyRows.length === 0 || policyStatus !== 'ready' || policyMutating}
+              >
+                批量策略
+              </Button>
+            )}
             <Button
               variant="secondary"
               onClick={() => {
@@ -744,7 +764,9 @@ export function EnterpriseKeysPage() {
         }
       >
         {error && <div className="error-box">{error}</div>}
-        {policyError && policyStatus === 'error' && <div className="error-box">策略加载失败：{policyError}</div>}
+        {enterpriseAccessAuditEnabled && policyError && policyStatus === 'error' && (
+          <div className="error-box">策略加载失败：{policyError}</div>
+        )}
         <div className={styles.tableWrapper}>
           <table className={styles.table}>
             <thead>
@@ -761,7 +783,7 @@ export function EnterpriseKeysPage() {
                 <th>{t('enterpriseKeys.email')}</th>
                 <th>API Key</th>
                 <th>部门</th>
-                <th>模型策略</th>
+                {enterpriseAccessAuditEnabled && <th>模型策略</th>}
                 <th>操作</th>
               </tr>
             </thead>
@@ -790,24 +812,24 @@ export function EnterpriseKeysPage() {
                     <td>{item.email || '-'}</td>
                     <td className={styles.mono}>{item.apiKey || '-'}</td>
                     <td>{item.departmentId ? (departmentNameMap.get(item.departmentId) ?? item.departmentId) : '未分组'}</td>
-                    <td>
-                      {policyStatus === 'loading' ? (
-                        <span className={styles.policyMuted}>加载中…</span>
-                      ) : policyStatus === 'unavailable' ? (
-                        <span className={styles.policyUnavailable}>插件不可用</span>
-                      ) : policyStatus === 'error' ? (
-                        <span className={styles.policyUnavailable}>加载失败</span>
-                      ) : policy ? (
-                        <div className={styles.policySummary}>
-                          <span>{policy.denied_models.length} 个禁止模型</span>
-                          <span className={policy.audit_enabled ? styles.auditOn : styles.auditOff}>
-                            审计{policy.audit_enabled ? '开' : '关'}
-                          </span>
-                        </div>
-                      ) : (
-                        <span className={styles.policyMuted}>默认开放 / 审计开</span>
-                      )}
-                    </td>
+                    {enterpriseAccessAuditEnabled && (
+                      <td>
+                        {policyStatus === 'loading' ? (
+                          <span className={styles.policyMuted}>加载中…</span>
+                        ) : policyStatus === 'error' ? (
+                          <span className={styles.policyUnavailable}>加载失败</span>
+                        ) : policy ? (
+                          <div className={styles.policySummary}>
+                            <span>{policy.denied_models.length} 个禁止模型</span>
+                            <span className={policy.audit_enabled ? styles.auditOn : styles.auditOff}>
+                              审计{policy.audit_enabled ? '开' : '关'}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className={styles.policyMuted}>默认开放 / 审计开</span>
+                        )}
+                      </td>
+                    )}
                     <td>
                       {item.apiKey ? (
                         <div className={styles.rowActions}>
@@ -838,14 +860,16 @@ export function EnterpriseKeysPage() {
                           >
                             限额
                           </Button>
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            disabled={!policyHash || policyStatus !== 'ready' || policyMutating}
-                            onClick={() => openSinglePolicyEditor(item)}
-                          >
-                            策略
-                          </Button>
+                          {enterpriseAccessAuditEnabled && (
+                            <Button
+                              variant="secondary"
+                              size="sm"
+                              disabled={!policyHash || policyStatus !== 'ready' || policyMutating}
+                              onClick={() => openSinglePolicyEditor(item)}
+                            >
+                              策略
+                            </Button>
+                          )}
                           <Button
                             variant="secondary"
                             size="sm"

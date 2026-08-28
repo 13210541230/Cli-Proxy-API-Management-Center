@@ -549,6 +549,8 @@
     "retention_unavailable": "当前无法获取保留设置。",
     "expiry_notice": "记录会在保留期限到期后自动清理。",
     "disabled_audit_notice": "关闭审计的 Key 不会产生新的文本记录。",
+    "capture_scope_notice": "多轮请求仅保存最后一条用户消息，不保存 assistant、系统、工具和媒体内容。",
+    "storage_notice": "审计正文按 Key 哈希写入独立日志文件，策略和设置保存在 SQLite。",
     "metadata_unavailable": "企业 Key 元数据当前不可用，用户筛选可能无法匹配。",
     "exclusions_title": "第一阶段排除项",
     "exclusions_body": "不审计 Realtime/WebSocket、图片、视频和 count_tokens；数值 prompt 可能只有元数据。",

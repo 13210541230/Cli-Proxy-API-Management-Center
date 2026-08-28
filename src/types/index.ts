@@ -14,3 +14,4 @@ export * from './log';
 export * from './quota';
 export * from './enterpriseKey';
 export * from './enterpriseAccessAudit';
+export * from './plugin';
