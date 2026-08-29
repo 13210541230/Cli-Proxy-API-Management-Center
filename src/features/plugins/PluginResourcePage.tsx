@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -30,6 +30,68 @@ const parseMenuIndex = (value = '') => {
 };
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Request failed');
+
+const handlePluginAPIRequest = async (event: MessageEvent) => {
+  if (typeof window === 'undefined' || !event.data || typeof event.data !== 'object') return;
+  const message = event.data as Record<string, unknown>;
+  if (message.type !== PLUGIN_API_REQUEST_TYPE || typeof message.id !== 'string') return;
+
+  const frame = Array.from(document.querySelectorAll<HTMLIFrameElement>('iframe')).find(
+    (candidate) => candidate.contentWindow === event.source,
+  );
+  if (!frame) return;
+
+  const pluginId = frame.dataset.pluginId?.trim() || '';
+  const iframeOrigin = (() => {
+    try {
+      return new URL(frame.src, window.location.href).origin;
+    } catch {
+      return '';
+    }
+  })();
+  if (!pluginId || !iframeOrigin || event.origin !== iframeOrigin) return;
+
+  const method = typeof message.method === 'string' ? message.method.toUpperCase() : '';
+  const path = typeof message.path === 'string' ? message.path.trim() : '';
+  const respond = (payload: Record<string, unknown>) => {
+    frame.contentWindow?.postMessage(
+      { type: PLUGIN_API_RESPONSE_TYPE, id: message.id, ...payload },
+      event.origin,
+    );
+  };
+  if (!isPluginAPIRequestAllowed(method, path, pluginId)) {
+    respond({ ok: false, status: 400, error: '插件请求路径或方法不被允许' });
+    return;
+  }
+
+  try {
+    const apiBase = useAuthStore.getState().apiBase.trim();
+    const response = await apiClient.requestRaw({
+      method,
+      url: apiBase ? toPluginAPIClientPath(path) : path || '/',
+      data: message.body,
+      validateStatus: () => true,
+    });
+    const status = Number(response.status || 0);
+    if (status >= 200 && status < 300) {
+      respond({ ok: true, status, data: response.data });
+      return;
+    }
+    const responseData = response.data as { error?: { message?: string } | string; message?: string } | undefined;
+    const detail = typeof responseData?.error === 'string'
+      ? responseData.error
+      : responseData?.error && typeof responseData.error === 'object'
+        ? responseData.error.message
+        : responseData?.message;
+    respond({ ok: false, status, error: detail || `管理接口请求失败（HTTP ${status}）`, data: response.data });
+  } catch (requestError) {
+    respond({ ok: false, status: 0, error: getErrorMessage(requestError) });
+  }
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('message', handlePluginAPIRequest);
+}
 
 export function PluginResourcePage() {
   const { t } = useTranslation();
@@ -81,53 +143,6 @@ export function PluginResourcePage() {
     }
   }, [loadPlugins, pluginStatus]);
 
-  useLayoutEffect(() => {
-    const frame = iframeRef.current;
-    if (!frame || !iframeSrc) return undefined;
-    const expectedOrigin = new URL(iframeSrc, window.location.href).origin;
-
-    const handlePluginRequest = async (event: MessageEvent) => {
-      if (event.source !== frame.contentWindow || event.origin !== expectedOrigin) return;
-      const message = event.data;
-      if (!message || message.type !== PLUGIN_API_REQUEST_TYPE || typeof message.id !== 'string') return;
-      const method = typeof message.method === 'string' ? message.method.toUpperCase() : '';
-      const path = typeof message.path === 'string' ? message.path.trim() : '';
-      const target = frame.contentWindow;
-      const respond = (payload: Record<string, unknown>) => {
-        target?.postMessage({ type: PLUGIN_API_RESPONSE_TYPE, id: message.id, ...payload }, expectedOrigin);
-      };
-      if (!isPluginAPIRequestAllowed(method, path, pluginId)) {
-        respond({ ok: false, status: 400, error: '插件请求路径或方法不被允许' });
-        return;
-      }
-      try {
-        const response = await apiClient.requestRaw({
-          method,
-          url: toPluginAPIClientPath(path),
-          data: message.body,
-          validateStatus: () => true,
-        });
-        const status = Number(response.status || 0);
-        if (status >= 200 && status < 300) {
-          respond({ ok: true, status, data: response.data });
-        } else {
-          const responseData = response.data as { error?: { message?: string } | string; message?: string } | undefined;
-          const detail = typeof responseData?.error === 'string'
-            ? responseData.error
-            : responseData?.error && typeof responseData.error === 'object'
-              ? responseData.error.message
-              : responseData?.message;
-          respond({ ok: false, status, error: detail || `管理接口请求失败（HTTP ${status}）`, data: response.data });
-        }
-      } catch (requestError) {
-        respond({ ok: false, status: 0, error: getErrorMessage(requestError) });
-      }
-    };
-
-    window.addEventListener('message', handlePluginRequest);
-    return () => window.removeEventListener('message', handlePluginRequest);
-  }, [iframeSrc, pluginId]);
-
   useEffect(() => {
     const handleRefresh = () => void loadPlugins();
     window.addEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, handleRefresh);
@@ -157,6 +172,7 @@ export function PluginResourcePage() {
           src={iframeSrc}
           title={resource.label}
           referrerPolicy="strict-origin-when-cross-origin"
+          data-plugin-id={pluginId}
           allow="clipboard-read; clipboard-write"
         />
       )}
