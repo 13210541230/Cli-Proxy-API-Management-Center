@@ -627,7 +627,67 @@ export function EnterpriseKeysPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>企业 Key 管理</h1>
+      <header className={styles.pageHeader}>
+        <div className={styles.pageHeaderCopy}>
+          <span className={styles.eyebrow}>ENTERPRISE ACCESS</span>
+          <h1 className={styles.title}>企业 Key 管理</h1>
+          <p className={styles.description}>
+            集中管理企业 Key、部门归属、访问策略与配额状态，批量操作会作用于当前筛选结果。
+          </p>
+        </div>
+        <div className={styles.pageHeaderActions}>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setEditingDepartments(managedDepartments);
+              setDepartmentModalOpen(true);
+            }}
+          >
+            部门管理
+          </Button>
+          <Button variant="secondary" onClick={() => setImportModalOpen(true)}>
+            <IconDownload size={14} />
+            导入 CSV
+          </Button>
+          <Button
+            onClick={() => {
+              if (!newKeyDepartmentId && managedDepartments.length > 0) {
+                setNewKeyDepartmentId(managedDepartments[0].id);
+              }
+              setAddKeyModalOpen(true);
+            }}
+          >
+            新增 Key
+          </Button>
+          <Button variant="secondary" onClick={refreshAll} disabled={loading}>
+            <IconRefreshCw size={14} />
+            刷新
+          </Button>
+        </div>
+      </header>
+
+      <section className={styles.statsGrid} aria-label="企业 Key 概览">
+        <article className={`${styles.statCard} ${styles.statCardAccent}`}>
+          <span>Key 总数</span>
+          <strong>{keyBindings.length}</strong>
+          <small>当前筛选 {filteredRows.length} 条</small>
+        </article>
+        <article className={styles.statCard}>
+          <span>部门</span>
+          <strong>{managedDepartments.length}</strong>
+          <small>含未分组 Key</small>
+        </article>
+        <article className={styles.statCard}>
+          <span>已选择</span>
+          <strong>{selectedApiKeys.length}</strong>
+          <small>可执行批量操作</small>
+        </article>
+        <article className={styles.statCard}>
+          <span>已停用</span>
+          <strong>{pausedKeyHashes.size}</strong>
+          <small>{quotaEnabled ? 'Quota 已启用' : 'Quota 未启用'}</small>
+        </article>
+      </section>
 
       <Card
         title="Key 列表"
@@ -658,53 +718,25 @@ export function EnterpriseKeysPage() {
             </div>
             <div className={styles.actionRow}>
               <div className={styles.actionGroup}>
+                <span className={styles.selectionBadge}>已选 {selectedApiKeys.length} 项</span>
+                <Button variant="danger" onClick={handleBatchDeleteKeys} disabled={selectedApiKeys.length === 0}>
+                  <IconTrash2 size={14} />
+                  批量删除
+                </Button>
+                <Button onClick={handleExportSelected} disabled={selectedApiKeys.length === 0}>
+                  <IconDownload size={14} />
+                  导出选中
+                </Button>
                 <Button
-                  variant="secondary"
+                  variant="danger"
                   onClick={() => {
-                    setEditingDepartments(managedDepartments);
-                    setDepartmentModalOpen(true);
+                    const target = requireSelectedTarget();
+                    if (target) openPauseTarget(target);
                   }}
-            >
-              部门管理
-            </Button>
-            <Button variant="secondary" onClick={() => setImportModalOpen(true)}>
-              导入 CSV
-            </Button>
-            <Button
-              variant="secondary"
-              onClick={() => {
-                if (!newKeyDepartmentId && managedDepartments.length > 0) {
-                  setNewKeyDepartmentId(managedDepartments[0].id);
-                }
-                setAddKeyModalOpen(true);
-              }}
-            >
-              新增 Key
-            </Button>
-            <Button variant="secondary" onClick={refreshAll}>
-              <IconRefreshCw size={14} />
-              刷新
-            </Button>
-              </div>
-              <div className={styles.actionGroup}>
-            <Button variant="danger" onClick={handleBatchDeleteKeys} disabled={selectedApiKeys.length === 0}>
-              <IconTrash2 size={14} />
-              批量删除
-            </Button>
-            <Button onClick={handleExportSelected}>
-              <IconDownload size={14} />
-              导出选中
-            </Button>
-            <Button
-              variant="danger"
-              onClick={() => {
-                const target = requireSelectedTarget();
-                if (target) openPauseTarget(target);
-              }}
-              disabled={selectedActionRows.length === 0 || actionSaving}
-            >
-              批量停用
-            </Button>
+                  disabled={selectedActionRows.length === 0 || actionSaving}
+                >
+                  批量停用
+                </Button>
               </div>
               <div className={styles.actionGroup}>
             {enterpriseAccessAuditEnabled && (
@@ -892,7 +924,6 @@ export function EnterpriseKeysPage() {
           </table>
           {!loading && filteredRows.length === 0 && <div className={styles.empty}>暂无数据</div>}
         </div>
-        <div className={styles.selectionMeta}>已选 {selectedApiKeys.length} 项</div>
       </Card>
 
       <Card title="导入历史（最近 20 条）">

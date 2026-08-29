@@ -2314,7 +2314,6 @@ export function MonitoringCenterPage() {
         'account_stats',
         'api_key_stats',
         'api_key_timeline',
-        'reasoning_stats',
         'filter_options',
         'events',
       ],
@@ -2789,32 +2788,6 @@ export function MonitoringCenterPage() {
         : buildMonitoringSummary(scopedStatsRows),
     [analytics, analyticsMode, scopedStatsRows]
   );
-  const reasoningEffortRows = useMemo(() => {
-    const rows =
-      analyticsMode && analytics?.reasoning_stats
-        ? analytics.reasoning_stats.map((item) => ({
-            effort: String(item.key || 'unknown'),
-            requests: analyticsNumber(item.requests),
-            reasoningTokens: analyticsNumber(item.reasoning_tokens),
-          }))
-        : Array.from(
-            scopedStatsRows.reduce((map, row) => {
-              const effort = row.reasoningEffort || 'unknown';
-              const current = map.get(effort) || { effort, requests: 0, reasoningTokens: 0 };
-              current.requests += 1;
-              current.reasoningTokens += row.reasoningTokens;
-              map.set(effort, current);
-              return map;
-            }, new Map<string, { effort: string; requests: number; reasoningTokens: number }>()).values()
-          );
-    const totalRequests = rows.reduce((sum, row) => sum + row.requests, 0);
-    return rows
-      .map((row) => ({
-        ...row,
-        share: totalRequests > 0 ? row.requests / totalRequests : 0,
-      }))
-      .sort((left, right) => right.requests - left.requests || left.effort.localeCompare(right.effort));
-  }, [analytics, analyticsMode, scopedStatsRows]);
   const accountRows = useMemo(
     () =>
       analyticsMode && analytics
@@ -3818,41 +3791,6 @@ export function MonitoringCenterPage() {
       </section>
 
       <MonitoringPanel
-        title={t('monitoring.reasoning_effort_title', { defaultValue: '模型推理强度' })}
-        subtitle={t('monitoring.reasoning_effort_desc', {
-          defaultValue: '区分请求侧思考强度与响应侧推理 Tokens，历史缺失值归类为 unknown。',
-        })}
-        extra={
-          <span className={styles.panelMetricHint}>
-            {`${reasoningEffortRows.length} ${t('monitoring.reasoning_effort_levels', { defaultValue: '个等级' })}`}
-          </span>
-        }
-      >
-        <div className={styles.reasoningEffortGrid}>
-          {reasoningEffortRows.map((row) => (
-            <button
-              key={row.effort}
-              type="button"
-              className={`${styles.reasoningEffortCard} ${selectedReasoningEffort === row.effort ? styles.reasoningEffortCardActive : ''}`}
-              onClick={() =>
-                setSelectedReasoningEffort((current) => (current === row.effort ? 'all' : row.effort))
-              }
-            >
-              <span className={styles.reasoningEffortCardHeader}>
-                <strong>{row.effort}</strong>
-                <span>{formatPercent(row.share)}</span>
-              </span>
-              <span className={styles.reasoningEffortCardMetrics}>
-                <span>{`${formatCompactNumber(row.requests)} ${t('monitoring.total_calls')}`}</span>
-                <span>{`${formatCompactNumber(row.reasoningTokens)} ${t('monitoring.reasoning_tokens')}`}</span>
-              </span>
-            </button>
-          ))}
-          {reasoningEffortRows.length === 0 ? renderMonitoringEmptyState() : null}
-        </div>
-      </MonitoringPanel>
-
-      <MonitoringPanel
         title={t('monitoring.api_key_summary_title', { defaultValue: 'API Key 用量汇总' })}
         subtitle={t('monitoring.api_key_summary_desc', {
           defaultValue: '按当前时间范围与筛选条件汇总（不受下方 API Key 单选影响）',
@@ -3971,51 +3909,74 @@ export function MonitoringCenterPage() {
           </div>
         }
       >
-        <div className={styles.tableWrapper}>
-          <table className={`${styles.table} ${styles.realtimeTable}`}>
-            <thead>
-              <tr>
-                <th>{t('monitoring.filter_api_key')}</th>
-                <th>{t('monitoring.trend', { defaultValue: '趋势' })}</th>
-                <th>{t('monitoring.total', { defaultValue: '总计' })}</th>
-                <th>{t('monitoring.bucket_count', { defaultValue: '点位数' })}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {apiKeyTrendSeriesRows.map((row, index) => {
-                const color = `hsl(${(index * 67) % 360} 72% 48%)`;
-                const points = buildSparklinePoints(row.values);
-                const totalText =
-                  apiKeyTrendMetric === 'cost'
-                    ? formatUsd(row.total)
-                    : formatCompactNumber(row.total);
-                return (
-                  <tr key={`trend-${row.apiKeyHash}`}>
-                    <td>{row.label}</td>
-                    <td>
-                      <svg width="220" height="44" viewBox="0 0 220 44" role="img" aria-label={row.label}>
-                        <polyline
-                          fill="none"
-                          stroke={color}
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          points={points}
-                        />
-                      </svg>
-                    </td>
-                    <td>{totalText}</td>
-                    <td>{row.bucketCount}</td>
-                  </tr>
-                );
-              })}
-              {apiKeyTrendSeriesRows.length === 0 ? (
-                <tr>
-                  <td colSpan={4}>{renderMonitoringEmptyState()}</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+        <div className={styles.apiKeyTrendList}>
+          {apiKeyTrendSeriesRows.map((row, index) => {
+            const color = `hsl(${(index * 67) % 360} 72% 48%)`;
+            const points = buildSparklinePoints(row.values);
+            const totalText =
+              apiKeyTrendMetric === 'cost' ? formatUsd(row.total) : formatCompactNumber(row.total);
+            const selected = selectedApiKeyHash === row.apiKeyHash;
+            return (
+              <article key={`trend-${row.apiKeyHash}`} className={styles.apiKeyTrendCard}>
+                <div className={styles.apiKeyTrendHeader}>
+                  <div className={styles.apiKeySummaryRank} aria-label={`#${index + 1}`}>
+                    {index + 1}
+                  </div>
+                  <div className={styles.apiKeySummaryIdentity}>
+                    <strong title={row.label}>{row.label}</strong>
+                    <span>
+                      {t('monitoring.api_key_hash_suffix', { defaultValue: 'Hash' })} ·{' '}
+                      {row.apiKeyHash.slice(-8)}
+                    </span>
+                  </div>
+                  <div className={styles.apiKeyTrendTotal}>
+                    <span>
+                      {apiKeyTrendMetric === 'cost'
+                        ? t('monitoring.estimated_cost')
+                        : apiKeyTrendMetric === 'requests'
+                          ? t('monitoring.total_calls')
+                          : t('monitoring.total_tokens')}
+                    </span>
+                    <strong>{totalText}</strong>
+                  </div>
+                </div>
+                <div className={styles.apiKeyTrendChart}>
+                  <svg
+                    width="100%"
+                    height="64"
+                    viewBox="0 0 220 44"
+                    preserveAspectRatio="none"
+                    role="img"
+                    aria-label={row.label}
+                  >
+                    <polyline
+                      fill="none"
+                      stroke={color}
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      points={points}
+                    />
+                  </svg>
+                </div>
+                <div className={styles.apiKeyTrendFooter}>
+                  <span>
+                    {`${row.bucketCount} ${t('monitoring.bucket_count', { defaultValue: '个时间点' })}`}
+                  </span>
+                  <button
+                    type="button"
+                    className={`${styles.apiKeyTrendAction} ${selected ? styles.apiKeyTrendActionSelected : ''}`}
+                    onClick={() => setSelectedApiKeyHash(selected ? 'all' : row.apiKeyHash)}
+                  >
+                    {selected
+                      ? t('monitoring.selected', { defaultValue: '已选中' })
+                      : t('monitoring.view_details', { defaultValue: '查看明细' })}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+          {apiKeyTrendSeriesRows.length === 0 ? renderMonitoringEmptyState() : null}
         </div>
       </MonitoringPanel>
 
