@@ -509,6 +509,17 @@ export function IconSidebarLogs({ size = 20, ...props }: IconProps) {
   );
 }
 
+export function IconSidebarPlugins({ size = 20, ...props }: IconProps) {
+  return (
+    <svg {...sidebarSvgProps} width={size} height={size} {...props}>
+      <path d="M8 4h8v4h4v8h-4v4H8v-4H4V8h4Z" fill="currentColor" fillOpacity="0.08" />
+      <path d="M8 4h8v4h4v8h-4v4H8v-4H4V8h4Z" />
+      <path d="M9 12h6" />
+      <path d="M12 9v6" />
+    </svg>
+  );
+}
+
 export function IconSidebarSystem({ size = 20, ...props }: IconProps) {
   return (
     <svg {...sidebarSvgProps} width={size} height={size} {...props}>

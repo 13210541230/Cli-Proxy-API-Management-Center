@@ -151,7 +151,8 @@
     "quota_limits": "Quota Limits",
     "quota_paused": "Paused Keys",
     "my_usage": "My Usage",
-    "alert_config": "Alert Configuration"
+    "alert_config": "Alert Configuration",
+    "plugins": "Plugin Center"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -203,6 +204,38 @@
     "view_monitoring": "View request monitoring",
     "view_logs": "View logs",
     "system_overview": "System Overview"
+  },
+  "plugins": {
+    "eyebrow": "EXTENSIONS",
+    "title": "Plugin Center",
+    "description": "Manage plugin lifecycle and open plugin-provided workspaces without adding plugin-specific pages to the Management Center.",
+    "overview": "Plugin overview",
+    "total": "Installed plugins",
+    "enabled": "Enabled",
+    "configured": "Configured",
+    "resources": "Plugin workspaces",
+    "disabled_notice": "Plugin support is disabled by CPA. Installed plugins remain visible, but their workspaces are unavailable.",
+    "installed_title": "Installed plugins",
+    "installed_desc": "Each plugin owns its UI. This page only provides generic lifecycle controls and navigation.",
+    "search": "Search plugins",
+    "search_placeholder": "Search by name or menu",
+    "unavailable": "Plugin API unavailable",
+    "unavailable_desc": "The connected CPA version does not expose the plugin management API.",
+    "empty": "No plugins found",
+    "empty_search": "Try a different search term.",
+    "empty_desc": "Installed plugins will appear here when CPA exposes them.",
+    "version_unknown": "Version unknown",
+    "menus": "menus",
+    "no_menus": "No plugin workspace declared",
+    "toggle": "enabled",
+    "config_title": "Configure plugin",
+    "json_hint": "Enter valid JSON.",
+    "delete_confirm": "Delete {{name}}?",
+    "resource_unavailable": "Plugin workspace unavailable",
+    "resource_not_found": "Plugin workspace not found",
+    "resource_not_found_desc": "The plugin is disabled, the menu was removed, or this CPA version does not expose the resource.",
+    "resource_empty": "Plugin resource is empty",
+    "resource_empty_desc": "The plugin did not declare a loadable resource path."
   },
   "basic_settings": {
     "title": "Basic Settings",

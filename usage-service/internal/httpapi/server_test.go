@@ -126,6 +126,39 @@ func TestModelListProxyPreservesAuthorization(t *testing.T) {
 	}
 }
 
+func TestPluginResourceProxyInjectsManagementAuthorization(t *testing.T) {
+	observed := make(chan observedRequest, 1)
+	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		observed <- observedRequest{path: r.URL.Path, query: r.URL.RawQuery, auth: r.Header.Get("Authorization")}
+		w.Header().Set("Content-Type", "text/html")
+		_, _ = w.Write([]byte("<main>plugin workspace</main>"))
+	}))
+	t.Cleanup(upstream.Close)
+
+	handler := newTestHandler(t, upstream.URL, true)
+	req := httptest.NewRequest(http.MethodGet, "/v0/resource/plugins/demo%2Fplugin/workspace?theme=dark", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if rr.Body.String() != "<main>plugin workspace</main>" {
+		t.Fatalf("body = %q", rr.Body.String())
+	}
+	got := <-observed
+	if got.path != "/v0/resource/plugins/demo/plugin/workspace" {
+		t.Fatalf("proxied path = %q", got.path)
+	}
+	if got.query != "theme=dark" {
+		t.Fatalf("proxied query = %q", got.query)
+	}
+	if got.auth != "Bearer management-key" {
+		t.Fatalf("proxied authorization = %q", got.auth)
+	}
+}
+
 func TestUsageImportAcceptsLegacyExportAndSkipsDuplicates(t *testing.T) {
 	handler := newTestHandler(t, "http://example.test", true)
 	payload := `{

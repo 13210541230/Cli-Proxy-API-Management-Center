@@ -1,0 +1,33 @@
+.page {
+  display: flex;
+  min-width: 0;
+  min-height: calc(100vh - 116px);
+  color: var(--text-primary);
+}
+
+.frame {
+  display: block;
+  width: 100%;
+  min-height: calc(100vh - 116px);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-primary);
+}
+
+.stateShell {
+  display: grid;
+  width: 100%;
+  min-height: 360px;
+  place-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-primary);
+}
+
+.state {
+  display: grid;
+  width: 100%;
+  min-height: 360px;
+  place-items: center;
+  color: var(--text-secondary);
+}

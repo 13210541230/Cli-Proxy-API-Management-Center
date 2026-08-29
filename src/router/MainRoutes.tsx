@@ -108,6 +108,10 @@ const ApiKeyUsageSelfServicePage = lazy(() =>
     default: ApiKeyUsageSelfServicePage,
   }))
 );
+const PluginsPage = lazy(() => import('@/pages/PluginsPage').then(({ PluginsPage }) => ({ default: PluginsPage })));
+const PluginResourcePage = lazy(() =>
+  import('@/pages/PluginResourcePage').then(({ PluginResourcePage }) => ({ default: PluginResourcePage }))
+);
 
 function RequestAuditRoute() {
   const capability = usePluginStore((state) => state.enterpriseAccessAudit);
@@ -188,6 +192,8 @@ const mainRoutes = [
   { path: '/quota-paused', element: <Navigate to="/quota-limits" replace /> },
   { path: '/my-usage', element: <ApiKeyUsageSelfServicePage /> },
   { path: '/alert-config', element: <AlertConfigPage /> },
+  { path: '/plugins', element: <PluginsPage /> },
+  { path: '/plugin-pages/:pluginId/:menuIndex', element: <PluginResourcePage /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

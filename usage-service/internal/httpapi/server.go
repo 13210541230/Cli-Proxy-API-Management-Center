@@ -168,6 +168,10 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
+	if strings.HasPrefix(r.URL.Path, "/v0/resource/plugins/") {
+		s.withCORS(s.handlePluginResourceProxy)(w, r)
+		return
+	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/model-prices") {
 		s.withCORS(s.handleModelPrices)(w, r)
 		return
@@ -1772,6 +1776,40 @@ func (s *Server) handleModelListProxy(w http.ResponseWriter, r *http.Request) {
 		req.URL.Scheme = target.Scheme
 		req.URL.Host = target.Host
 		req.Host = target.Host
+	}
+	proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
+		writeError(w, http.StatusBadGateway, err)
+	}
+	proxy.ServeHTTP(w, r)
+}
+
+func (s *Server) handlePluginResourceProxy(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		methodNotAllowed(w)
+		return
+	}
+	setup, ok, err := s.resolveSetup(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if !ok {
+		writeError(w, http.StatusPreconditionRequired, errors.New("usage service is not configured"))
+		return
+	}
+	target, err := url.Parse(setup.CPAUpstreamURL)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	originalDirector := proxy.Director
+	proxy.Director = func(req *http.Request) {
+		originalDirector(req)
+		req.URL.Scheme = target.Scheme
+		req.URL.Host = target.Host
+		req.Host = target.Host
+		req.Header.Set("Authorization", "Bearer "+setup.ManagementKey)
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
 		writeError(w, http.StatusBadGateway, err)

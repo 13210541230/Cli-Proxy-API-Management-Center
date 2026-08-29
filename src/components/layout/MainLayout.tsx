@@ -5,6 +5,7 @@ import {
   useCallback,
   useEffect,
   useLayoutEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -23,6 +24,7 @@ import {
   IconSidebarProviders,
   IconSidebarQuota,
   IconSidebarSystem,
+  IconSidebarPlugins,
 } from '@/components/ui/icons';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import {
@@ -38,6 +40,7 @@ import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAv
 import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
 import type { Theme } from '@/types';
+import { collectPluginResourceEntries } from '@/features/plugins/pluginResources';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
@@ -49,6 +52,7 @@ const sidebarIcons: Record<string, ReactNode> = {
 	config: <IconSidebarConfig size={18} />,
 	logs: <IconSidebarLogs size={18} />,
 	system: <IconSidebarSystem size={18} />,
+  plugins: <IconSidebarPlugins size={18} />,
 };
 
 // Header action icons - smaller size for header buttons
@@ -223,6 +227,9 @@ export function MainLayout() {
   const clearCache = useConfigStore((state) => state.clearCache);
   const requestMonitoringAvailability = useRequestMonitoringAvailability();
   const fetchPlugins = usePluginStore((state) => state.fetchPlugins);
+  const pluginStatus = usePluginStore((state) => state.pluginStatus);
+  const pluginsEnabled = usePluginStore((state) => state.pluginsEnabled);
+  const plugins = usePluginStore((state) => state.plugins);
 
   const theme = useThemeStore((state) => state.theme);
   const setTheme = useThemeStore((state) => state.setTheme);
@@ -397,6 +404,12 @@ export function MainLayout() {
     });
   }, [fetchPlugins]);
 
+  const pluginResources = useMemo(
+    () => (pluginsEnabled === true ? collectPluginResourceEntries(plugins) : []),
+    [plugins, pluginsEnabled],
+  );
+  const pluginManagementVisible = pluginStatus === 'ready' && pluginsEnabled !== false;
+
   const navItems = [
     { path: '/', label: t('nav.dashboard'), icon: sidebarIcons.dashboard },
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
@@ -412,6 +425,14 @@ export function MainLayout() {
 	...(config?.loggingToFile
 	  ? [{ path: '/logs', label: t('nav.logs'), icon: sidebarIcons.logs }]
 	  : []),
+  ...(pluginManagementVisible
+    ? [{ path: '/plugins', label: t('nav.plugins', { defaultValue: 'Plugins' }), icon: sidebarIcons.plugins }]
+    : []),
+  ...pluginResources.map((resource) => ({
+    path: resource.route,
+    label: resource.label,
+    icon: sidebarIcons.plugins,
+  })),
 	{ path: '/system', label: t('nav.system_info'), icon: sidebarIcons.system }
   ];
   const navOrder = navItems.map((item) => item.path);
@@ -474,6 +495,7 @@ export function MainLayout() {
     clearCache();
     const results = await Promise.allSettled([
       fetchConfig(undefined, true),
+      fetchPlugins(true).catch(() => []),
       triggerHeaderRefresh(),
     ]);
     const rejected = results.find((result) => result.status === 'rejected');

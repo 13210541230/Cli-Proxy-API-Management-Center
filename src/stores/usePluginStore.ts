@@ -1,42 +1,69 @@
 import { create } from 'zustand';
 import { pluginsApi } from '@/services/api/plugins';
+import type { ManagementPluginEntry } from '@/types/plugin';
 
-const ENTERPRISE_ACCESS_AUDIT_ID = 'enterprise-access-audit';
+export type PluginCapabilityStatus = 'idle' | 'loading' | 'ready' | 'unavailable';
+export type EnterpriseAccessAuditCapability = 'idle' | 'loading' | 'enabled' | 'disabled';
 
-type PluginCapabilityStatus = 'idle' | 'loading' | 'enabled' | 'disabled';
-
-interface PluginState {
-  enterpriseAccessAudit: PluginCapabilityStatus;
-  fetchPlugins: (force?: boolean) => Promise<void>;
+interface PluginStoreState {
+  pluginsEnabled: boolean | null;
+  plugins: ManagementPluginEntry[];
+  pluginStatus: PluginCapabilityStatus;
+  enterpriseAccessAudit: EnterpriseAccessAuditCapability;
+  fetchPlugins: (force?: boolean) => Promise<ManagementPluginEntry[]>;
+  clearPlugins: () => void;
 }
 
-let inFlight: Promise<void> | null = null;
-let fetchedAt = 0;
-const CACHE_MS = 30_000;
+let fetchPromise: Promise<ManagementPluginEntry[]> | null = null;
 
-export const usePluginStore = create<PluginState>((set) => ({
+export const usePluginStore = create<PluginStoreState>((set, get) => ({
+  pluginsEnabled: null,
+  plugins: [],
+  pluginStatus: 'idle',
   enterpriseAccessAudit: 'idle',
-  fetchPlugins: async (force = false) => {
-    if (!force && fetchedAt > 0 && Date.now() - fetchedAt < CACHE_MS) return;
-    if (inFlight) return inFlight;
 
-    set({ enterpriseAccessAudit: 'loading' });
-    inFlight = pluginsApi
+  fetchPlugins: async (force = false) => {
+    if (!force && get().pluginStatus === 'ready') return get().plugins;
+    if (fetchPromise) return fetchPromise;
+
+    set({ pluginStatus: 'loading' });
+    fetchPromise = pluginsApi
       .list()
       .then((response) => {
-        const plugin = response.plugins?.find((item) => item.id === ENTERPRISE_ACCESS_AUDIT_ID);
-        fetchedAt = Date.now();
-        set({ enterpriseAccessAudit: plugin?.effective_enabled ? 'enabled' : 'disabled' });
+        const plugins = response.plugins ?? [];
+        const audit = plugins.find((plugin) => plugin.id === 'enterprise-access-audit');
+        set({
+          plugins,
+          pluginsEnabled: response.plugins_enabled ?? true,
+          pluginStatus: 'ready',
+          enterpriseAccessAudit: audit?.effective_enabled ? 'enabled' : 'disabled',
+        });
+        return plugins;
       })
       .catch(() => {
-        fetchedAt = Date.now();
-        set({ enterpriseAccessAudit: 'disabled' });
+        set({
+          plugins: [],
+          pluginsEnabled: null,
+          pluginStatus: 'unavailable',
+          enterpriseAccessAudit: 'disabled',
+        });
+        return [];
       })
       .finally(() => {
-        inFlight = null;
+        fetchPromise = null;
       });
 
-    return inFlight;
+    return fetchPromise;
+  },
+
+  clearPlugins: () => {
+    fetchPromise = null;
+    set({
+      pluginsEnabled: null,
+      plugins: [],
+      pluginStatus: 'idle',
+      enterpriseAccessAudit: 'idle',
+    });
   },
 }));
 

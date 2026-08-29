@@ -151,7 +151,8 @@
     "quota_limits": "限额管理",
     "quota_paused": "暂停管理",
     "my_usage": "用量查询",
-    "alert_config": "告警配置"
+    "alert_config": "告警配置",
+    "plugins": "插件中心"
   },
   "dashboard": {
     "title": "仪表盘",
@@ -203,6 +204,38 @@
     "view_monitoring": "查看请求监控",
     "view_logs": "查看日志",
     "system_overview": "系统概览"
+  },
+  "plugins": {
+    "eyebrow": "扩展能力",
+    "title": "插件中心",
+    "description": "统一管理插件生命周期，并通过通用宿主打开插件提供的工作台，无需为每个插件增加独立页面。",
+    "overview": "插件概览",
+    "total": "已安装插件",
+    "enabled": "已启用",
+    "configured": "已配置",
+    "resources": "插件工作台",
+    "disabled_notice": "CPA 当前已禁用插件支持。已安装插件仍会显示，但插件工作台不可用。",
+    "installed_title": "已安装插件",
+    "installed_desc": "插件自行拥有业务界面，本页面只提供通用生命周期控制和导航。",
+    "search": "搜索插件",
+    "search_placeholder": "按名称或菜单搜索",
+    "unavailable": "插件接口不可用",
+    "unavailable_desc": "当前连接的 CPA 版本未提供插件管理接口。",
+    "empty": "未找到插件",
+    "empty_search": "请尝试其他搜索关键词。",
+    "empty_desc": "当 CPA 提供插件信息后，已安装插件会显示在这里。",
+    "version_unknown": "版本未知",
+    "menus": "个菜单",
+    "no_menus": "未声明插件工作台",
+    "toggle": "启用",
+    "config_title": "配置插件",
+    "json_hint": "请输入有效的 JSON。",
+    "delete_confirm": "确定删除 {{name}} 吗？",
+    "resource_unavailable": "插件工作台不可用",
+    "resource_not_found": "未找到插件工作台",
+    "resource_not_found_desc": "插件可能已停用、菜单已移除，或当前 CPA 版本未提供该资源。",
+    "resource_empty": "插件资源为空",
+    "resource_empty_desc": "插件未声明可加载的资源路径。"
   },
   "basic_settings": {
     "title": "基础设置",

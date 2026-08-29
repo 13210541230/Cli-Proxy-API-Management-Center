@@ -144,7 +144,8 @@
     "monitoring_center": "請求監控",
     "config_management": "設定面板",
     "logs": "記錄檢視",
-    "system_info": "中心資訊"
+    "system_info": "中心資訊",
+    "plugins": "外掛中心"
   },
   "dashboard": {
     "title": "儀表板",
@@ -196,6 +197,38 @@
     "view_monitoring": "查看請求監控",
     "view_logs": "查看記錄",
     "system_overview": "系統概覽"
+  },
+  "plugins": {
+    "eyebrow": "擴充功能",
+    "title": "外掛中心",
+    "description": "統一管理外掛生命週期，並透過通用宿主開啟外掛提供的工作台，不為每個外掛新增獨立頁面。",
+    "overview": "外掛概覽",
+    "total": "已安裝外掛",
+    "enabled": "已啟用",
+    "configured": "已設定",
+    "resources": "外掛工作台",
+    "disabled_notice": "CPA 目前已停用外掛支援。已安裝外掛仍會顯示，但外掛工作台無法使用。",
+    "installed_title": "已安裝外掛",
+    "installed_desc": "外掛自行擁有業務介面，本頁面只提供通用生命週期控制和導覽。",
+    "search": "搜尋外掛",
+    "search_placeholder": "按名稱或選單搜尋",
+    "unavailable": "外掛 API 無法使用",
+    "unavailable_desc": "目前連線的 CPA 版本未提供外掛管理 API。",
+    "empty": "找不到外掛",
+    "empty_search": "請嘗試其他搜尋關鍵字。",
+    "empty_desc": "CPA 提供外掛資訊後，已安裝外掛會顯示在這裡。",
+    "version_unknown": "版本未知",
+    "menus": "個選單",
+    "no_menus": "未宣告外掛工作台",
+    "toggle": "啟用",
+    "config_title": "設定外掛",
+    "json_hint": "請輸入有效的 JSON。",
+    "delete_confirm": "確定刪除 {{name}} 嗎？",
+    "resource_unavailable": "外掛工作台無法使用",
+    "resource_not_found": "找不到外掛工作台",
+    "resource_not_found_desc": "外掛可能已停用、選單已移除，或目前 CPA 版本未提供該資源。",
+    "resource_empty": "外掛資源為空",
+    "resource_empty_desc": "外掛未宣告可載入的資源路徑。"
   },
   "basic_settings": {
     "title": "基本設定",
