@@ -1,12 +1,17 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { useAuthStore, usePluginStore } from '@/stores';
+import { apiClient } from '@/services/api/client';
 import {
   collectPluginResourceEntries,
+  isPluginAPIRequestAllowed,
+  PLUGIN_API_REQUEST_TYPE,
+  PLUGIN_API_RESPONSE_TYPE,
   PLUGIN_RESOURCES_REFRESH_EVENT,
   resolvePluginAssetURL,
+  toPluginAPIClientPath,
 } from './pluginResources';
 import styles from './PluginResourcePage.module.scss';
 
@@ -35,6 +40,7 @@ export function PluginResourcePage() {
   const fetchPlugins = usePluginStore((state) => state.fetchPlugins);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const pluginId = useMemo(() => decode(rawPluginId), [rawPluginId]);
   const menuIndex = useMemo(() => parseMenuIndex(rawMenuIndex), [rawMenuIndex]);
@@ -70,6 +76,54 @@ export function PluginResourcePage() {
   }, [loadPlugins, pluginStatus]);
 
   useEffect(() => {
+    const frame = iframeRef.current;
+    if (!frame || !iframeSrc) return undefined;
+    const expectedOrigin = new URL(iframeSrc, window.location.href).origin;
+    if (expectedOrigin !== window.location.origin) return undefined;
+
+    const handlePluginRequest = async (event: MessageEvent) => {
+      if (event.source !== frame.contentWindow || event.origin !== expectedOrigin) return;
+      const message = event.data;
+      if (!message || message.type !== PLUGIN_API_REQUEST_TYPE || typeof message.id !== 'string') return;
+      const method = typeof message.method === 'string' ? message.method.toUpperCase() : '';
+      const path = typeof message.path === 'string' ? message.path.trim() : '';
+      const target = frame.contentWindow;
+      const respond = (payload: Record<string, unknown>) => {
+        target?.postMessage({ type: PLUGIN_API_RESPONSE_TYPE, id: message.id, ...payload }, expectedOrigin);
+      };
+      if (!isPluginAPIRequestAllowed(method, path, pluginId)) {
+        respond({ ok: false, status: 400, error: '插件请求路径或方法不被允许' });
+        return;
+      }
+      try {
+        const response = await apiClient.requestRaw({
+          method,
+          url: toPluginAPIClientPath(path),
+          data: message.body,
+          validateStatus: () => true,
+        });
+        const status = Number(response.status || 0);
+        if (status >= 200 && status < 300) {
+          respond({ ok: true, status, data: response.data });
+        } else {
+          const responseData = response.data as { error?: { message?: string } | string; message?: string } | undefined;
+          const detail = typeof responseData?.error === 'string'
+            ? responseData.error
+            : responseData?.error && typeof responseData.error === 'object'
+              ? responseData.error.message
+              : responseData?.message;
+          respond({ ok: false, status, error: detail || `管理接口请求失败（HTTP ${status}）`, data: response.data });
+        }
+      } catch (requestError) {
+        respond({ ok: false, status: 0, error: getErrorMessage(requestError) });
+      }
+    };
+
+    window.addEventListener('message', handlePluginRequest);
+    return () => window.removeEventListener('message', handlePluginRequest);
+  }, [iframeSrc, pluginId]);
+
+  useEffect(() => {
     const handleRefresh = () => void loadPlugins();
     window.addEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, handleRefresh);
     return () => window.removeEventListener(PLUGIN_RESOURCES_REFRESH_EVENT, handleRefresh);
@@ -93,6 +147,7 @@ export function PluginResourcePage() {
         </div>
       ) : (
         <iframe
+          ref={iframeRef}
           className={styles.frame}
           src={iframeSrc}
           title={resource.label}

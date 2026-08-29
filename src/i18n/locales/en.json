@@ -145,7 +145,6 @@
     "monitoring_center": "Request Monitoring",
     "config_management": "Config Panel",
     "enterprise_keys": "Enterprise Key Management",
-    "request_audit": "Request Audit",
     "logs": "Logs Viewer",
     "system_info": "Management Center Info",
     "quota_limits": "Quota Limits",

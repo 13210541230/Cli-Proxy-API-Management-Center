@@ -2,6 +2,20 @@ import { normalizeApiBase } from '@/utils/connection';
 import type { ManagementPluginEntry, ManagementPluginMenu } from '@/types/plugin';
 
 export const PLUGIN_RESOURCES_REFRESH_EVENT = 'plugin-resources-refresh';
+export const PLUGIN_API_REQUEST_TYPE = 'cpa-plugin-api-request';
+export const PLUGIN_API_RESPONSE_TYPE = 'cpa-plugin-api-response';
+
+export const toPluginAPIClientPath = (path: string): string =>
+  path.trim().replace(/^\/v0\/management(?=\/|$)/, '') || '/';
+
+export const isPluginAPIRequestAllowed = (method: string, path: string, pluginID: string): boolean => {
+  const normalizedPluginID = pluginID.trim().replace(/^\/+|\/+$/g, '');
+  const normalizedPath = path.trim();
+  if (!normalizedPluginID || !normalizedPath) return false;
+  const prefix = `/v0/management/${normalizedPluginID}`;
+  return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method.trim().toUpperCase()) &&
+    (normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`));
+};
 
 export interface PluginResourceEntry {
   pluginID: string;

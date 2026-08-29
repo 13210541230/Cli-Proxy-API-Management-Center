@@ -13,37 +13,30 @@ const listPlugins = vi.mocked(pluginsApi.list);
 describe('usePluginStore', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    usePluginStore.setState({ enterpriseAccessAudit: 'idle' });
+    usePluginStore.setState({ plugins: [], pluginsEnabled: null, pluginStatus: 'idle' });
   });
 
-  it('enables enterprise capabilities only for an effectively enabled plugin', async () => {
+  it('stores the normalized generic plugin list', async () => {
     listPlugins.mockResolvedValueOnce({
+      plugins_enabled: true,
       plugins: [
-        { id: 'enterprise-access-audit', registered: true, enabled: true, effective_enabled: true },
+        { id: 'example', registered: true, enabled: true, effective_enabled: true },
       ],
     });
 
     await usePluginStore.getState().fetchPlugins(true);
 
-    expect(usePluginStore.getState().enterpriseAccessAudit).toBe('enabled');
+    expect(usePluginStore.getState().plugins).toHaveLength(1);
+    expect(usePluginStore.getState().plugins[0].id).toBe('example');
+    expect(usePluginStore.getState().pluginStatus).toBe('ready');
   });
 
-  it.each([
-    [{ plugins: [] }],
-    [{ plugins: [{ id: 'enterprise-access-audit', registered: true, enabled: false, effective_enabled: false }] }],
-  ])('hides enterprise capabilities when the plugin is unavailable', async (response) => {
-    listPlugins.mockResolvedValueOnce(response);
-
-    await usePluginStore.getState().fetchPlugins(true);
-
-    expect(usePluginStore.getState().enterpriseAccessAudit).toBe('disabled');
-  });
-
-  it('fails closed when the capability endpoint is unavailable', async () => {
+  it('fails closed when the plugin endpoint is unavailable', async () => {
     listPlugins.mockRejectedValueOnce(new Error('not available'));
 
     await usePluginStore.getState().fetchPlugins(true);
 
-    expect(usePluginStore.getState().enterpriseAccessAudit).toBe('disabled');
+    expect(usePluginStore.getState().plugins).toEqual([]);
+    expect(usePluginStore.getState().pluginStatus).toBe('unavailable');
   });
 });

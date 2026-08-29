@@ -3,7 +3,9 @@ import {
   buildPluginResourceRoute,
   collectPluginResourceEntries,
   getPluginTitle,
+  isPluginAPIRequestAllowed,
   resolvePluginAssetURL,
+  toPluginAPIClientPath,
 } from './pluginResources';
 import type { ManagementPluginEntry } from '@/types/plugin';
 
@@ -37,6 +39,17 @@ describe('plugin resource host helpers', () => {
     expect(resolvePluginAssetURL('/v0/resource/plugins/demo/page', 'http://localhost:8317/v0/management'))
       .toBe('http://localhost:8317/v0/resource/plugins/demo/page');
     expect(resolvePluginAssetURL('https://plugins.example.test/page', '')).toBe('https://plugins.example.test/page');
+  });
+
+  it('restricts iframe API requests to authenticated management routes', () => {
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/enterprise-access-audit/audit', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('PUT', '/v0/management/enterprise-access-audit/policy', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/plugins', 'enterprise-access-audit')).toBe(false);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/resource/plugins/demo/page', 'enterprise-access-audit')).toBe(false);
+    expect(isPluginAPIRequestAllowed('GET', 'https://example.com/secret', 'enterprise-access-audit')).toBe(false);
+    expect(isPluginAPIRequestAllowed('OPTIONS', '/v0/management/enterprise-access-audit/audit', 'enterprise-access-audit')).toBe(false);
+    expect(toPluginAPIClientPath('/v0/management/enterprise-access-audit/audit')).toBe('/enterprise-access-audit/audit');
+    expect(toPluginAPIClientPath('/v0/management/enterprise-access-audit/policy')).toBe('/enterprise-access-audit/policy');
   });
 
   it('falls back to the plugin id when metadata has no display name', () => {
