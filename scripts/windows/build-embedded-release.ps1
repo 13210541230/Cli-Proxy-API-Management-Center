@@ -12,6 +12,10 @@ $binary = Join-Path $repo 'bin/cpa-manager.exe'
 New-Item -ItemType Directory -Force -Path (Split-Path -Parent $binary) | Out-Null
 $distContent = [System.IO.File]::ReadAllText($dist)
 $normalizedContent = $distContent.Replace("`r`n", "`n")
+$hiddenCodePoints = @(0x0002, 0x0018, 0x001F, 0x007F, 0x0080, 0x0085, 0x009F, 0x061C, 0x200B, 0x200E, 0x200F, 0x202D, 0x202E, 0x2066, 0x2067, 0x2069, 0xFEFF)
+foreach ($codePoint in $hiddenCodePoints) {
+  $normalizedContent = $normalizedContent.Replace([string][char]$codePoint, ('\u{0:X4}' -f $codePoint))
+}
 [System.IO.File]::WriteAllText($embedded, $normalizedContent, [System.Text.UTF8Encoding]::new($false))
 
 Write-Host '== Embedded binary build =='

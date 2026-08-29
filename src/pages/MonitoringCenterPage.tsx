@@ -2119,7 +2119,6 @@ export function MonitoringCenterPage() {
   const [apiKeySummarySortKey, setApiKeySummarySortKey] = useState<ApiKeySummarySortKey>('cost');
   const [apiKeySummaryTopN, setApiKeySummaryTopN] = useState('20');
   const [apiKeyTrendMetric, setApiKeyTrendMetric] = useState<ApiKeyTrendMetric>('tokens');
-  const [apiKeyTrendTopN, setApiKeyTrendTopN] = useState('5');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilter>('all');
   const [expandedAccounts, setExpandedAccounts] = useState<Record<string, boolean>>({});
   const [focusedAccount, setFocusedAccount] = useState<string | null>(null);
@@ -2696,14 +2695,6 @@ export function MonitoringCenterPage() {
     ],
     [t]
   );
-  const apiKeyTrendTopNOptions = useMemo(
-    () => [
-      { value: '3', label: 'Top 3' },
-      { value: '5', label: 'Top 5' },
-      { value: '10', label: 'Top 10' },
-    ],
-    []
-  );
   const apiKeyTrendHourly = useMemo(() => {
     if (timeRange === 'today') return true;
     if (timeRange !== 'custom' || !customTimeRange) return false;
@@ -2716,11 +2707,8 @@ export function MonitoringCenterPage() {
     );
   }, [customTimeRange, timeRange]);
   const apiKeyTrendSeriesRows = useMemo(() => {
-    const topN = Math.max(1, Number.parseInt(apiKeyTrendTopN, 10) || 5);
-    const selected = apiKeySummaryAllRows
-      .slice(0, topN)
-      .map((row) => row.apiKeyHash)
-      .filter(Boolean);
+    if (selectedApiKeyHash === 'all') return [];
+    const selected = [selectedApiKeyHash];
     const analyticsSeries =
       analyticsMode && analytics?.api_key_timeline
         ? buildAnalyticsApiKeyTrendSeries(analytics.api_key_timeline, selected, apiKeyTrendMetric)
@@ -2757,8 +2745,8 @@ export function MonitoringCenterPage() {
     apiKeySummaryAllRows,
     apiKeyTrendHourly,
     apiKeyTrendMetric,
-    apiKeyTrendTopN,
     scopedRowsByDimension,
+    selectedApiKeyHash,
   ]);
   const scopedRows = useMemo(
     () =>
@@ -3885,11 +3873,12 @@ export function MonitoringCenterPage() {
         </div>
       </MonitoringPanel>
 
-      <MonitoringPanel
-        title={t('monitoring.api_key_trend_title', { defaultValue: 'API Key 用量趋势' })}
-        subtitle={t('monitoring.api_key_trend_desc', {
-          defaultValue: '展示 TopN API Key 的时间趋势对比（随当前时间范围变化）',
-        })}
+      {selectedApiKeyHash !== 'all' ? (
+        <MonitoringPanel
+          title={t('monitoring.api_key_trend_title', { defaultValue: 'API Key 用量趋势' })}
+          subtitle={t('monitoring.api_key_trend_desc', {
+            defaultValue: '仅展示当前选中 API Key 的时间趋势（随当前时间范围变化）',
+          })}
         extra={
           <div className={`${styles.inlineMetrics} ${styles.realtimeHeaderActions}`}>
             <Select
@@ -3899,13 +3888,13 @@ export function MonitoringCenterPage() {
               ariaLabel={t('monitoring.api_key_trend_metric_label', { defaultValue: '趋势指标' })}
               fullWidth={false}
             />
-            <Select
-              value={apiKeyTrendTopN}
-              options={apiKeyTrendTopNOptions}
-              onChange={(value) => setApiKeyTrendTopN(value)}
-              ariaLabel={t('monitoring.api_key_trend_topn_label', { defaultValue: '趋势TopN' })}
-              fullWidth={false}
-            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedApiKeyHash('all')}
+            >
+              {t('monitoring.clear_api_key_selection', { defaultValue: '取消选择' })}
+            </Button>
           </div>
         }
       >
@@ -3979,6 +3968,7 @@ export function MonitoringCenterPage() {
           {apiKeyTrendSeriesRows.length === 0 ? renderMonitoringEmptyState() : null}
         </div>
       </MonitoringPanel>
+      ) : null}
 
       <MonitoringPanel
         title={
