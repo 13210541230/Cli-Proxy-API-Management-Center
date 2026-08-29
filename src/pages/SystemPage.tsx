@@ -377,7 +377,17 @@ export function SystemPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.pageEyebrow}>{t('system_info.workspace_label', { defaultValue: 'Operations workspace' })}</span>
+          <h1 className={styles.pageTitle}>{t('system_info.title')}</h1>
+          <p className={styles.pageDescription}>{t('system_info.workspace_desc', { defaultValue: 'Review runtime versions, model availability, links, and local management controls.' })}</p>
+        </div>
+        <span className={`${styles.connectionBadge} ${auth.connectionStatus === 'connected' ? styles.connectionGood : styles.connectionBad}`}>
+          <span className={styles.connectionDot} />
+          {auth.connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+        </span>
+      </header>
       <div className={styles.content}>
         <Card className={styles.aboutCard}>
           <div className={styles.aboutHeader}>

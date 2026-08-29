@@ -136,12 +136,21 @@ export function ApiKeyUsageSelfServicePage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.header}>
-        <h1>{t('self_usage.title')}</h1>
-        <p className={styles.description}>{t('self_usage.description')}</p>
-      </div>
+      <header className={styles.header}>
+        <div>
+          <span className={styles.eyebrow}>{t('self_usage.workspace_label', { defaultValue: 'Usage workspace' })}</span>
+          <h1>{t('self_usage.title')}</h1>
+          <p className={styles.description}>{t('self_usage.description')}</p>
+        </div>
+      </header>
 
       <Card className={styles.searchSection}>
+        <div className={styles.searchHeader}>
+          <div>
+            <h2>{t('self_usage.query_title', { defaultValue: 'Inspect API key usage' })}</h2>
+            <p>{t('self_usage.query_desc', { defaultValue: 'Enter a key to view recent usage, quota status, and model-level totals.' })}</p>
+          </div>
+        </div>
         <div className={styles.searchRow}>
           <Input
             placeholder={t('self_usage.api_key_placeholder')}

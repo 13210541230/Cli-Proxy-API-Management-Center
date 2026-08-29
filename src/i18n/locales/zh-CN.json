@@ -1740,6 +1740,7 @@
   },
   "config_management": {
     "title": "配置面板",
+    "workspace_label": "配置工作台",
     "editor_title": "配置文件",
     "reload": "重新加载",
     "reload_confirm_message": "重新加载将丢弃你当前未保存的修改，确定继续吗？",

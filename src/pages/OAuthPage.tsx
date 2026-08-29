@@ -357,7 +357,13 @@ export function OAuthPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.pageEyebrow}>{t('oauth.workspace_label', { defaultValue: 'Authentication workspace' })}</span>
+          <h1 className={styles.pageTitle}>{t('nav.oauth', { defaultValue: 'OAuth' })}</h1>
+          <p className={styles.pageDescription}>{t('oauth.workspace_desc', { defaultValue: 'Authorize provider accounts and complete callback-based sign-in flows from one place.' })}</p>
+        </div>
+      </header>
 
       <div className={styles.content}>
         {PROVIDERS.map((provider) => {
@@ -375,7 +381,7 @@ export function OAuthPage() {
             .filter(Boolean)
             .join(' ');
           return (
-            <div key={provider.id}>
+            <div key={provider.id} className={styles.providerItem}>
               <Card
                 title={
                   <span className={styles.cardTitle}>

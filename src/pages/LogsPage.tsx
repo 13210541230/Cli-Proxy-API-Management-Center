@@ -452,7 +452,17 @@ export function LogsPage() {
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.eyebrow}>{t('logs.workspace_label', { defaultValue: 'Operations workspace' })}</span>
+          <h1 className={styles.pageTitle}>{t('logs.title')}</h1>
+          <p className={styles.pageDescription}>{t('logs.workspace_desc', { defaultValue: 'Inspect request activity, filter structured events, and keep operational history under control.' })}</p>
+        </div>
+        <span className={`${styles.connectionBadge} ${connectionStatus === 'connected' ? styles.connectionGood : styles.connectionBad}`}>
+          <span className={styles.connectionDot} />
+          {connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+        </span>
+      </header>
 
       <div className={styles.tabBar}>
         <button

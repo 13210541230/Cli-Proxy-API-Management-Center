@@ -1636,6 +1636,7 @@
   },
   "config_management": {
     "title": "設定面板",
+    "workspace_label": "設定工作台",
     "editor_title": "設定檔",
     "reload": "重新載入",
     "reload_confirm_message": "重新載入將捨棄你目前未儲存的修改，確定繼續嗎？",

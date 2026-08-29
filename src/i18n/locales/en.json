@@ -1738,6 +1738,7 @@
   },
   "config_management": {
     "title": "Config Panel",
+    "workspace_label": "Configuration workspace",
     "editor_title": "Configuration File",
     "reload": "Reload",
     "reload_confirm_message": "Reloading will discard your unsaved changes. Do you want to continue?",

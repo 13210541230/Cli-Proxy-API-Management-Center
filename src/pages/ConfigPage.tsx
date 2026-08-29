@@ -881,10 +881,19 @@ export function ConfigPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
-        <p className={styles.description}>{pageDescription}</p>
-      </div>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.pageEyebrow}>{t('config_management.workspace_label')}</span>
+          <h1 className={styles.pageTitle}>{t('config_management.title')}</h1>
+          <p className={styles.description}>{pageDescription}</p>
+        </div>
+        <div className={styles.pageHeaderActions}>
+          <span className={`${styles.connectionBadge} ${connectionStatus === 'connected' ? styles.connectionGood : styles.connectionBad}`}>
+            <span className={styles.connectionDot} />
+            {connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+          </span>
+        </div>
+      </header>
 
       <div className={styles.workspaceShell}>
         <div className={styles.pageMeta}>
