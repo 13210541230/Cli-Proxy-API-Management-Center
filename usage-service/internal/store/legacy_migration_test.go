@@ -77,6 +77,10 @@ func TestOpenMigratesLegacyDatabaseWithoutChangingProtectedData(t *testing.T) {
 	}
 	for name, definition := range beforeSchema {
 		// 当前真实启动迁移会为 import history 补 csv_filename/error_details 两列。
+		// usage_events 只允许新增兼容字段，旧表结构和数据仍需保持不变。
+		if name == "table:usage_events" {
+			continue
+		}
 		if name == "table:enterprise_key_bindings" || name == "table:enterprise_import_history" {
 			continue
 		}
@@ -95,6 +99,9 @@ func TestOpenMigratesLegacyDatabaseWithoutChangingProtectedData(t *testing.T) {
 	}
 	if migratedColumns != 2 {
 		t.Fatalf("import-history migrated column count = %d, want 2", migratedColumns)
+	}
+	if !hasColumn(migrated.db, "usage_events", "reasoning_effort") {
+		t.Fatal("usage_events.reasoning_effort was not added during migration")
 	}
 	var rollupRows int
 	if err := migrated.db.QueryRow(`select count(*) from usage_hourly_rollups`).Scan(&rollupRows); err != nil {

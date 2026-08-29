@@ -18,16 +18,16 @@ func TestDailyDimensionRollupSharesCheckpointAndPurgesWithHourlyData(t *testing.
 	defer db.Close()
 	const day = int64(24 * 60 * 60 * 1000)
 	if _, err := db.InsertEvents(ctx, []usage.Event{
-		{EventHash: "dimension-a", TimestampMS: day + 100, Timestamp: "a", Model: "model-a", Provider: "provider-a", AuthIndex: "auth-a", APIKeyHash: "hash-a", AccountSnapshot: "account-a", InputTokens: 3, TotalTokens: 3, CreatedAtMS: 1},
-		{EventHash: "dimension-b", TimestampMS: day + 200, Timestamp: "b", Model: "model-a", Provider: "provider-a", AuthIndex: "auth-b", APIKeyHash: "hash-b", AccountSnapshot: "account-b", OutputTokens: 4, TotalTokens: 4, Failed: true, CreatedAtMS: 2},
+		{EventHash: "dimension-a", TimestampMS: day + 100, Timestamp: "a", Model: "model-a", Provider: "provider-a", AuthIndex: "auth-a", APIKeyHash: "hash-a", AccountSnapshot: "account-a", ReasoningEffort: "high", InputTokens: 3, ReasoningTokens: 1, TotalTokens: 4, CreatedAtMS: 1},
+		{EventHash: "dimension-b", TimestampMS: day + 200, Timestamp: "b", Model: "model-a", Provider: "provider-a", AuthIndex: "auth-b", APIKeyHash: "hash-b", AccountSnapshot: "account-b", ReasoningEffort: "low", OutputTokens: 4, TotalTokens: 4, Failed: true, CreatedAtMS: 2},
 	}); err != nil {
 		t.Fatalf("insert events: %v", err)
 	}
 	if n, err := db.ApplyHourlyRollupBatch(ctx, 100); err != nil || n != 2 {
 		t.Fatalf("apply rollup = %d, %v", n, err)
 	}
-	wantRows := map[string]int{"account": 2, "api_key": 2, "provider": 1, "auth_index": 2}
-	for _, dimension := range []string{"account", "api_key", "provider", "auth_index"} {
+	wantRows := map[string]int{"account": 2, "api_key": 2, "provider": 1, "auth_index": 2, "reasoning_effort": 2}
+	for _, dimension := range []string{"account", "api_key", "provider", "auth_index", "reasoning_effort"} {
 		rows, err := db.LoadDailyDimensionRollups(ctx, day, 2*day, dimension)
 		if err != nil {
 			t.Fatalf("load %s rows: %v", dimension, err)

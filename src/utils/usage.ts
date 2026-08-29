@@ -36,6 +36,8 @@ export interface UsageDetail {
   authProviderSnapshot?: string;
   auth_snapshot_at_ms?: number;
   authSnapshotAtMs?: number;
+  reasoning_effort?: string;
+  reasoningEffort?: string;
   latency_ms?: number;
   tokens: UsageTokens;
   failed: boolean;
@@ -280,6 +282,9 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           auth_snapshot_at_ms: toPositiveNumber(
             detailRaw.auth_snapshot_at_ms ?? detailRaw.authSnapshotAtMs
           ),
+          reasoning_effort: readDetailString(
+            detailRaw.reasoning_effort ?? detailRaw.reasoningEffort
+          ),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,
@@ -345,6 +350,9 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           ),
           auth_snapshot_at_ms: toPositiveNumber(
             detailRaw.auth_snapshot_at_ms ?? detailRaw.authSnapshotAtMs
+          ),
+          reasoning_effort: readDetailString(
+            detailRaw.reasoning_effort ?? detailRaw.reasoningEffort
           ),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),

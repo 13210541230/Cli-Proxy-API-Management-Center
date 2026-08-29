@@ -23,6 +23,7 @@ const legacyUsageExportFixture = `{
                 "timestamp": "2026-01-02T03:04:05Z",
                 "source": "alice@example.com",
                 "auth_index": "auth-1",
+                "reasoning_effort": "high",
                 "tokens": {
                   "input_tokens": 10,
                   "output_tokens": 20,
@@ -68,7 +69,7 @@ func TestParseImportPayloadLegacyUsageExport(t *testing.T) {
 	}
 
 	first := result.Events[0]
-	if first.Model != "gpt-4o" || first.Endpoint != "POST /v1/chat/completions" {
+	if first.Model != "gpt-4o" || first.Endpoint != "POST /v1/chat/completions" || first.ReasoningEffort != "high" {
 		t.Fatalf("first event target = %#v", first)
 	}
 	if first.Method != "POST" || first.Path != "/v1/chat/completions" {

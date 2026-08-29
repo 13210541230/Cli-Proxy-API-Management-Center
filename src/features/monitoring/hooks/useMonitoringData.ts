@@ -352,6 +352,7 @@ export type MonitoringEventRow = {
   dayKey: string;
   hourLabel: string;
   model: string;
+  reasoningEffort?: string;
   endpoint: string;
   endpointMethod: string;
   endpointPath: string;
@@ -490,6 +491,7 @@ export interface UseMonitoringDataParams {
   customTimeRange?: MonitoringCustomTimeRange | null;
   searchQuery: string;
   searchApiKeyHash?: string;
+  reasoningEffort?: string;
 }
 
 export interface UseMonitoringDataReturn {
@@ -621,7 +623,8 @@ const buildRangeFilteredRows = (
   timeRange: MonitoringTimeRange,
   customTimeRange: MonitoringCustomTimeRange | null | undefined,
   searchQuery: string,
-  searchApiKeyHash?: string
+  searchApiKeyHash?: string,
+  reasoningEffort?: string
 ) => {
   const nowMs = Date.now();
   const bounds = getRangeBounds(timeRange, nowMs, customTimeRange);
@@ -640,6 +643,15 @@ const buildRangeFilteredRows = (
       normalizedQuery &&
       !row.searchText.includes(normalizedQuery) &&
       !(normalizedSearchApiKeyHash && row.apiKeyHash === normalizedSearchApiKeyHash)
+    ) {
+      return false;
+    }
+
+    const normalizedReasoningEffort = String(reasoningEffort || '').trim().toLowerCase();
+    if (
+      normalizedReasoningEffort &&
+      normalizedReasoningEffort !== 'all' &&
+      String(row.reasoningEffort || 'unknown').toLowerCase() !== normalizedReasoningEffort
     ) {
       return false;
     }
@@ -1470,6 +1482,8 @@ const buildEventRows = (
       const endpoint = readString(detail.__endpoint) || '-';
       const endpointMethod = readString(detail.__endpointMethod) || '-';
       const endpointPath = readString(detail.__endpointPath) || endpoint;
+      const reasoningEffort =
+        readString(detail.reasoning_effort ?? detail.reasoningEffort) || 'unknown';
       const inputTokens = Math.max(Number(detail.tokens?.input_tokens) || 0, 0);
       const outputTokens = Math.max(Number(detail.tokens?.output_tokens) || 0, 0);
       const reasoningTokens = Math.max(Number(detail.tokens?.reasoning_tokens) || 0, 0);
@@ -1495,6 +1509,7 @@ const buildEventRows = (
         dayKey,
         hourLabel,
         model: readString(detail.__modelName) || '-',
+        reasoningEffort,
         endpoint,
         endpointMethod,
         endpointPath,
@@ -1538,7 +1553,8 @@ const buildEventRows = (
           endpointPath,
           endpointMethod,
           authMeta?.provider || snapshotProvider,
-          authMeta?.planType
+          authMeta?.planType,
+          reasoningEffort
         ),
       } satisfies MonitoringEventRow;
     })
@@ -1598,6 +1614,7 @@ export function useMonitoringData({
   customTimeRange,
   searchQuery,
   searchApiKeyHash,
+  reasoningEffort,
 }: UseMonitoringDataParams): UseMonitoringDataReturn {
   const [authFiles, setAuthFiles] = useState<AuthFileItem[]>([]);
   const [channels, setChannels] = useState<MonitoringChannelMeta[]>([]);
@@ -1725,8 +1742,15 @@ export function useMonitoringData({
 
   const filteredRows = useMemo(
     () =>
-      buildRangeFilteredRows(allRows, timeRange, customTimeRange, searchQuery, searchApiKeyHash),
-    [allRows, customTimeRange, searchApiKeyHash, searchQuery, timeRange]
+      buildRangeFilteredRows(
+        allRows,
+        timeRange,
+        customTimeRange,
+        searchQuery,
+        searchApiKeyHash,
+        reasoningEffort
+      ),
+    [allRows, customTimeRange, reasoningEffort, searchApiKeyHash, searchQuery, timeRange]
   );
   const statsRows = useMemo(() => filteredRows.filter(shouldIncludeInStats), [filteredRows]);
 

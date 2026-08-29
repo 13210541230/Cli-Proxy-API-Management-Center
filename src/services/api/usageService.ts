@@ -216,6 +216,7 @@ export interface UsageAnalyticsResponse {
   account_stats?: UsageAnalyticsDimensionStat[];
   api_key_stats?: UsageAnalyticsDimensionStat[];
   api_key_timeline?: UsageAnalyticsDimensionTimeline[];
+  reasoning_stats?: UsageAnalyticsDimensionStat[];
   events?: UsageAnalyticsEventsPage;
   filter_options?: Record<string, string[]>;
 }

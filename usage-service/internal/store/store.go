@@ -331,6 +331,7 @@ func (s *Store) init() error {
 			timestamp text not null,
 			provider text,
 			model text not null,
+			reasoning_effort text,
 			endpoint text,
 			method text,
 			path text,
@@ -546,6 +547,7 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 		{name: "auth_file_snapshot", definition: "text"},
 		{name: "auth_provider_snapshot", definition: "text"},
 		{name: "auth_snapshot_at_ms", definition: "integer"},
+		{name: "reasoning_effort", definition: "text"},
 	}
 	for _, column := range columns {
 		if _, ok := existing[column.name]; ok {
@@ -1051,12 +1053,12 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 	}()
 
 	stmt, err := tx.PrepareContext(ctx, `insert or ignore into usage_events (
-		request_id, event_hash, timestamp_ms, timestamp, provider, model, endpoint, method, path,
+		request_id, event_hash, timestamp_ms, timestamp, provider, model, reasoning_effort, endpoint, method, path,
 		auth_type, auth_index, source, source_hash, api_key_hash,
 		account_snapshot, auth_label_snapshot, auth_file_snapshot, auth_provider_snapshot, auth_snapshot_at_ms,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 		latency_ms, failed, raw_json, created_at_ms
-	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return InsertResult{}, err
 	}
@@ -1076,6 +1078,7 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 			event.Timestamp,
 			nullString(event.Provider),
 			event.Model,
+			nullString(event.ReasoningEffort),
 			nullString(event.Endpoint),
 			nullString(event.Method),
 			nullString(event.Path),
@@ -1142,7 +1145,7 @@ func (s *Store) RecentEventsFiltered(
 		limit = 50000
 	}
 	query := `select
-		request_id, event_hash, timestamp_ms, timestamp, provider, model, endpoint, method, path,
+		request_id, event_hash, timestamp_ms, timestamp, provider, model, reasoning_effort, endpoint, method, path,
 		auth_type, auth_index, source, source_hash, api_key_hash,
 		account_snapshot, auth_label_snapshot, auth_file_snapshot, auth_provider_snapshot, auth_snapshot_at_ms,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
@@ -1177,7 +1180,7 @@ func (s *Store) RecentEventsFiltered(
 	events := make([]usage.Event, 0)
 	for rows.Next() {
 		var event usage.Event
-		var requestID, provider, endpoint, method, path, authType, authIndex, source, sourceHash, apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot, rawJSON sql.NullString
+		var requestID, provider, reasoningEffort, endpoint, method, path, authType, authIndex, source, sourceHash, apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot, rawJSON sql.NullString
 		var authSnapshotAt sql.NullInt64
 		var latency sql.NullInt64
 		var failed int
@@ -1188,6 +1191,7 @@ func (s *Store) RecentEventsFiltered(
 			&event.Timestamp,
 			&provider,
 			&event.Model,
+			&reasoningEffort,
 			&endpoint,
 			&method,
 			&path,
@@ -1216,6 +1220,7 @@ func (s *Store) RecentEventsFiltered(
 		}
 		event.RequestID = requestID.String
 		event.Provider = provider.String
+		event.ReasoningEffort = reasoningEffort.String
 		event.Endpoint = endpoint.String
 		event.Method = method.String
 		event.Path = path.String

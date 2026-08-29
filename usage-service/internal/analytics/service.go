@@ -28,6 +28,7 @@ var allowedIncludes = map[string]struct{}{
 	"account_stats":    {},
 	"api_key_stats":    {},
 	"api_key_timeline": {},
+	"reasoning_stats":  {},
 	"events":           {},
 	"filter_options":   {},
 }
@@ -104,6 +105,7 @@ type Filters struct {
 	AccountSnapshot string `json:"account_snapshot,omitempty"`
 	AuthIndex       string `json:"auth_index,omitempty"`
 	Endpoint        string `json:"endpoint,omitempty"`
+	ReasoningEffort string `json:"reasoning_effort,omitempty"`
 }
 
 type EventsPageRequest struct {
@@ -219,6 +221,7 @@ type EventItem struct {
 	AuthFileSnapshot     string `json:"auth_file_snapshot,omitempty"`
 	AuthProviderSnapshot string `json:"auth_provider_snapshot,omitempty"`
 	AuthSnapshotAtMS     int64  `json:"auth_snapshot_at_ms,omitempty"`
+	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
 	InputTokens          int64  `json:"input_tokens"`
 	OutputTokens         int64  `json:"output_tokens"`
 	ReasoningTokens      int64  `json:"reasoning_tokens"`
@@ -247,6 +250,7 @@ type Response struct {
 	AccountStats   []DimensionStat     `json:"account_stats,omitempty"`
 	APIKeyStats    []DimensionStat     `json:"api_key_stats,omitempty"`
 	APIKeyTimeline []DimensionTimeline `json:"api_key_timeline,omitempty"`
+	ReasoningStats []DimensionStat     `json:"reasoning_stats,omitempty"`
 	Events         *EventsPage         `json:"events,omitempty"`
 	FilterOptions  map[string][]string `json:"filter_options,omitempty"`
 }
@@ -312,6 +316,7 @@ func toStoreFilter(req Request) store.UsageAggregateFilter {
 		AccountSnapshot: req.Filters.AccountSnapshot,
 		AuthIndex:       req.Filters.AuthIndex,
 		Endpoint:        req.Filters.Endpoint,
+		ReasoningEffort: req.Filters.ReasoningEffort,
 	}
 }
 
@@ -386,6 +391,14 @@ func Query(ctx context.Context, st *store.Store, req Request) (Response, error) 
 			return Response{}, err
 		}
 		response.APIKeyTimeline = timeline
+		response.Meta.Source = combineSource(response.Meta.Source, source)
+	}
+	if includes(req, "reasoning_stats") {
+		rows, source, err := queryDimension(ctx, st, filter, "reasoning_effort", state.CoverageEventID, useRollup)
+		if err != nil {
+			return Response{}, err
+		}
+		response.ReasoningStats = dimensionStats(rows)
 		response.Meta.Source = combineSource(response.Meta.Source, source)
 	}
 	if includes(req, "filter_options") {
@@ -718,7 +731,7 @@ func queryCore(ctx context.Context, st *store.Store, filter store.UsageAggregate
 }
 
 func filtersForcesRaw(filter store.UsageAggregateFilter) []string {
-	result := make([]string, 0, 6)
+	result := make([]string, 0, 7)
 	if strings.TrimSpace(filter.APIKeyHash) != "" {
 		result = append(result, "api_key_hash")
 	}
@@ -736,6 +749,9 @@ func filtersForcesRaw(filter store.UsageAggregateFilter) []string {
 	}
 	if strings.TrimSpace(filter.Endpoint) != "" {
 		result = append(result, "endpoint")
+	}
+	if strings.TrimSpace(filter.ReasoningEffort) != "" {
+		result = append(result, "reasoning_effort")
 	}
 	return result
 }
@@ -878,7 +894,8 @@ func eventItems(items []store.UsageEventPageItem) []EventItem {
 			AuthType: item.AuthType, AuthIndex: item.AuthIndex, Source: usage.MaskUsageSource(item.Source), SourceHash: item.SourceHash,
 			APIKeyHash: item.APIKeyHash, AccountSnapshot: item.AccountSnapshot, AuthLabelSnapshot: item.AuthLabelSnapshot,
 			AuthFileSnapshot: item.AuthFileSnapshot, AuthProviderSnapshot: item.AuthProviderSnapshot, AuthSnapshotAtMS: item.AuthSnapshotAtMS,
-			InputTokens: item.InputTokens, OutputTokens: item.OutputTokens, ReasoningTokens: item.ReasoningTokens,
+			ReasoningEffort: item.ReasoningEffort,
+			InputTokens:     item.InputTokens, OutputTokens: item.OutputTokens, ReasoningTokens: item.ReasoningTokens,
 			CachedTokens: item.CachedTokens, CacheTokens: item.CacheTokens, TotalTokens: item.TotalTokens,
 			LatencyMS: item.LatencyMS, Failed: item.Failed, CreatedAtMS: item.CreatedAtMS,
 		})

@@ -61,6 +61,7 @@ export type AccountOverviewPageResetState = {
   selectedChannel: string;
   selectedModel: string;
   selectedProvider: string;
+  selectedReasoningEffort?: string;
   selectedStatus: string;
   timeRange: MonitoringTimeRange;
 };
@@ -203,6 +204,7 @@ export const shouldResetAccountOverviewPage = (
     previous.selectedChannel !== next.selectedChannel ||
     previous.selectedModel !== next.selectedModel ||
     previous.selectedProvider !== next.selectedProvider ||
+    previous.selectedReasoningEffort !== next.selectedReasoningEffort ||
     previous.selectedStatus !== next.selectedStatus ||
     previous.timeRange !== next.timeRange
   );

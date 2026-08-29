@@ -12,12 +12,15 @@ import (
 )
 
 type Event struct {
-	RequestID            string `json:"request_id,omitempty"`
-	EventHash            string `json:"event_hash"`
-	TimestampMS          int64  `json:"timestamp_ms"`
-	Timestamp            string `json:"timestamp"`
-	Provider             string `json:"provider,omitempty"`
-	Model                string `json:"model"`
+	RequestID   string `json:"request_id,omitempty"`
+	EventHash   string `json:"event_hash"`
+	TimestampMS int64  `json:"timestamp_ms"`
+	Timestamp   string `json:"timestamp"`
+	Provider    string `json:"provider,omitempty"`
+	Model       string `json:"model"`
+	// ReasoningEffort is the request-side model reasoning setting. It is
+	// separate from response-side ReasoningTokens and may be absent in legacy events.
+	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
 	Endpoint             string `json:"endpoint,omitempty"`
 	Method               string `json:"method,omitempty"`
 	Path                 string `json:"path,omitempty"`
@@ -62,6 +65,7 @@ type Detail struct {
 	AuthFileSnapshot     string `json:"auth_file_snapshot,omitempty"`
 	AuthProviderSnapshot string `json:"auth_provider_snapshot,omitempty"`
 	AuthSnapshotAtMS     int64  `json:"auth_snapshot_at_ms,omitempty"`
+	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
 	LatencyMS            *int64 `json:"latency_ms,omitempty"`
 	Tokens               Tokens `json:"tokens"`
 	Failed               bool   `json:"failed"`
@@ -137,6 +141,7 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		Timestamp:            timestamp,
 		Provider:             readString(record, "provider", "type", "auth_type", "authType"),
 		Model:                readString(record, "model", "model_name", "modelName"),
+		ReasoningEffort:      readString(record, "reasoning_effort", "reasoningEffort", "thinking_level", "thinkingLevel"),
 		Endpoint:             endpoint,
 		Method:               method,
 		Path:                 path,
@@ -207,6 +212,7 @@ func BuildPayload(events []Event) Payload {
 			AuthFileSnapshot:     event.AuthFileSnapshot,
 			AuthProviderSnapshot: event.AuthProviderSnapshot,
 			AuthSnapshotAtMS:     event.AuthSnapshotAtMS,
+			ReasoningEffort:      event.ReasoningEffort,
 			LatencyMS:            event.LatencyMS,
 			Failed:               event.Failed,
 			Tokens: Tokens{

@@ -27,6 +27,13 @@
 ## Analytics 读取
 
 - 新接口：`POST /v0/management/monitoring/analytics`，时间范围为 `[from_ms,to_ms)`。
-- `summary`、`timeline`、`model_stats`、账号/API Key 统计及 `api_key_timeline` 按 include 返回；`events` 独立使用 `(timestamp_ms,id)` keyset 分页并返回真实 `total_count`。
+- `summary`、`timeline`、`model_stats`、账号/API Key 统计、`api_key_timeline` 及 `reasoning_stats` 按 include 返回；`events` 独立使用 `(timestamp_ms,id)` keyset 分页并返回真实 `total_count`。
 - Rollup 尚未覆盖、失败或不适用筛选时自动回退 raw SQL；旧 GET 用量接口作为兼容和回滚路径保留。
 - 响应 `meta.source`、`meta.complete`、`meta.rollup_status` 和 `coverage_event_id` 用于运维观测，不应把分页明细当成完整统计。
+
+## Monitoring Center 前端展示
+
+- 长范围继续使用 Analytics/Rollup，明细仅独立加载最近 200 条；账号、模型、API Key 汇总和趋势不会从有限明细重新推算。
+- API Key 汇总采用 Plus 风格的排名卡片，支持按 Tokens、预估花费或调用次数排序，并显示成功率、失败数、推理 Tokens、最新调用时间和安全的 Hash 后缀。
+- 请求监控表补充请求侧 `reasoning_effort`、输出 TPS 以及输入/输出/推理/缓存 Token 拆分；推理强度卡片支持点击筛选。
+- `reasoning_effort` 缺失的历史事件统一显示为 `unknown`/本地化“未知”，不会为旧数据臆造模型设置；旧事件的 `event_hash` 保持兼容。

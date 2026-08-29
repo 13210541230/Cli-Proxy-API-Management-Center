@@ -207,27 +207,27 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 		return s.rollupBatchError(tx, err)
 	}
 
-	rows, err := tx.QueryContext(ctx, `select id, timestamp_ms, model, provider, auth_index, api_key_hash, account_snapshot,
+	rows, err := tx.QueryContext(ctx, `select id, timestamp_ms, model, provider, auth_index, api_key_hash, account_snapshot, reasoning_effort,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens, latency_ms, failed
 		from usage_events where id > ? and id <= ? order by id asc limit ?`, state.CoverageEventID, state.TargetEventID, batchSize)
 	if err != nil {
 		return s.rollupBatchError(tx, err)
 	}
 	type eventRow struct {
-		id                                              int64
-		bucket, input, output, reasoning, cached, cache int64
-		total, latency                                  int64
-		model, provider, authIndex, apiKeyHash, account string
-		latencyValid                                    bool
-		failed                                          bool
+		id                                                               int64
+		bucket, input, output, reasoning, cached, cache                  int64
+		total, latency                                                   int64
+		model, provider, authIndex, apiKeyHash, account, reasoningEffort string
+		latencyValid                                                     bool
+		failed                                                           bool
 	}
 	events := make([]eventRow, 0, batchSize)
 	for rows.Next() {
 		var event eventRow
-		var provider, authIndex, apiKeyHash, account sql.NullString
+		var provider, authIndex, apiKeyHash, account, reasoningEffort sql.NullString
 		var latency sql.NullInt64
 		var failed int
-		if err := rows.Scan(&event.id, &event.bucket, &event.model, &provider, &authIndex, &apiKeyHash, &account,
+		if err := rows.Scan(&event.id, &event.bucket, &event.model, &provider, &authIndex, &apiKeyHash, &account, &reasoningEffort,
 			&event.input, &event.output, &event.reasoning, &event.cached, &event.cache, &event.total, &latency, &failed); err != nil {
 			_ = rows.Close()
 			return s.rollupBatchError(tx, err)
@@ -237,6 +237,7 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 		event.authIndex = authIndex.String
 		event.apiKeyHash = apiKeyHash.String
 		event.account = account.String
+		event.reasoningEffort = reasoningEffort.String
 		event.latencyValid = latency.Valid
 		if latency.Valid {
 			event.latency = latency.Int64
@@ -281,6 +282,7 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			{name: "api_key", key: event.apiKeyHash},
 			{name: "provider", key: event.provider},
 			{name: "auth_index", key: event.authIndex},
+			{name: "reasoning_effort", key: event.reasoningEffort},
 		} {
 			dimensionKey := fmt.Sprintf("%d\x00%s\x00%s\x00%s", dimensionBucket, dimension.name, dimension.key, event.model)
 			dimensionAggregate := dimensionAggregates[dimensionKey]

@@ -23,6 +23,7 @@ type UsageAggregateFilter struct {
 	AccountSnapshot string
 	AuthIndex       string
 	Endpoint        string
+	ReasoningEffort string
 }
 
 // UsageMetric is an aggregate over usage_events. It intentionally contains no
@@ -213,6 +214,8 @@ func usageDimensionColumn(dimension string) string {
 		return "ue.auth_index"
 	case "endpoint":
 		return "ue.endpoint"
+	case "reasoning_effort", "reasoning":
+		return "ue.reasoning_effort"
 	default:
 		return ""
 	}
@@ -238,6 +241,11 @@ func usageWhere(filter UsageAggregateFilter, includeMinID bool) (string, []any) 
 	appendText("ue.account_snapshot", filter.AccountSnapshot)
 	appendText("ue.auth_index", filter.AuthIndex)
 	appendText("ue.endpoint", filter.Endpoint)
+	if strings.EqualFold(strings.TrimSpace(filter.ReasoningEffort), "unknown") {
+		where = append(where, "(ue.reasoning_effort is null or trim(ue.reasoning_effort) = '')")
+	} else {
+		appendText("ue.reasoning_effort", filter.ReasoningEffort)
+	}
 	return strings.Join(where, " and "), args
 }
 
@@ -296,6 +304,7 @@ type UsageEventPageItem struct {
 	AuthFileSnapshot     string
 	AuthProviderSnapshot string
 	AuthSnapshotAtMS     int64
+	ReasoningEffort      string
 	InputTokens          int64
 	OutputTokens         int64
 	ReasoningTokens      int64
@@ -334,7 +343,7 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	args = append(args, limit+1)
 	rows, err := s.db.QueryContext(ctx, `select
 		ue.id, ue.request_id, ue.event_hash, ue.timestamp_ms, ue.timestamp, ue.provider, ue.model,
-		ue.endpoint, ue.method, ue.path, ue.auth_type, ue.auth_index, ue.source, ue.source_hash,
+		ue.reasoning_effort, ue.endpoint, ue.method, ue.path, ue.auth_type, ue.auth_index, ue.source, ue.source_hash,
 		ue.api_key_hash, ue.account_snapshot, ue.auth_label_snapshot, ue.auth_file_snapshot,
 		ue.auth_provider_snapshot, ue.auth_snapshot_at_ms, ue.input_tokens, ue.output_tokens,
 		ue.reasoning_tokens, ue.cached_tokens, ue.cache_tokens, ue.total_tokens, ue.latency_ms,
@@ -347,14 +356,14 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	items := make([]UsageEventPageItem, 0, limit)
 	for rows.Next() {
 		var item UsageEventPageItem
-		var requestID, provider, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
+		var requestID, provider, reasoningEffort, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
 		var apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot sql.NullString
 		var authSnapshotAt sql.NullInt64
 		var latency sql.NullInt64
 		var failed int
 		if err := rows.Scan(
 			&item.ID, &requestID, &item.EventHash, &item.TimestampMS, &item.Timestamp, &provider, &item.Model,
-			&endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
+			&reasoningEffort, &endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
 			&accountSnapshot, &authLabelSnapshot, &authFileSnapshot, &authProviderSnapshot,
 			&authSnapshotAt, &item.InputTokens, &item.OutputTokens, &item.ReasoningTokens,
 			&item.CachedTokens, &item.CacheTokens, &item.TotalTokens, &latency, &failed, &item.CreatedAtMS,
@@ -375,6 +384,7 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 		item.AuthLabelSnapshot = authLabelSnapshot.String
 		item.AuthFileSnapshot = authFileSnapshot.String
 		item.AuthProviderSnapshot = authProviderSnapshot.String
+		item.ReasoningEffort = reasoningEffort.String
 		if authSnapshotAt.Valid {
 			item.AuthSnapshotAtMS = authSnapshotAt.Int64
 		}
@@ -399,11 +409,12 @@ func (s *Store) LoadUsageFilterOptions(ctx context.Context, filter UsageAggregat
 	where, args := usageWhere(filter, false)
 	options := map[string][]string{}
 	queries := map[string]string{
-		"models":         "select distinct coalesce(ue.model, '') from usage_events ue where " + where + " order by 1",
-		"providers":      "select distinct coalesce(ue.provider, '') from usage_events ue where " + where + " order by 1",
-		"api_key_hashes": "select distinct coalesce(ue.api_key_hash, '') from usage_events ue where " + where + " order by 1",
-		"accounts":       "select distinct coalesce(ue.account_snapshot, '') from usage_events ue where " + where + " order by 1",
-		"endpoints":      "select distinct coalesce(ue.endpoint, '') from usage_events ue where " + where + " order by 1",
+		"models":            "select distinct coalesce(ue.model, '') from usage_events ue where " + where + " order by 1",
+		"providers":         "select distinct coalesce(ue.provider, '') from usage_events ue where " + where + " order by 1",
+		"api_key_hashes":    "select distinct coalesce(ue.api_key_hash, '') from usage_events ue where " + where + " order by 1",
+		"accounts":          "select distinct coalesce(ue.account_snapshot, '') from usage_events ue where " + where + " order by 1",
+		"endpoints":         "select distinct coalesce(ue.endpoint, '') from usage_events ue where " + where + " order by 1",
+		"reasoning_efforts": "select distinct coalesce(ue.reasoning_effort, '') from usage_events ue where " + where + " order by 1",
 	}
 	for name, query := range queries {
 		rows, err := s.db.QueryContext(ctx, query, args...)

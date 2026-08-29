@@ -175,6 +175,7 @@ type FocusSnapshot = {
   selectedModel: string;
   selectedChannel: string;
   selectedApiKeyHash: string;
+  selectedReasoningEffort: string;
   selectedStatus: StatusFilter;
 };
 
@@ -189,15 +190,18 @@ type RealtimeLogRow = MonitoringEventRow & {
   successRate: number;
   streamKey: string;
   recentPattern: boolean[];
+  outputTokensPerSecond: number | null;
 };
 
 type ApiKeySummaryRow = {
   apiKeyHash: string;
   apiKeyLabel: string;
+  rank: number;
   requests: number;
   success: number;
   failed: number;
   totalTokens: number;
+  reasoningTokens: number;
   totalCost: number;
   lastSeenAt: number;
 };
@@ -273,10 +277,12 @@ const buildAnalyticsApiKeyRows = (
     return {
       apiKeyHash: key,
       apiKeyLabel: label,
+      rank: 0,
       requests: analyticsNumber(item.requests),
       success: analyticsNumber(item.successes),
       failed: analyticsNumber(item.failures),
       totalTokens: analyticsNumber(item.total_tokens),
+      reasoningTokens: analyticsNumber(item.reasoning_tokens),
       totalCost: analyticsNumber(item.cost_usd),
       lastSeenAt: 0,
     };
@@ -286,7 +292,7 @@ const buildAnalyticsApiKeyRows = (
     if (sortKey === 'requests') return right.requests - left.requests || right.totalTokens - left.totalTokens;
     return right.totalTokens - left.totalTokens || right.requests - left.requests;
   });
-  return rows;
+  return rows.map((row, index) => ({ ...row, rank: index + 1 }));
 };
 
 const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): unknown => {
@@ -312,6 +318,7 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
       auth_file_snapshot: item.auth_file_snapshot,
       auth_provider_snapshot: item.auth_provider_snapshot,
       auth_snapshot_at_ms: item.auth_snapshot_at_ms,
+      reasoning_effort: item.reasoning_effort,
       latency_ms: item.latency_ms,
       failed: item.failed === true,
       tokens: {
@@ -668,6 +675,10 @@ const buildRealtimeLogRows = (rows: MonitoringEventRow[]): RealtimeLogRow[] => {
       requestCount: next.total,
       successRate: next.total > 0 ? next.success / next.total : 1,
       recentPattern: nextPattern,
+      outputTokensPerSecond:
+        row.latencyMs !== null && row.latencyMs > 0
+          ? row.outputTokens / (row.latencyMs / 1000)
+          : null,
     } satisfies RealtimeLogRow;
   });
 
@@ -690,10 +701,12 @@ const buildApiKeySummaryRows = (
     const existing = map.get(key) ?? {
       apiKeyHash: row.apiKeyHash,
       apiKeyLabel: row.apiKeyLabel || '-',
+      rank: 0,
       requests: 0,
       success: 0,
       failed: 0,
       totalTokens: 0,
+      reasoningTokens: 0,
       totalCost: 0,
       lastSeenAt: 0,
     };
@@ -701,6 +714,7 @@ const buildApiKeySummaryRows = (
     existing.success += row.failed ? 0 : 1;
     existing.failed += row.failed ? 1 : 0;
     existing.totalTokens += row.totalTokens;
+    existing.reasoningTokens += row.reasoningTokens;
     existing.totalCost += row.totalCost;
     existing.lastSeenAt = Math.max(existing.lastSeenAt, row.timestampMs);
     map.set(key, existing);
@@ -729,7 +743,7 @@ const buildApiKeySummaryRows = (
       right.lastSeenAt - left.lastSeenAt
     );
   });
-  return sorted;
+  return sorted.map((row, index) => ({ ...row, rank: index + 1 }));
 };
 
 const buildTrendBucketKey = (timestampMs: number, hourly: boolean) => {
@@ -2094,6 +2108,7 @@ export function MonitoringCenterPage() {
   const [selectedModel, setSelectedModel] = useState('all');
   const [selectedChannel, setSelectedChannel] = useState('all');
   const [selectedApiKeyHash, setSelectedApiKeyHash] = useState('all');
+  const [selectedReasoningEffort, setSelectedReasoningEffort] = useState('all');
   const [apiKeySummarySortKey, setApiKeySummarySortKey] = useState<ApiKeySummarySortKey>('cost');
   const [apiKeySummaryTopN, setApiKeySummaryTopN] = useState('20');
   const [apiKeyTrendMetric, setApiKeyTrendMetric] = useState<ApiKeyTrendMetric>('tokens');
@@ -2233,6 +2248,7 @@ export function MonitoringCenterPage() {
         selectedModel,
         selectedChannel,
         selectedApiKeyHash,
+        selectedReasoningEffort,
         selectedStatus,
       ].join('|'),
     [
@@ -2243,6 +2259,7 @@ export function MonitoringCenterPage() {
       selectedChannel,
       selectedModel,
       selectedProvider,
+      selectedReasoningEffort,
       selectedStatus,
       timeRange,
     ]
@@ -2290,12 +2307,17 @@ export function MonitoringCenterPage() {
         'account_stats',
         'api_key_stats',
         'api_key_timeline',
+        'reasoning_stats',
         'filter_options',
         'events',
       ],
+      filters:
+        selectedReasoningEffort !== 'all'
+          ? { reasoning_effort: selectedReasoningEffort }
+          : undefined,
       events_page: { limit: 200 },
     };
-  }, [customTimeRange, timeRange]);
+  }, [customTimeRange, selectedReasoningEffort, timeRange]);
   const [analytics, setAnalytics] = useState<UsageAnalyticsResponse | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState('');
@@ -2340,6 +2362,7 @@ export function MonitoringCenterPage() {
     customTimeRange,
     searchQuery: deferredSearch,
     searchApiKeyHash: deferredSearchApiKeyHash,
+    reasoningEffort: selectedReasoningEffort,
   });
 
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
@@ -2483,6 +2506,32 @@ export function MonitoringCenterPage() {
     ];
   }, [analytics, analyticsMode, filteredRows, t]);
 
+  const reasoningEffortOptions = useMemo(() => {
+    const values: string[] = analyticsMode
+      ? Array.from(
+          new Set(
+            (analytics?.filter_options?.reasoning_efforts || []).map((value) => value || 'unknown')
+          )
+        )
+      : Array.from(new Set(filteredRows.map((row) => row.reasoningEffort || 'unknown')));
+    return [
+      {
+        value: 'all',
+        label: t('monitoring.filter_all_reasoning_efforts', { defaultValue: '全部思考强度' }),
+      },
+      ...values
+        .filter(Boolean)
+        .map((value) => ({
+          value,
+          label:
+            value === 'unknown'
+              ? t('monitoring.reasoning_unknown', { defaultValue: '未知' })
+              : value,
+        }))
+        .sort((left, right) => left.label.localeCompare(right.label)),
+    ];
+  }, [analytics, analyticsMode, filteredRows, t]);
+
   const channelOptions = useMemo(
     () => [
       { value: 'all', label: t('monitoring.filter_all_channels') },
@@ -2566,6 +2615,12 @@ export function MonitoringCenterPage() {
         if (selectedChannel !== 'all' && row.channel !== selectedChannel) {
           return false;
         }
+        if (
+          selectedReasoningEffort !== 'all' &&
+          String(row.reasoningEffort || 'unknown').toLowerCase() !== selectedReasoningEffort.toLowerCase()
+        ) {
+          return false;
+        }
         if (selectedStatus === 'success' && row.failed) {
           return false;
         }
@@ -2580,6 +2635,7 @@ export function MonitoringCenterPage() {
       selectedChannel,
       selectedModel,
       selectedProvider,
+      selectedReasoningEffort,
       selectedStatus,
     ]
   );
@@ -2726,6 +2782,32 @@ export function MonitoringCenterPage() {
         : buildMonitoringSummary(scopedStatsRows),
     [analytics, analyticsMode, scopedStatsRows]
   );
+  const reasoningEffortRows = useMemo(() => {
+    const rows =
+      analyticsMode && analytics?.reasoning_stats
+        ? analytics.reasoning_stats.map((item) => ({
+            effort: String(item.key || 'unknown'),
+            requests: analyticsNumber(item.requests),
+            reasoningTokens: analyticsNumber(item.reasoning_tokens),
+          }))
+        : Array.from(
+            scopedStatsRows.reduce((map, row) => {
+              const effort = row.reasoningEffort || 'unknown';
+              const current = map.get(effort) || { effort, requests: 0, reasoningTokens: 0 };
+              current.requests += 1;
+              current.reasoningTokens += row.reasoningTokens;
+              map.set(effort, current);
+              return map;
+            }, new Map<string, { effort: string; requests: number; reasoningTokens: number }>()).values()
+          );
+    const totalRequests = rows.reduce((sum, row) => sum + row.requests, 0);
+    return rows
+      .map((row) => ({
+        ...row,
+        share: totalRequests > 0 ? row.requests / totalRequests : 0,
+      }))
+      .sort((left, right) => right.requests - left.requests || left.effort.localeCompare(right.effort));
+  }, [analytics, analyticsMode, scopedStatsRows]);
   const accountRows = useMemo(
     () =>
       analyticsMode && analytics
@@ -2771,6 +2853,7 @@ export function MonitoringCenterPage() {
       selectedChannel,
       selectedModel,
       selectedProvider,
+      selectedReasoningEffort,
       selectedStatus,
       timeRange,
     }),
@@ -2782,6 +2865,7 @@ export function MonitoringCenterPage() {
       selectedChannel,
       selectedModel,
       selectedProvider,
+      selectedReasoningEffort,
       selectedStatus,
       timeRange,
     ]
@@ -2828,6 +2912,7 @@ export function MonitoringCenterPage() {
     selectedModel !== 'all' ||
     selectedChannel !== 'all' ||
     selectedApiKeyHash !== 'all' ||
+    selectedReasoningEffort !== 'all' ||
     selectedStatus !== 'all';
   const hasActiveDataFilter = hasSearchFilter || hasScopeFilter;
   const failedGroupCount = analyticsMode && analytics
@@ -2970,6 +3055,7 @@ export function MonitoringCenterPage() {
     setSelectedModel(snapshot.selectedModel);
     setSelectedChannel(snapshot.selectedChannel);
     setSelectedApiKeyHash(snapshot.selectedApiKeyHash);
+    setSelectedReasoningEffort(snapshot.selectedReasoningEffort);
     setSelectedStatus(snapshot.selectedStatus);
   }, []);
 
@@ -2982,6 +3068,7 @@ export function MonitoringCenterPage() {
     setSelectedModel('all');
     setSelectedChannel('all');
     setSelectedApiKeyHash('all');
+    setSelectedReasoningEffort('all');
     setSelectedStatus('all');
   }, []);
 
@@ -3142,6 +3229,7 @@ export function MonitoringCenterPage() {
           selectedModel,
           selectedChannel,
           selectedApiKeyHash,
+          selectedReasoningEffort,
           selectedStatus,
         };
       }
@@ -3158,6 +3246,7 @@ export function MonitoringCenterPage() {
       selectedChannel,
       selectedModel,
       selectedProvider,
+      selectedReasoningEffort,
       selectedStatus,
     ]
   );
@@ -3654,6 +3743,12 @@ export function MonitoringCenterPage() {
               ariaLabel={t('monitoring.filter_model')}
             />
             <Select
+              value={selectedReasoningEffort}
+              options={reasoningEffortOptions}
+              onChange={setSelectedReasoningEffort}
+              ariaLabel={t('monitoring.reasoning_effort', { defaultValue: '思考强度' })}
+            />
+            <Select
               value={selectedChannel}
               options={channelOptions}
               onChange={setSelectedChannel}
@@ -3716,6 +3811,41 @@ export function MonitoringCenterPage() {
       </section>
 
       <MonitoringPanel
+        title={t('monitoring.reasoning_effort_title', { defaultValue: '模型推理强度' })}
+        subtitle={t('monitoring.reasoning_effort_desc', {
+          defaultValue: '区分请求侧思考强度与响应侧推理 Tokens，历史缺失值归类为 unknown。',
+        })}
+        extra={
+          <span className={styles.panelMetricHint}>
+            {`${reasoningEffortRows.length} ${t('monitoring.reasoning_effort_levels', { defaultValue: '个等级' })}`}
+          </span>
+        }
+      >
+        <div className={styles.reasoningEffortGrid}>
+          {reasoningEffortRows.map((row) => (
+            <button
+              key={row.effort}
+              type="button"
+              className={`${styles.reasoningEffortCard} ${selectedReasoningEffort === row.effort ? styles.reasoningEffortCardActive : ''}`}
+              onClick={() =>
+                setSelectedReasoningEffort((current) => (current === row.effort ? 'all' : row.effort))
+              }
+            >
+              <span className={styles.reasoningEffortCardHeader}>
+                <strong>{row.effort}</strong>
+                <span>{formatPercent(row.share)}</span>
+              </span>
+              <span className={styles.reasoningEffortCardMetrics}>
+                <span>{`${formatCompactNumber(row.requests)} ${t('monitoring.total_calls')}`}</span>
+                <span>{`${formatCompactNumber(row.reasoningTokens)} ${t('monitoring.reasoning_tokens')}`}</span>
+              </span>
+            </button>
+          ))}
+          {reasoningEffortRows.length === 0 ? renderMonitoringEmptyState() : null}
+        </div>
+      </MonitoringPanel>
+
+      <MonitoringPanel
         title={t('monitoring.api_key_summary_title', { defaultValue: 'API Key 用量汇总' })}
         subtitle={t('monitoring.api_key_summary_desc', {
           defaultValue: '按当前时间范围与筛选条件汇总（不受下方 API Key 单选影响）',
@@ -3739,52 +3869,74 @@ export function MonitoringCenterPage() {
           </div>
         }
       >
-        <div className={styles.tableWrapper}>
-          <table className={`${styles.table} ${styles.realtimeTable}`}>
-            <thead>
-              <tr>
-                <th>{t('monitoring.filter_api_key')}</th>
-                <th>{t('monitoring.total_calls')}</th>
-                <th>{t('monitoring.success_calls')}</th>
-                <th>{t('monitoring.failure_calls')}</th>
-                <th>{t('monitoring.total_tokens')}</th>
-                <th>{t('monitoring.estimated_cost')}</th>
-                <th>{t('monitoring.latest_request_time')}</th>
-                <th>{t('common.actions', { defaultValue: '操作' })}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {apiKeySummaryRows.map((row) => (
-                <tr key={`${row.apiKeyHash}-${row.apiKeyLabel}`}>
-                  <td>{row.apiKeyLabel}</td>
-                  <td>{formatCompactNumber(row.requests)}</td>
-                  <td>{formatCompactNumber(row.success)}</td>
-                  <td className={row.failed > 0 ? styles.badText : undefined}>
-                    {formatCompactNumber(row.failed)}
-                  </td>
-                  <td>{formatCompactNumber(row.totalTokens)}</td>
-                  <td>{hasPrices ? formatUsd(row.totalCost) : '--'}</td>
-                  <td>{row.lastSeenAt > 0 ? new Date(row.lastSeenAt).toLocaleString(i18n.language) : '-'}</td>
-                  <td>
-                    <Button
-                      variant={selectedApiKeyHash === row.apiKeyHash ? 'primary' : 'secondary'}
-                      onClick={() => setSelectedApiKeyHash(row.apiKeyHash || 'all')}
-                      disabled={!row.apiKeyHash}
-                    >
-                      {selectedApiKeyHash === row.apiKeyHash
-                        ? t('monitoring.selected', { defaultValue: '已选中' })
-                        : t('monitoring.filter_api_key')}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-              {apiKeySummaryRows.length === 0 ? (
-                <tr>
-                  <td colSpan={8}>{renderMonitoringEmptyState()}</td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
+        <div className={styles.apiKeySummaryList}>
+          {apiKeySummaryRows.map((row) => {
+            const successRate = row.requests > 0 ? row.success / row.requests : 1;
+            const selected = selectedApiKeyHash === row.apiKeyHash;
+            return (
+              <article
+                key={`${row.apiKeyHash}-${row.apiKeyLabel}`}
+                className={`${styles.apiKeySummaryCard} ${selected ? styles.apiKeySummaryCardSelected : ''}`}
+              >
+                <div className={styles.apiKeySummaryRank} aria-label={`#${row.rank}`}>
+                  {row.rank}
+                </div>
+                <div className={styles.apiKeySummaryIdentity}>
+                  <strong title={row.apiKeyLabel}>{row.apiKeyLabel}</strong>
+                  <span>
+                    {row.apiKeyHash
+                      ? `${t('monitoring.api_key_hash_suffix', { defaultValue: 'Hash' })} · ${row.apiKeyHash.slice(-8)}`
+                      : t('monitoring.reasoning_unknown', { defaultValue: '未知' })}
+                  </span>
+                </div>
+                <div className={styles.apiKeySummaryMetrics}>
+                  <div>
+                    <span>{t('monitoring.total_calls')}</span>
+                    <strong>{formatCompactNumber(row.requests)}</strong>
+                  </div>
+                  <div>
+                    <span>{t('monitoring.success_rate')}</span>
+                    <strong className={successRate >= 0.95 ? styles.goodText : styles.warnText}>
+                      {formatPercent(successRate)}
+                    </strong>
+                  </div>
+                  <div>
+                    <span>{t('monitoring.total_tokens')}</span>
+                    <strong>{formatCompactNumber(row.totalTokens)}</strong>
+                  </div>
+                  <div>
+                    <span>{t('monitoring.reasoning_tokens')}</span>
+                    <strong>{formatCompactNumber(row.reasoningTokens)}</strong>
+                  </div>
+                  <div>
+                    <span>{t('monitoring.estimated_cost')}</span>
+                    <strong>{hasPrices ? formatUsd(row.totalCost) : '--'}</strong>
+                  </div>
+                </div>
+                <div className={styles.apiKeySummaryMeta}>
+                  <span className={row.failed > 0 ? styles.badText : styles.goodText}>
+                    {`${formatCompactNumber(row.failed)} ${t('monitoring.failure_calls')}`}
+                  </span>
+                  <span>
+                    {row.lastSeenAt > 0
+                      ? new Date(row.lastSeenAt).toLocaleString(i18n.language)
+                      : '-'}
+                  </span>
+                </div>
+                <Button
+                  variant={selected ? 'primary' : 'secondary'}
+                  onClick={() => setSelectedApiKeyHash(row.apiKeyHash || 'all')}
+                  disabled={!row.apiKeyHash}
+                  className={styles.apiKeySummaryAction}
+                >
+                  {selected
+                    ? t('monitoring.selected', { defaultValue: '已选中' })
+                    : t('monitoring.filter_api_key')}
+                </Button>
+              </article>
+            );
+          })}
+          {apiKeySummaryRows.length === 0 ? renderMonitoringEmptyState() : null}
         </div>
       </MonitoringPanel>
 
@@ -4196,10 +4348,12 @@ export function MonitoringCenterPage() {
               <tr>
                 <th>{t('monitoring.column_type')}</th>
                 <th>{t('monitoring.column_model')}</th>
+                <th>{t('monitoring.reasoning_effort', { defaultValue: '思考强度' })}</th>
                 <th>{t('monitoring.recent_status')}</th>
                 <th>{t('monitoring.request_status')}</th>
                 <th>{t('monitoring.column_success_rate')}</th>
                 <th>{t('monitoring.total_calls')}</th>
+                <th>{t('monitoring.tokens_per_second', { defaultValue: 'TPS' })}</th>
                 <th>{t('monitoring.column_latency')}</th>
                 <th>{t('monitoring.column_time')}</th>
                 <th>{t('monitoring.this_call_usage')}</th>
@@ -4233,6 +4387,9 @@ export function MonitoringCenterPage() {
                     </div>
                   </td>
                   <td>
+                    <span className={styles.reasoningEffortBadge}>{row.reasoningEffort || 'unknown'}</span>
+                  </td>
+                  <td>
                     <div className={styles.recentStatusCell}>
                       <RecentPattern pattern={row.recentPattern} variant="plain" />
                     </div>
@@ -4255,6 +4412,11 @@ export function MonitoringCenterPage() {
                   </td>
                   <td>{formatCompactNumber(row.requestCount)}</td>
                   <td>
+                    {row.outputTokensPerSecond === null
+                      ? '--'
+                      : `${formatCompactNumber(row.outputTokensPerSecond)} /s`}
+                  </td>
+                  <td>
                     <span
                       className={
                         row.latencyMs !== null && row.latencyMs >= 30000
@@ -4271,7 +4433,7 @@ export function MonitoringCenterPage() {
                   <td>
                     <div className={styles.primaryCell}>
                       <span>{formatCompactNumber(row.totalTokens)}</span>
-                      <small>{`I ${formatCompactNumber(row.inputTokens)} · O ${formatCompactNumber(row.outputTokens)} · C ${formatCompactNumber(row.cachedTokens)}`}</small>
+                      <small>{`I ${formatCompactNumber(row.inputTokens)} · O ${formatCompactNumber(row.outputTokens)} · R ${formatCompactNumber(row.reasoningTokens)} · C ${formatCompactNumber(row.cachedTokens)}`}</small>
                     </div>
                   </td>
                   <td>{hasPrices ? formatUsd(row.totalCost) : '--'}</td>
@@ -4279,7 +4441,7 @@ export function MonitoringCenterPage() {
               ))}
               {realtimeLogRows.length === 0 ? (
                 <tr>
-                  <td colSpan={10}>{renderMonitoringEmptyState()}</td>
+                  <td colSpan={12}>{renderMonitoringEmptyState()}</td>
                 </tr>
               ) : null}
             </tbody>

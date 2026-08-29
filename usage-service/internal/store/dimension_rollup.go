@@ -11,7 +11,7 @@ const dayMilliseconds = int64(24 * 60 * 60 * 1000)
 // event-id checkpoint as the hourly rollup. A zero bound is unbounded.
 func (s *Store) LoadDailyDimensionRollups(ctx context.Context, fromMS, toMS int64, dimension string) ([]DailyDimensionRollup, error) {
 	dimension = strings.ToLower(strings.TrimSpace(dimension))
-	if dimension != "account" && dimension != "api_key" && dimension != "provider" && dimension != "auth_index" {
+	if dimension != "account" && dimension != "api_key" && dimension != "provider" && dimension != "auth_index" && dimension != "reasoning_effort" {
 		return nil, &UnsupportedDimensionError{Dimension: dimension}
 	}
 	query := `select bucket_ms, dimension, dimension_key, model, requests, successes, failures,

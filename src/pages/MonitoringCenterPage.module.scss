@@ -969,6 +969,165 @@
   font-size: 23px;
 }
 
+.panelMetricHint {
+  color: var(--monitor-muted);
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.reasoningEffortGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reasoningEffortCard {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 16px;
+  background: var(--monitor-surface-elevated);
+  color: var(--monitor-ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.reasoningEffortCard:hover,
+.reasoningEffortCardActive {
+  border-color: color-mix(in srgb, var(--monitor-accent) 48%, var(--monitor-line-strong));
+  background: color-mix(in srgb, var(--monitor-accent) 9%, var(--monitor-surface-elevated));
+  transform: translateY(-1px);
+}
+
+.reasoningEffortCardHeader,
+.reasoningEffortCardMetrics {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reasoningEffortCardHeader strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: capitalize;
+  white-space: nowrap;
+}
+
+.reasoningEffortCardHeader span,
+.reasoningEffortCardMetrics span {
+  color: var(--monitor-muted);
+  font-size: 11px;
+}
+
+.reasoningEffortCardMetrics {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.apiKeySummaryList {
+  display: grid;
+  gap: 10px;
+}
+
+.apiKeySummaryCard {
+  display: grid;
+  grid-template-columns: 42px minmax(150px, 1.25fr) minmax(0, 3fr) minmax(150px, 0.9fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--monitor-line);
+  border-radius: 18px;
+  background: var(--monitor-surface-elevated);
+  transition:
+    border-color 0.18s ease,
+    background-color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.apiKeySummaryCard:hover,
+.apiKeySummaryCardSelected {
+  border-color: color-mix(in srgb, var(--monitor-accent) 42%, var(--monitor-line-strong));
+  background: var(--monitor-surface-hover);
+  box-shadow: var(--shadow);
+}
+
+.apiKeySummaryCard:hover {
+  transform: translateY(-1px);
+}
+
+.apiKeySummaryRank {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--monitor-accent) 14%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.apiKeySummaryIdentity,
+.apiKeySummaryMeta {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.apiKeySummaryIdentity strong {
+  overflow: hidden;
+  color: var(--monitor-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apiKeySummaryIdentity span,
+.apiKeySummaryMeta span,
+.apiKeySummaryMetrics span {
+  color: var(--monitor-muted);
+  font-size: 11px;
+}
+
+.apiKeySummaryMetrics {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(70px, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.apiKeySummaryMetrics > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.apiKeySummaryMetrics strong {
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.apiKeySummaryMeta {
+  justify-items: end;
+  text-align: right;
+}
+
+.apiKeySummaryAction {
+  min-width: 76px;
+  white-space: nowrap;
+}
+
 .summaryMeta {
   margin-top: auto;
   color: var(--monitor-muted);
@@ -1484,6 +1643,20 @@
   display: flex;
   align-items: center;
   min-width: 70px;
+}
+
+.reasoningEffortBadge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid color-mix(in srgb, var(--monitor-accent) 24%, var(--monitor-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-accent) 8%, var(--monitor-surface));
+  color: var(--monitor-accent-strong);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: lowercase;
 }
 
 .realtimeTable .statusBadge {
@@ -3260,6 +3433,7 @@
   .summaryHero,
   .summarySub,
   .summaryGrid,
+  .reasoningEffortGrid,
   .priceGrid {
     grid-template-columns: 1fr;
   }
@@ -3270,6 +3444,30 @@
 
   .summaryCardSecondary .summaryValue {
     font-size: 22px;
+  }
+
+  .apiKeySummaryCard {
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    gap: 10px;
+  }
+
+  .apiKeySummaryMetrics {
+    grid-column: 2 / -1;
+    grid-row: 2;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .apiKeySummaryMeta {
+    grid-column: 2;
+    grid-row: 3;
+    justify-items: start;
+    text-align: left;
+  }
+
+  .apiKeySummaryAction {
+    grid-column: 3;
+    grid-row: 3;
+    justify-self: end;
   }
 
   .priceActionsBar {
