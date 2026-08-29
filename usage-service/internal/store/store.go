@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	_ "modernc.org/sqlite"
@@ -244,6 +245,11 @@ type EnterpriseImportHistory struct {
 
 type Store struct {
 	db *sql.DB
+
+	// rollupFailureMu 保护无法在 SQLite 锁持有期间落盘的失败信息，避免错误被丢弃。
+	rollupFailureMu      sync.Mutex
+	pendingRollupFailure *rollupFailureMarker
+	rollupFailurePath    string
 }
 
 const managerConfigKey = "manager_config_v1"
@@ -256,9 +262,13 @@ func Open(path string) (*Store, error) {
 	if err != nil {
 		return nil, err
 	}
-	store := &Store{db: db}
+	store := &Store{db: db, rollupFailurePath: rollupFailureMarkerPath(path)}
 	db.SetMaxOpenConns(1)
 	if err := store.init(); err != nil {
+		_ = db.Close()
+		return nil, err
+	}
+	if err := store.loadRollupFailureMarker(); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
@@ -272,13 +282,38 @@ func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-// PurgeEventsBefore deletes usage_events older than the given cutoff (timestamp_ms).
+// PurgeEventsBefore atomically removes expired raw events and invalidates the
+// rebuildable hourly layer so deleted events cannot remain in rollup reads.
 func (s *Store) PurgeEventsBefore(ctx context.Context, cutoffMS int64) (int64, error) {
-	res, err := s.db.ExecContext(ctx, `delete from usage_events where timestamp_ms < ?`, cutoffMS)
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return 0, err
+	}
+	defer func() { _ = tx.Rollback() }()
+	res, err := tx.ExecContext(ctx, `delete from usage_events where timestamp_ms < ?`, cutoffMS)
 	if err != nil {
 		return 0, err
 	}
 	n, _ := res.RowsAffected()
+	if n > 0 {
+		if _, err := tx.ExecContext(ctx, `delete from usage_hourly_rollups`); err != nil {
+			return 0, err
+		}
+		if _, err := tx.ExecContext(ctx, `delete from usage_daily_dimension_rollups`); err != nil {
+			return 0, err
+		}
+		if _, err := tx.ExecContext(ctx, `update usage_rollup_state set checkpoint_id = 0, coverage_event_id = 0, target_event_id = 0, status = ?, last_error = null, updated_at_ms = ? where id = 1`, RollupStatusPending, time.Now().UnixMilli()); err != nil {
+			return 0, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return 0, err
+	}
+	if n > 0 {
+		if err := s.clearPendingRollupFailure(); err != nil {
+			return n, fmt.Errorf("clear rollup failure marker after purge: %w", err)
+		}
+	}
 	return n, nil
 }
 
@@ -327,12 +362,68 @@ func (s *Store) init() error {
 		`create index if not exists idx_usage_events_endpoint on usage_events(endpoint)`,
 		`create index if not exists idx_usage_events_api_key_hash on usage_events(api_key_hash)`,
 		`create index if not exists idx_usage_events_spend_window on usage_events(failed, timestamp_ms, api_key_hash, model)`,
+		`create table if not exists usage_hourly_rollups (
+			bucket_ms integer not null,
+			model text not null,
+			requests integer not null default 0,
+			successes integer not null default 0,
+			failures integer not null default 0,
+			input_tokens integer not null default 0,
+			output_tokens integer not null default 0,
+			reasoning_tokens integer not null default 0,
+			cached_tokens integer not null default 0,
+			cache_tokens integer not null default 0,
+			total_tokens integer not null default 0,
+			latency_sum_ms integer not null default 0,
+			latency_samples integer not null default 0,
+			zero_token_calls integer not null default 0,
+			primary key(bucket_ms, model)
+		)`,
+		`create table if not exists usage_daily_dimension_rollups (
+			bucket_ms integer not null,
+			dimension text not null,
+			dimension_key text not null,
+			model text not null,
+			requests integer not null default 0,
+			successes integer not null default 0,
+			failures integer not null default 0,
+			input_tokens integer not null default 0,
+			output_tokens integer not null default 0,
+			reasoning_tokens integer not null default 0,
+			cached_tokens integer not null default 0,
+			cache_tokens integer not null default 0,
+			total_tokens integer not null default 0,
+			latency_sum_ms integer not null default 0,
+			latency_samples integer not null default 0,
+			zero_token_calls integer not null default 0,
+			primary key(bucket_ms, dimension, dimension_key, model)
+		)`,
+		`create index if not exists idx_usage_daily_dimension_lookup
+			on usage_daily_dimension_rollups(dimension, bucket_ms, dimension_key)`,
+		`create table if not exists usage_rollup_state (
+			id integer primary key check(id = 1),
+			checkpoint_id integer not null default 0,
+			coverage_event_id integer not null default 0,
+			target_event_id integer not null default 0,
+			status text not null default 'pending',
+			last_error text,
+			updated_at_ms integer not null default 0
+		)`,
+		`insert into usage_rollup_state(id, checkpoint_id, status, updated_at_ms)
+			values(1, 0, 'pending', 0) on conflict(id) do nothing`,
 		`create table if not exists dead_letter_events (
 			id integer primary key autoincrement,
 			payload text not null,
 			error text not null,
 			created_at_ms integer not null
 		)`,
+		`create table if not exists collector_pending_items (
+			id integer primary key autoincrement,
+			payload text not null,
+			status text not null default 'pending',
+			created_at_ms integer not null
+		)`,
+		`create index if not exists idx_collector_pending_items_status_id on collector_pending_items(status, id)`,
 		`create table if not exists settings (
 			key text primary key,
 			value text not null,
@@ -411,6 +502,12 @@ func (s *Store) init() error {
 		return err
 	}
 	if err := s.ensureEnterpriseSchema(); err != nil {
+		return err
+	}
+	if err := s.ensureRollupStateSchema(); err != nil {
+		return err
+	}
+	if err := s.ensureDimensionRollupSchema(); err != nil {
 		return err
 	}
 	return nil
@@ -550,26 +647,12 @@ func (s *Store) ensureEnterpriseSchema() error {
 	if _, err := s.db.Exec(`insert into enterprise_departments(
 		id, name, prefix, sort_order, enabled, system, created_at_ms, updated_at_ms
 	) values(?, ?, ?, ?, ?, ?, ?, ?)
-	on conflict(id) do update set name=excluded.name, enabled=excluded.enabled, system=excluded.system, updated_at_ms=excluded.updated_at_ms`,
+	on conflict(id) do nothing`,
 		UngroupedDepartmentID, "未分组", "", -1, 1, 1, now, now,
 	); err != nil {
 		return err
 	}
-	if _, err := s.db.Exec(`
-		update enterprise_key_bindings
-		set department_id = ?, updated_at_ms = ?
-		where department_id = ''
-		   or department_id not in (select id from enterprise_departments)
-	`, UngroupedDepartmentID, now); err != nil {
-		return err
-	}
-	if _, err := s.db.Exec(`
-			update enterprise_key_bindings
-		set user_name = '', updated_at_ms = ?
-		where source = 'sync' and user_name like 'synced_%'
-	`, now); err != nil {
-		return err
-	}
+	// 启动迁移只补齐结构，不归一化既有绑定数据；业务修复必须由显式保存/删除操作触发。
 	return nil
 }
 

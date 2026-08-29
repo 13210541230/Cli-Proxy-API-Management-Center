@@ -10,6 +10,8 @@ import {
   type UsageQueryParams,
   type UsageExportResponse,
   type UsageImportResponse,
+  type UsageAnalyticsRequest,
+  type UsageAnalyticsResponse,
 } from '@/services/api/usageService';
 import { useAuthStore, useUsageServiceStore } from '@/stores';
 import { detectApiBaseFromLocation } from '@/utils/connection';
@@ -38,6 +40,8 @@ export interface UseUsageDataReturn {
   exportUsage: () => Promise<UsageExportResponse>;
   importUsage: (file: File) => Promise<UsageImportResponse>;
   loadUsage: (params?: UsageQueryParams) => Promise<void>;
+  clearUsage: () => void;
+  loadAnalytics: (payload: UsageAnalyticsRequest) => Promise<UsageAnalyticsResponse>;
 }
 
 export function useUsageData(): UseUsageDataReturn {
@@ -55,6 +59,7 @@ export function useUsageData(): UseUsageDataReturn {
   const requestIdRef = useRef(0);
   const aliasRequestIdRef = useRef(0);
   const usageAbortControllerRef = useRef<AbortController | null>(null);
+  const analyticsAbortControllerRef = useRef<AbortController | null>(null);
   const serviceResolutionRef = useRef<{
     key: string;
     base: string;
@@ -193,6 +198,30 @@ export function useUsageData(): UseUsageDataReturn {
     }
   }, [getApiKeyAliasesFromApi]);
 
+  const clearUsage = useCallback(() => {
+    requestIdRef.current += 1;
+    usageAbortControllerRef.current?.abort();
+    usageAbortControllerRef.current = null;
+    setUsage(null);
+    setLastRefreshedAt(null);
+    setLoading(false);
+    setError('');
+  }, []);
+
+  const loadAnalytics = useCallback(
+    async (payload: UsageAnalyticsRequest): Promise<UsageAnalyticsResponse> => {
+      analyticsAbortControllerRef.current?.abort();
+      const controller = new AbortController();
+      analyticsAbortControllerRef.current = controller;
+      const serviceBase = await resolveUsageServiceBase();
+      if (!serviceBase) {
+        throw new Error('usage_service_not_configured');
+      }
+      return usageServiceApi.getAnalytics(serviceBase, managementKey, payload, controller.signal);
+    },
+    [managementKey, resolveUsageServiceBase]
+  );
+
   const loadUsage = useCallback(async (params?: UsageQueryParams) => {
     const requestId = requestIdRef.current + 1;
     requestIdRef.current = requestId;
@@ -235,7 +264,10 @@ export function useUsageData(): UseUsageDataReturn {
   useEffect(() => {
     void loadModelPricesFromStorage();
     void loadApiKeyAliases();
-    return () => usageAbortControllerRef.current?.abort();
+    return () => {
+      usageAbortControllerRef.current?.abort();
+      analyticsAbortControllerRef.current?.abort();
+    };
   }, [loadApiKeyAliases, loadModelPricesFromStorage]);
 
   const setModelPrices = useCallback(
@@ -276,5 +308,7 @@ export function useUsageData(): UseUsageDataReturn {
     exportUsage: exportUsageFromApi,
     importUsage: importUsageToApi,
     loadUsage,
+    clearUsage,
+    loadAnalytics,
   };
 }

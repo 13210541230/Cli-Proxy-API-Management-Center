@@ -48,6 +48,7 @@ import {
   type MonitoringAccountRow,
   type MonitoringCustomTimeRange,
   type MonitoringEventRow,
+  type MonitoringSummary,
   type MonitoringStatusTone,
   type MonitoringTimeRange,
   useMonitoringData,
@@ -100,6 +101,12 @@ import {
 } from '@/utils/usage';
 import { downloadBlob } from '@/utils/download';
 import { sha256Hex } from '@/utils/apiKeyHash';
+import type {
+  UsageAnalyticsDimensionStat,
+  UsageAnalyticsMetric,
+  UsageAnalyticsRequest,
+  UsageAnalyticsResponse,
+} from '@/services/api/usageService';
 import styles from './MonitoringCenterPage.module.scss';
 
 const TIME_RANGE_OPTIONS: Array<{ value: MonitoringTimeRange; labelKey: string }> = [
@@ -197,6 +204,176 @@ type ApiKeySummaryRow = {
 
 type ApiKeySummarySortKey = 'tokens' | 'cost' | 'requests';
 type ApiKeyTrendMetric = 'tokens' | 'requests' | 'cost';
+
+const analyticsNumber = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+const buildAnalyticsSummary = (
+  metric: UsageAnalyticsMetric | undefined,
+  timeline: Array<{ bucket_ms: number }> = []
+): MonitoringSummary => {
+  const source = metric || {
+    requests: 0,
+    successes: 0,
+    failures: 0,
+    input_tokens: 0,
+    output_tokens: 0,
+    reasoning_tokens: 0,
+    cached_tokens: 0,
+    cache_tokens: 0,
+    total_tokens: 0,
+    latency_sum_ms: 0,
+    latency_samples: 0,
+    zero_token_calls: 0,
+    cost_usd: 0,
+  };
+  const totalCalls = analyticsNumber(source.requests);
+  const successCalls = analyticsNumber(source.successes);
+  const failureCalls = analyticsNumber(source.failures);
+  const activeDayCount = Math.max(
+    1,
+    new Set(timeline.map((item) => Math.floor(analyticsNumber(item.bucket_ms) / (24 * 60 * 60 * 1000)))).size
+  );
+  const totalTokens = analyticsNumber(source.total_tokens);
+  const latencySamples = analyticsNumber(source.latency_samples);
+  return {
+    totalCalls,
+    successCalls,
+    failureCalls,
+    successRate: totalCalls > 0 ? successCalls / totalCalls : 1,
+    inputTokens: analyticsNumber(source.input_tokens),
+    outputTokens: analyticsNumber(source.output_tokens),
+    reasoningTokens: analyticsNumber(source.reasoning_tokens),
+    cachedTokens: analyticsNumber(source.cached_tokens),
+    totalTokens,
+    totalCost: analyticsNumber(source.cost_usd),
+    averageLatencyMs: latencySamples > 0 ? analyticsNumber(source.latency_sum_ms) / latencySamples : null,
+    rpm30m: 0,
+    tpm30m: 0,
+    avgDailyRequests: totalCalls / activeDayCount,
+    avgDailyTokens: totalTokens / activeDayCount,
+    approxTasks: totalCalls,
+    approxTaskFailures: failureCalls,
+    approxTaskSuccessRate: totalCalls > 0 ? successCalls / totalCalls : 1,
+    zeroTokenCalls: analyticsNumber(source.zero_token_calls),
+    zeroTokenModels: [],
+  };
+};
+
+const buildAnalyticsApiKeyRows = (
+  stats: UsageAnalyticsDimensionStat[] = [],
+  aliases: Array<{ apiKeyHash: string; alias: string }> = [],
+  sortKey: ApiKeySummarySortKey
+): ApiKeySummaryRow[] => {
+  const aliasMap = new Map(aliases.map((item) => [item.apiKeyHash.toLowerCase(), item.alias]));
+  const rows = stats.map((item) => {
+    const key = String(item.key || '');
+    const alias = aliasMap.get(key.toLowerCase());
+    const label = alias ? `${alias}（${key.slice(-6)}）` : key ? `未命名（${key.slice(-6)}）` : '-';
+    return {
+      apiKeyHash: key,
+      apiKeyLabel: label,
+      requests: analyticsNumber(item.requests),
+      success: analyticsNumber(item.successes),
+      failed: analyticsNumber(item.failures),
+      totalTokens: analyticsNumber(item.total_tokens),
+      totalCost: analyticsNumber(item.cost_usd),
+      lastSeenAt: 0,
+    };
+  });
+  rows.sort((left, right) => {
+    if (sortKey === 'cost') return right.totalCost - left.totalCost || right.requests - left.requests;
+    if (sortKey === 'requests') return right.requests - left.requests || right.totalTokens - left.totalTokens;
+    return right.totalTokens - left.totalTokens || right.requests - left.requests;
+  });
+  return rows;
+};
+
+const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): unknown => {
+  const apis: Record<string, { models: Record<string, { details: Array<Record<string, unknown>> }> }> = {};
+  (response?.events?.items || []).forEach((item) => {
+    const timestampMs = analyticsNumber(item.timestamp_ms);
+    const timestamp = typeof item.timestamp === 'string' && item.timestamp
+      ? item.timestamp
+      : new Date(timestampMs).toISOString();
+    const method = typeof item.method === 'string' ? item.method.trim().toUpperCase() : '';
+    const path = typeof item.path === 'string' ? item.path.trim() : '';
+    const endpoint = method && path ? `${method} ${path}` : String(item.endpoint || '-');
+    const model = String(item.model || '-');
+    const api = (apis[endpoint] ||= { models: {} });
+    const modelEntry = (api.models[model] ||= { details: [] });
+    modelEntry.details.push({
+      timestamp,
+      source: item.source,
+      auth_index: item.auth_index,
+      api_key_hash: item.api_key_hash,
+      account_snapshot: item.account_snapshot,
+      auth_label_snapshot: item.auth_label_snapshot,
+      auth_file_snapshot: item.auth_file_snapshot,
+      auth_provider_snapshot: item.auth_provider_snapshot,
+      auth_snapshot_at_ms: item.auth_snapshot_at_ms,
+      latency_ms: item.latency_ms,
+      failed: item.failed === true,
+      tokens: {
+        input_tokens: analyticsNumber(item.input_tokens),
+        output_tokens: analyticsNumber(item.output_tokens),
+        reasoning_tokens: analyticsNumber(item.reasoning_tokens),
+        cached_tokens: analyticsNumber(item.cached_tokens),
+        cache_tokens: analyticsNumber(item.cache_tokens),
+        total_tokens: analyticsNumber(item.total_tokens),
+      },
+    });
+  });
+  return { apis };
+};
+
+const buildAnalyticsAccountRows = (
+  stats: UsageAnalyticsDimensionStat[] = [],
+  authFiles: AuthFileItem[] = []
+): MonitoringAccountRow[] =>
+  stats
+    .map((item) => {
+      const totalCalls = analyticsNumber(item.requests);
+      const successCalls = analyticsNumber(item.successes);
+      const failureCalls = analyticsNumber(item.failures);
+      const account = String(item.key || '-');
+      const matchingAuthFiles = authFiles.filter((file) => {
+        const fileAccount = String(file.account || file.email || '').trim();
+        return fileAccount !== '' && fileAccount === account;
+      });
+      const authIndices = matchingAuthFiles
+        .map((file) => normalizeAuthIndex(file['auth_index'] ?? file.authIndex))
+        .filter((value): value is string => Boolean(value));
+      const authLabels = matchingAuthFiles
+        .map((file) => String(file.label || file.name || file.email || file.account || '').trim())
+        .filter(Boolean);
+      return {
+        id: `analytics:${account}`,
+        account,
+        displayAccount: account,
+        accountMasked: account,
+        authLabels,
+        authIndices,
+        channels: [],
+        totalCalls,
+        successCalls,
+        failureCalls,
+        successRate: totalCalls > 0 ? successCalls / totalCalls : 1,
+        inputTokens: analyticsNumber(item.input_tokens),
+        outputTokens: analyticsNumber(item.output_tokens),
+        cachedTokens: analyticsNumber(item.cached_tokens),
+        totalTokens: analyticsNumber(item.total_tokens),
+        totalCost: analyticsNumber(item.cost_usd),
+        averageLatencyMs:
+          analyticsNumber(item.latency_samples) > 0
+            ? analyticsNumber(item.latency_sum_ms) / analyticsNumber(item.latency_samples)
+            : null,
+        lastSeenAt: 0,
+        recentPattern: [],
+        models: [],
+      };
+    })
+    .sort((left, right) => right.totalCalls - left.totalCalls || left.account.localeCompare(right.account));
 
 type AccountQuotaWindow = {
   id: string;
@@ -603,6 +780,25 @@ const buildApiKeyTrendSeries = (
   });
 
   return { buckets, seriesMap };
+};
+
+const buildAnalyticsApiKeyTrendSeries = (
+  timelines: Array<{
+    key: string;
+    timeline: Array<{ bucket_ms: number } & UsageAnalyticsMetric>;
+  }>,
+  selectedKeys: string[],
+  metric: ApiKeyTrendMetric
+) => {
+  const timelineByKey = new Map(timelines.map((item) => [item.key, item.timeline]));
+  return selectedKeys.map((key) => {
+    const values = (timelineByKey.get(key) || []).map((item) => {
+      if (metric === 'requests') return analyticsNumber(item.requests);
+      if (metric === 'cost') return analyticsNumber(item.cost_usd);
+      return analyticsNumber(item.total_tokens);
+    });
+    return { key, values, bucketCount: values.length };
+  });
 };
 
 const buildSparklinePoints = (values: number[], width = 220, height = 44) => {
@@ -2004,6 +2200,8 @@ export function MonitoringCenterPage() {
     exportUsage,
     importUsage,
     loadUsage,
+    clearUsage,
+    loadAnalytics,
   } = useUsageData();
 
   const usageQueryParams = useMemo(() => {
@@ -2022,6 +2220,111 @@ export function MonitoringCenterPage() {
     return params;
   }, [customTimeRange, timeRange]);
 
+  const [analyticsFallbackScope, setAnalyticsFallbackScope] = useState('');
+  const analyticsScopeKey = useMemo(
+    () =>
+      [
+        timeRange,
+        customTimeRange?.startMs ?? '',
+        customTimeRange?.endMs ?? '',
+        deferredSearch.trim(),
+        selectedAccount,
+        selectedProvider,
+        selectedModel,
+        selectedChannel,
+        selectedApiKeyHash,
+        selectedStatus,
+      ].join('|'),
+    [
+      customTimeRange,
+      deferredSearch,
+      selectedAccount,
+      selectedApiKeyHash,
+      selectedChannel,
+      selectedModel,
+      selectedProvider,
+      selectedStatus,
+      timeRange,
+    ]
+  );
+  const analyticsMode = useMemo(() => {
+    if (analyticsFallbackScope === analyticsScopeKey) return false;
+    if (timeRange === 'today') return false;
+    if (timeRange === 'custom') {
+      if (!customTimeRange) return false;
+      if (customTimeRange.endMs - customTimeRange.startMs <= 24 * 60 * 60 * 1000) return false;
+    }
+    return (
+      deferredSearch.trim() === '' &&
+      selectedAccount === 'all' &&
+      selectedProvider === 'all' &&
+      selectedModel === 'all' &&
+      selectedChannel === 'all' &&
+      selectedApiKeyHash === 'all' &&
+      selectedStatus === 'all'
+    );
+  }, [
+    analyticsFallbackScope,
+    analyticsScopeKey,
+    customTimeRange,
+    deferredSearch,
+    selectedAccount,
+    selectedApiKeyHash,
+    selectedChannel,
+    selectedModel,
+    selectedProvider,
+    selectedStatus,
+    timeRange,
+  ]);
+  const analyticsRequest = useMemo<UsageAnalyticsRequest>(() => {
+    const bounds = getRangeBounds(timeRange, Date.now(), customTimeRange);
+    const fromMs = bounds && Number.isFinite(bounds.startMs) ? Math.max(0, bounds.startMs) : 0;
+    const toMs = bounds && Number.isFinite(bounds.endMs) ? bounds.endMs : Date.now();
+    return {
+      from_ms: fromMs,
+      to_ms: Math.max(toMs, fromMs + 1),
+      include: [
+        'summary',
+        'timeline',
+        'model_stats',
+        'account_stats',
+        'api_key_stats',
+        'api_key_timeline',
+        'filter_options',
+        'events',
+      ],
+      events_page: { limit: 200 },
+    };
+  }, [customTimeRange, timeRange]);
+  const [analytics, setAnalytics] = useState<UsageAnalyticsResponse | null>(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [analyticsError, setAnalyticsError] = useState('');
+  const analyticsRequestIdRef = useRef(0);
+  const refreshAnalytics = useCallback(async () => {
+    const requestId = analyticsRequestIdRef.current + 1;
+    analyticsRequestIdRef.current = requestId;
+    setAnalyticsLoading(true);
+    setAnalyticsError('');
+    try {
+      const response = await loadAnalytics(analyticsRequest);
+      if (analyticsRequestIdRef.current !== requestId) return;
+      setAnalytics(response);
+      setAnalyticsFallbackScope('');
+    } catch (error) {
+      if (analyticsRequestIdRef.current !== requestId) return;
+      setAnalytics(null);
+      setAnalyticsFallbackScope(analyticsScopeKey);
+      setAnalyticsError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (analyticsRequestIdRef.current === requestId) setAnalyticsLoading(false);
+    }
+  }, [analyticsRequest, analyticsScopeKey, loadAnalytics]);
+
+  const analyticsUsage = useMemo(
+    () => (analyticsMode ? buildAnalyticsUsagePayload(analytics) : usage),
+    [analytics, analyticsMode, usage]
+  );
+
   const {
     loading: monitoringLoading,
     error: monitoringError,
@@ -2029,7 +2332,7 @@ export function MonitoringCenterPage() {
     filteredRows,
     refreshMeta,
   } = useMonitoringData({
-    usage,
+    usage: analyticsUsage,
     config,
     modelPrices,
     apiKeyAliases,
@@ -2045,7 +2348,10 @@ export function MonitoringCenterPage() {
       return refreshInFlightRef.current;
     }
 
-    const request = Promise.all([loadUsage(usageQueryParams), refreshMeta(false)])
+    const request = Promise.all([
+      analyticsMode ? refreshAnalytics() : loadUsage(usageQueryParams),
+      refreshMeta(false),
+    ])
       .then(() => undefined)
       .finally(() => {
         if (refreshInFlightRef.current === request) {
@@ -2054,7 +2360,7 @@ export function MonitoringCenterPage() {
       });
     refreshInFlightRef.current = request;
     return request;
-  }, [loadUsage, refreshMeta, usageQueryParams]);
+  }, [analyticsMode, loadUsage, refreshAnalytics, refreshMeta, usageQueryParams]);
 
   const setCurrentAccountPage = useCallback(
     (page: number) => {
@@ -2072,8 +2378,16 @@ export function MonitoringCenterPage() {
 
   useHeaderRefresh(refreshAll);
   useEffect(() => {
+    if (analyticsMode) {
+      clearUsage();
+      void refreshAnalytics();
+      return;
+    }
+    analyticsRequestIdRef.current += 1;
+    setAnalytics(null);
+    setAnalyticsError('');
     void loadUsage(usageQueryParams).catch(() => {});
-  }, [loadUsage, usageQueryParams]);
+  }, [analyticsMode, clearUsage, loadUsage, refreshAnalytics, usageQueryParams]);
 
   useInterval(
     () => {
@@ -2095,10 +2409,12 @@ export function MonitoringCenterPage() {
         ? t('monitoring.request_monitoring_service_unavailable_body')
         : t('monitoring.request_monitoring_not_configured_body');
   const overallLoading =
-    usageLoading || monitoringLoading || requestMonitoringAvailability.checking;
+    (analyticsMode ? analyticsLoading : usageLoading) ||
+    monitoringLoading ||
+    requestMonitoringAvailability.checking;
   const combinedError = monitoringUnavailable
     ? monitoringError
-    : [usageError, monitoringError].filter(Boolean).join('；');
+    : [usageError, analyticsError, monitoringError].filter(Boolean).join('；');
   const hasPrices = Object.keys(modelPrices).length > 0;
 
   useEffect(() => {
@@ -2116,21 +2432,33 @@ export function MonitoringCenterPage() {
     });
   }, [accountOverviewMode, accountPageByMode.card, accountPageSizeByMode.card, accountSort]);
 
-  const providerOptions = useMemo(
-    () => [
+  const providerOptions = useMemo(() => {
+    const values = analyticsMode
+      ? analytics?.filter_options?.providers || []
+      : Array.from(new Set(filteredRows.map((row) => row.provider)));
+    return [
       { value: 'all', label: t('monitoring.filter_all_providers') },
-      ...Array.from(new Set(filteredRows.map((row) => row.provider)))
+      ...values
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right))
         .map((value) => ({ value, label: value })),
-    ],
-    [filteredRows, t]
-  );
+    ];
+  }, [analytics, analyticsMode, filteredRows, t]);
 
   const accountOptionRows = useMemo(() => buildAccountRows(filteredRows), [filteredRows]);
 
-  const accountOptions = useMemo(
-    () => [
+  const accountOptions = useMemo(() => {
+    if (analyticsMode) {
+      const values = analytics?.filter_options?.accounts || [];
+      return [
+        { value: 'all', label: t('monitoring.filter_all_accounts') },
+        ...values
+          .filter(Boolean)
+          .sort((left, right) => left.localeCompare(right))
+          .map((value) => ({ value, label: value })),
+      ];
+    }
+    return [
       { value: 'all', label: t('monitoring.filter_all_accounts') },
       ...Array.from(
         new Map(
@@ -2139,20 +2467,21 @@ export function MonitoringCenterPage() {
       )
         .sort((left, right) => left[1].localeCompare(right[1]))
         .map(([value, label]) => ({ value, label })),
-    ],
-    [accountOptionRows, t]
-  );
+    ];
+  }, [accountOptionRows, analytics, analyticsMode, t]);
 
-  const modelOptions = useMemo(
-    () => [
+  const modelOptions = useMemo(() => {
+    const values = analyticsMode
+      ? analytics?.filter_options?.models || []
+      : Array.from(new Set(filteredRows.map((row) => row.model)));
+    return [
       { value: 'all', label: t('monitoring.filter_all_models') },
-      ...Array.from(new Set(filteredRows.map((row) => row.model)))
+      ...values
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right))
         .map((value) => ({ value, label: value })),
-    ],
-    [filteredRows, t]
-  );
+    ];
+  }, [analytics, analyticsMode, filteredRows, t]);
 
   const channelOptions = useMemo(
     () => [
@@ -2167,18 +2496,25 @@ export function MonitoringCenterPage() {
 
   const apiKeyOptions = useMemo(() => {
     const optionMap = new Map<string, string>();
-    filteredRows.forEach((row) => {
-      if (!row.apiKeyHash || optionMap.has(row.apiKeyHash)) return;
-      optionMap.set(row.apiKeyHash, row.apiKeyLabel || row.apiKeyMasked || row.apiKeyHash);
-    });
-
+    if (analyticsMode) {
+      (analytics?.filter_options?.api_key_hashes || []).forEach((hash) => {
+        if (!hash || optionMap.has(hash)) return;
+        const alias = apiKeyAliases.find((item) => item.apiKeyHash.toLowerCase() === hash.toLowerCase())?.alias;
+        optionMap.set(hash, alias ? `${alias}（${hash.slice(-6)}）` : `未命名（${hash.slice(-6)}）`);
+      });
+    } else {
+      filteredRows.forEach((row) => {
+        if (!row.apiKeyHash || optionMap.has(row.apiKeyHash)) return;
+        optionMap.set(row.apiKeyHash, row.apiKeyLabel || row.apiKeyMasked || row.apiKeyHash);
+      });
+    }
     return [
       { value: 'all', label: t('monitoring.filter_all_api_keys') },
       ...Array.from(optionMap.entries())
         .sort((left, right) => left[1].localeCompare(right[1]))
         .map(([value, label]) => ({ value, label })),
     ];
-  }, [filteredRows, t]);
+  }, [analytics, analyticsMode, apiKeyAliases, filteredRows, t]);
 
   const statusOptions = useMemo(
     () => [
@@ -2274,10 +2610,16 @@ export function MonitoringCenterPage() {
     ],
     [t]
   );
-  const apiKeySummaryAllRows = useMemo(
-    () => buildApiKeySummaryRows(scopedRowsByDimension, apiKeySummarySortKey),
-    [apiKeySummarySortKey, scopedRowsByDimension]
-  );
+  const apiKeySummaryAllRows = useMemo(() => {
+    if (analyticsMode && analytics) {
+      return buildAnalyticsApiKeyRows(
+        analytics.api_key_stats || [],
+        apiKeyAliases,
+        apiKeySummarySortKey
+      );
+    }
+    return buildApiKeySummaryRows(scopedRowsByDimension, apiKeySummarySortKey);
+  }, [analytics, analyticsMode, apiKeyAliases, apiKeySummarySortKey, scopedRowsByDimension]);
   const apiKeySummaryRows = useMemo(() => {
     const rows = apiKeySummaryAllRows;
     const topN = Number.parseInt(apiKeySummaryTopN, 10);
@@ -2317,30 +2659,39 @@ export function MonitoringCenterPage() {
       .slice(0, topN)
       .map((row) => row.apiKeyHash)
       .filter(Boolean);
-    const { buckets, seriesMap } = buildApiKeyTrendSeries(
-      scopedRowsByDimension,
-      selected,
-      apiKeyTrendMetric,
-      apiKeyTrendHourly
-    );
+    const analyticsSeries =
+      analyticsMode && analytics?.api_key_timeline
+        ? buildAnalyticsApiKeyTrendSeries(analytics.api_key_timeline, selected, apiKeyTrendMetric)
+        : null;
+    const { buckets, seriesMap } = analyticsSeries
+      ? { buckets: [], seriesMap: new Map<string, number[]>() }
+      : buildApiKeyTrendSeries(
+          scopedRowsByDimension,
+          selected,
+          apiKeyTrendMetric,
+          apiKeyTrendHourly
+        );
     return selected
-      .map((key) => {
+      .map((key, index) => {
         const summary = apiKeySummaryAllRows.find((row) => row.apiKeyHash === key);
+        const analyticsValues = analyticsSeries?.[index]?.values;
         return {
           apiKeyHash: key,
           label: summary?.apiKeyLabel || key,
-          values: seriesMap.get(key) || [],
+          values: analyticsValues || seriesMap.get(key) || [],
           total:
             apiKeyTrendMetric === 'requests'
               ? summary?.requests || 0
               : apiKeyTrendMetric === 'cost'
                 ? summary?.totalCost || 0
                 : summary?.totalTokens || 0,
-          bucketCount: buckets.length,
+          bucketCount: analyticsSeries?.[index]?.bucketCount || buckets.length,
         };
       })
       .filter((item) => item.values.length > 0);
   }, [
+    analytics,
+    analyticsMode,
     apiKeySummaryAllRows,
     apiKeyTrendHourly,
     apiKeyTrendMetric,
@@ -2368,8 +2719,20 @@ export function MonitoringCenterPage() {
     [accountStatusBounds, i18n.language, t]
   );
 
-  const scopedSummary = useMemo(() => buildMonitoringSummary(scopedStatsRows), [scopedStatsRows]);
-  const accountRows = useMemo(() => buildAccountRows(scopedRows), [scopedRows]);
+  const scopedSummary = useMemo(
+    () =>
+      analyticsMode && analytics
+        ? buildAnalyticsSummary(analytics.summary, analytics.timeline)
+        : buildMonitoringSummary(scopedStatsRows),
+    [analytics, analyticsMode, scopedStatsRows]
+  );
+  const accountRows = useMemo(
+    () =>
+      analyticsMode && analytics
+        ? buildAnalyticsAccountRows(analytics.account_stats, authFiles)
+        : buildAccountRows(scopedRows),
+    [analytics, analyticsMode, authFiles, scopedRows]
+  );
   const accountStatusDataByRowId = useMemo(
     () => buildMonitoringAccountStatusDataMap(scopedRows, accountStatusBounds),
     [accountStatusBounds, scopedRows]
@@ -2467,7 +2830,9 @@ export function MonitoringCenterPage() {
     selectedApiKeyHash !== 'all' ||
     selectedStatus !== 'all';
   const hasActiveDataFilter = hasSearchFilter || hasScopeFilter;
-  const failedGroupCount = groupedRealtimeRows.filter((row) => row.failureCalls > 0).length;
+  const failedGroupCount = analyticsMode && analytics
+    ? analyticsNumber(analytics.summary?.failures)
+    : groupedRealtimeRows.filter((row) => row.failureCalls > 0).length;
   const failedOnlyActive = selectedStatus === 'failed';
   const connectionTone: MonitoringStatusTone =
     connectionStatus === 'connected' ? 'good' : connectionStatus === 'connecting' ? 'warn' : 'bad';

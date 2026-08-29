@@ -48,6 +48,7 @@ export interface UsageServiceCollectorStatus {
   totalInserted?: number;
   totalSkipped?: number;
   deadLetters?: number;
+  pendingItems?: number;
   lastError?: string;
 }
 
@@ -156,6 +157,79 @@ export interface UsageQueryParams {
   fromMs?: number;
   toMs?: number;
   apiKeyHash?: string;
+}
+
+export interface UsageAnalyticsMetric {
+  requests: number;
+  successes: number;
+  failures: number;
+  input_tokens: number;
+  output_tokens: number;
+  reasoning_tokens: number;
+  cached_tokens: number;
+  cache_tokens: number;
+  total_tokens: number;
+  latency_sum_ms: number;
+  latency_samples: number;
+  zero_token_calls: number;
+  cost_usd: number;
+}
+
+export interface UsageAnalyticsTimelineItem extends UsageAnalyticsMetric {
+  bucket_ms: number;
+}
+
+export interface UsageAnalyticsModelStat extends UsageAnalyticsMetric {
+  model: string;
+}
+
+export interface UsageAnalyticsDimensionStat extends UsageAnalyticsMetric {
+  key: string;
+}
+
+export interface UsageAnalyticsDimensionTimeline {
+  key: string;
+  timeline: UsageAnalyticsTimelineItem[];
+}
+
+export interface UsageAnalyticsEventsPage {
+  items: Array<Record<string, unknown>>;
+  total_count: number;
+  has_more: boolean;
+  next_cursor?: string;
+  next_before_ms?: number;
+  next_before_id?: number;
+}
+
+export interface UsageAnalyticsResponse {
+  meta: {
+    version: string;
+    complete: boolean;
+    source: string;
+    rollup_status: string;
+    coverage_event_id: number;
+    target_event_id: number;
+  };
+  summary?: UsageAnalyticsMetric;
+  timeline?: UsageAnalyticsTimelineItem[];
+  model_stats?: UsageAnalyticsModelStat[];
+  account_stats?: UsageAnalyticsDimensionStat[];
+  api_key_stats?: UsageAnalyticsDimensionStat[];
+  api_key_timeline?: UsageAnalyticsDimensionTimeline[];
+  events?: UsageAnalyticsEventsPage;
+  filter_options?: Record<string, string[]>;
+}
+
+export interface UsageAnalyticsRequest {
+  from_ms: number;
+  to_ms: number;
+  include: string[] | Record<string, unknown>;
+  filters?: Record<string, string>;
+  events_page?: {
+    limit?: number;
+    before_ms?: number;
+    before_id?: number;
+  };
 }
 
 const USAGE_SERVICE_INFO_TIMEOUT_MS = 2 * 1000;
@@ -356,6 +430,26 @@ export const usageServiceApi = {
         params,
         signal,
       });
+      return response.data;
+    });
+  },
+
+  getAnalytics: async (
+    base: string,
+    managementKey: string | undefined,
+    payload: UsageAnalyticsRequest,
+    signal?: AbortSignal
+  ): Promise<UsageAnalyticsResponse> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.post<UsageAnalyticsResponse>(
+        buildUrl(base, '/v0/management/monitoring/analytics'),
+        payload,
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+          signal,
+        }
+      );
       return response.data;
     });
   },

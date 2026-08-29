@@ -13,6 +13,7 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/httpapi"
 	"github.com/seakee/cpa-manager/usage-service/internal/mail"
+	"github.com/seakee/cpa-manager/usage-service/internal/rollup"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
 )
 
@@ -46,6 +47,10 @@ func main() {
 	})
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	// Rollup 在后台按 event id 分批追赶，避免历史重建阻塞 HTTP listener。
+	rollupWorker := rollup.NewWorker(db, rollup.Config{BatchSize: 1000})
+	rollupWorker.Start(ctx)
 
 	if cfg.CPAUpstreamURL != "" && cfg.ManagementKey != "" {
 		manager.Start(ctx, collector.RuntimeConfig{
@@ -118,6 +123,7 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	manager.Stop()
+	rollupWorker.Stop()
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}

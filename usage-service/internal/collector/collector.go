@@ -27,6 +27,7 @@ type Status struct {
 	TotalInserted  int64  `json:"totalInserted"`
 	TotalSkipped   int64  `json:"totalSkipped"`
 	DeadLetters    int64  `json:"deadLetters"`
+	PendingItems   int64  `json:"pendingItems"`
 	LastError      string `json:"lastError,omitempty"`
 }
 
@@ -312,6 +313,14 @@ func (m *Manager) consumeHTTP(ctx context.Context, cfg RuntimeConfig, client *ht
 			status.Transport = "http"
 			status.LastError = ""
 		})
+		if pending, err := m.store.CollectorPendingItemCount(ctx); err != nil {
+			return err
+		} else if pending > 0 {
+			if err := m.drainPendingItems(ctx, cfg); err != nil {
+				return err
+			}
+			continue
+		}
 		items, err := client.Pop(ctx, m.batchSize(cfg))
 		if err != nil {
 			return err
@@ -338,6 +347,14 @@ func (m *Manager) consumeRESP(ctx context.Context, cfg RuntimeConfig, client *re
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
+		if pending, err := m.store.CollectorPendingItemCount(ctx); err != nil {
+			return err
+		} else if pending > 0 {
+			if err := m.drainPendingItems(ctx, cfg); err != nil {
+				return err
+			}
+			continue
+		}
 		items, err := client.Pop(queue, popSide, m.batchSize(cfg))
 		if err != nil {
 			return err
@@ -363,31 +380,84 @@ func (m *Manager) processItems(ctx context.Context, cfg RuntimeConfig, items []s
 	m.setStatus(func(status *Status) {
 		status.LastConsumedAt = time.Now().UnixMilli()
 	})
-	events := make([]usage.Event, 0, len(items))
-	for _, item := range items {
-		event, err := usage.NormalizeRaw([]byte(item))
-		if err != nil {
-			_ = m.store.AddDeadLetter(ctx, item, err)
-			m.setStatus(func(status *Status) {
-				status.DeadLetters++
-			})
-			continue
-		}
-		events = append(events, event)
+	// RESP LPOP/RPOP and the HTTP queue both remove items before processing.
+	// Persist the normalized queue payload first so a failed InsertEvents or a
+	// process restart has a local replay source instead of silently losing the batch.
+	persistCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	err := m.store.EnqueueCollectorPendingItems(persistCtx, items)
+	cancel()
+	if err != nil {
+		m.markError("persist_pending", err)
+		return err
 	}
-	m.enrichAccountSnapshots(ctx, cfg, events)
-	result, err := m.store.InsertEvents(ctx, events)
+	return m.drainPendingItems(ctx, cfg)
+}
+
+func (m *Manager) drainPendingItems(ctx context.Context, cfg RuntimeConfig) error {
+	items, err := m.store.LoadCollectorPendingItems(ctx, m.batchSize(cfg))
 	if err != nil {
 		return err
 	}
-	if result.Inserted > 0 || result.Skipped > 0 {
-		m.setStatus(func(status *Status) {
-			status.LastInsertedAt = time.Now().UnixMilli()
-			status.TotalInserted += int64(result.Inserted)
-			status.TotalSkipped += int64(result.Skipped)
-		})
+	if len(items) == 0 {
+		m.refreshPendingItemStatus(ctx)
+		return nil
 	}
+
+	deleteIDs := make([]int64, 0, len(items))
+	events := make([]usage.Event, 0, len(items))
+	eventIDs := make([]int64, 0, len(items))
+	for _, item := range items {
+		if store.IsCollectorPendingDeadLettered(item) {
+			deleteIDs = append(deleteIDs, item.ID)
+			continue
+		}
+		event, normalizeErr := usage.NormalizeRaw([]byte(item.Payload))
+		if normalizeErr != nil {
+			if err := m.store.AddDeadLetter(ctx, item.Payload, normalizeErr); err != nil {
+				m.markError("dead_letter", err)
+				return err
+			}
+			if err := m.store.MarkCollectorPendingDeadLettered(ctx, item.ID); err != nil {
+				return err
+			}
+			m.setStatus(func(status *Status) { status.DeadLetters++ })
+			deleteIDs = append(deleteIDs, item.ID)
+			continue
+		}
+		events = append(events, event)
+		eventIDs = append(eventIDs, item.ID)
+	}
+	m.enrichAccountSnapshots(ctx, cfg, events)
+	if len(events) > 0 {
+		result, err := m.store.InsertEvents(ctx, events)
+		if err != nil {
+			m.markError("insert", err)
+			m.refreshPendingItemStatus(ctx)
+			return err
+		}
+		deleteIDs = append(deleteIDs, eventIDs...)
+		if result.Inserted > 0 || result.Skipped > 0 {
+			m.setStatus(func(status *Status) {
+				status.LastInsertedAt = time.Now().UnixMilli()
+				status.TotalInserted += int64(result.Inserted)
+				status.TotalSkipped += int64(result.Skipped)
+			})
+		}
+	}
+	if err := m.store.DeleteCollectorPendingItems(ctx, deleteIDs); err != nil {
+		m.markError("delete_pending", err)
+		return err
+	}
+	m.refreshPendingItemStatus(ctx)
 	return nil
+}
+
+func (m *Manager) refreshPendingItemStatus(ctx context.Context) {
+	count, err := m.store.CollectorPendingItemCount(ctx)
+	if err != nil {
+		return
+	}
+	m.setStatus(func(status *Status) { status.PendingItems = count })
 }
 
 func (m *Manager) enrichAccountSnapshots(ctx context.Context, cfg RuntimeConfig, events []usage.Event) {

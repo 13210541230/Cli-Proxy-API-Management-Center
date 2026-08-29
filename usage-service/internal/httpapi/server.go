@@ -204,6 +204,11 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 		s.withCORS(s.handleEnterpriseUsageReport)(w, r)
 		return
 	}
+	cleanAnalyticsPath := strings.TrimRight(r.URL.Path, "/")
+	if cleanAnalyticsPath == "/v0/management/monitoring/analytics" {
+		s.withCORS(s.handleAnalytics)(w, r)
+		return
+	}
 	cleanUsagePath := strings.TrimRight(r.URL.Path, "/")
 	if cleanUsagePath == "/v0/management/usage" || strings.HasPrefix(cleanUsagePath, "/v0/management/usage/") {
 		s.withCORS(s.handleUsage)(w, r)

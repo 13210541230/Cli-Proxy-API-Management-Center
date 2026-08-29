@@ -395,6 +395,11 @@ func buildEventHash(event Event) string {
 	return hashString(strings.Join(parts, "|"))
 }
 
+// MaskUsageSource preserves the display-safe source representation used by
+// normalized events. Analytics/detail responses must use it even for legacy
+// imported rows that may have bypassed NormalizeRaw.
+func MaskUsageSource(value string) string { return maskSource(value) }
+
 func maskSource(value string) string {
 	trimmed := strings.TrimSpace(value)
 	if trimmed == "" {
