@@ -1,20 +1,31 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   IconKey,
   IconBot,
   IconFileText,
-  IconSatellite
+  IconSatellite,
+  IconRefreshCw,
+  IconChartLine
 } from '@/components/ui/icons';
-import { useAuthStore, useConfigStore, useModelsStore } from '@/stores';
+import { useAuthStore, useConfigStore, useModelsStore, useUsageServiceStore } from '@/stores';
 import { apiKeysApi, providersApi, authFilesApi } from '@/services/api';
+import {
+  isUsageServiceId,
+  usageServiceApi,
+  type UsageAnalyticsMetric,
+  type UsageAnalyticsModelStat,
+  type UsageAnalyticsTimelineItem,
+  type UsageServiceStatus
+} from '@/services/api/usageService';
+import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import styles from './DashboardPage.module.scss';
 
 interface QuickStat {
   label: string;
   value: number | string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   path: string;
   loading?: boolean;
   sublabel?: string;
@@ -28,6 +39,65 @@ interface ProviderStats {
 }
 
 type TimeOfDay = 'morning' | 'afternoon' | 'evening' | 'night';
+type UsageSnapshotState = 'loading' | 'ready' | 'unavailable' | 'error';
+
+type DashboardUsageSnapshot = {
+  state: UsageSnapshotState;
+  summary: UsageAnalyticsMetric | null;
+  timeline: UsageAnalyticsTimelineItem[];
+  modelStats: UsageAnalyticsModelStat[];
+  status: UsageServiceStatus | null;
+  error: string;
+  refreshedAt: number | null;
+};
+
+const EMPTY_USAGE_SNAPSHOT: DashboardUsageSnapshot = {
+  state: 'unavailable',
+  summary: null,
+  timeline: [],
+  modelStats: [],
+  status: null,
+  error: '',
+  refreshedAt: null
+};
+
+const EMPTY_ANALYTICS_METRIC: UsageAnalyticsMetric = {
+  requests: 0,
+  successes: 0,
+  failures: 0,
+  input_tokens: 0,
+  output_tokens: 0,
+  reasoning_tokens: 0,
+  cached_tokens: 0,
+  cache_tokens: 0,
+  total_tokens: 0,
+  latency_sum_ms: 0,
+  latency_samples: 0,
+  zero_token_calls: 0,
+  cost_usd: 0
+};
+
+const readMetricNumber = (value: unknown): number =>
+  typeof value === 'number' && Number.isFinite(value) ? value : 0;
+
+const formatCompactNumber = (value: number, locale: string): string =>
+  new Intl.NumberFormat(locale, { notation: 'compact', maximumFractionDigits: 1 }).format(value);
+
+const formatCurrency = (value: number, locale: string): string =>
+  new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: 'USD',
+    maximumFractionDigits: 2
+  }).format(value);
+
+const formatRelativeTime = (timestampMs: number | null, locale: string): string => {
+  if (!timestampMs) return '—';
+  const elapsedSeconds = Math.max(0, Math.round((Date.now() - timestampMs) / 1000));
+  if (elapsedSeconds < 60) return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-elapsedSeconds, 'second');
+  const elapsedMinutes = Math.round(elapsedSeconds / 60);
+  if (elapsedMinutes < 60) return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-elapsedMinutes, 'minute');
+  return new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }).format(-Math.round(elapsedMinutes / 60), 'hour');
+};
 
 function getTimeOfDay(): TimeOfDay {
   const hour = new Date().getHours();
@@ -65,6 +135,11 @@ export function DashboardPage() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [usageSnapshot, setUsageSnapshot] = useState<DashboardUsageSnapshot>(EMPTY_USAGE_SNAPSHOT);
+  const usageRequestIdRef = useRef(0);
+  const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
+  const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
+  const managementKey = useAuthStore((state) => state.managementKey);
 
   // Time-of-day state for dynamic greeting
   const [timeOfDay, setTimeOfDay] = useState<TimeOfDay>(getTimeOfDay);
@@ -146,6 +221,79 @@ export function DashboardPage() {
       // Ignore model fetch errors on dashboard
     }
   }, [connectionStatus, apiBase, resolveApiKeysForModels, fetchModelsFromStore]);
+
+  const refreshUsageSnapshot = useCallback(async () => {
+    const requestId = usageRequestIdRef.current + 1;
+    usageRequestIdRef.current = requestId;
+
+    if (connectionStatus !== 'connected' || !apiBase) {
+      setUsageSnapshot(EMPTY_USAGE_SNAPSHOT);
+      return;
+    }
+
+    setUsageSnapshot((previous) => ({ ...previous, state: 'loading', error: '' }));
+    const serviceBase = usageServiceEnabled && usageServiceBase ? usageServiceBase : apiBase;
+
+    try {
+      const info = await usageServiceApi.getInfo(serviceBase);
+      if (!isUsageServiceId(info.service)) {
+        if (usageRequestIdRef.current === requestId) {
+          setUsageSnapshot(EMPTY_USAGE_SNAPSHOT);
+        }
+        return;
+      }
+
+      const now = Date.now();
+      const [statusResult, analyticsResult] = await Promise.allSettled([
+        usageServiceApi.getStatus(serviceBase, managementKey),
+        usageServiceApi.getAnalytics(
+          serviceBase,
+          managementKey,
+          {
+            from_ms: now - 24 * 60 * 60 * 1000,
+            to_ms: now,
+            include: ['summary', 'timeline', 'model_stats']
+          }
+        )
+      ]);
+
+      if (usageRequestIdRef.current !== requestId) return;
+
+      const status = statusResult.status === 'fulfilled' ? statusResult.value : null;
+      const analytics = analyticsResult.status === 'fulfilled' ? analyticsResult.value : null;
+      const analyticsError = analyticsResult.status === 'rejected'
+        ? analyticsResult.reason instanceof Error
+          ? analyticsResult.reason.message
+          : String(analyticsResult.reason)
+        : '';
+
+      setUsageSnapshot({
+        state: analytics ? 'ready' : status ? 'ready' : 'error',
+        summary: analytics?.summary ?? null,
+        timeline: analytics?.timeline ?? [],
+        modelStats: analytics?.model_stats ?? [],
+        status,
+        error: analyticsError,
+        refreshedAt: Date.now()
+      });
+    } catch (error) {
+      if (usageRequestIdRef.current !== requestId) return;
+      setUsageSnapshot({
+        ...EMPTY_USAGE_SNAPSHOT,
+        state: 'error',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  }, [apiBase, connectionStatus, managementKey, usageServiceBase, usageServiceEnabled]);
+
+  useHeaderRefresh(refreshUsageSnapshot, connectionStatus === 'connected');
+
+  useEffect(() => {
+    void refreshUsageSnapshot();
+    return () => {
+      usageRequestIdRef.current += 1;
+    };
+  }, [refreshUsageSnapshot]);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -276,6 +424,51 @@ export function DashboardPage() {
     minute: '2-digit'
   });
 
+  const hasUsageData = usageSnapshot.summary !== null;
+  const usageMetric = usageSnapshot.summary ?? EMPTY_ANALYTICS_METRIC;
+  const usageRequests = readMetricNumber(usageMetric.requests);
+  const usageSuccessRate = usageRequests > 0
+    ? readMetricNumber(usageMetric.successes) / usageRequests
+    : null;
+  const usageTimeline = usageSnapshot.timeline
+    .filter((item) => Number.isFinite(item.bucket_ms))
+    .slice(-24);
+  const maxTimelineRequests = Math.max(
+    1,
+    ...usageTimeline.map((item) => readMetricNumber(item.requests))
+  );
+  const topModels = [...usageSnapshot.modelStats]
+    .sort((left, right) => readMetricNumber(right.requests) - readMetricNumber(left.requests))
+    .slice(0, 5);
+  const maxModelRequests = Math.max(
+    1,
+    ...topModels.map((item) => readMetricNumber(item.requests))
+  );
+  const collector = usageSnapshot.status?.collector;
+  const collectorHasError = Boolean(collector?.lastError);
+  const usageServiceStateKey = usageSnapshot.state === 'ready'
+    ? 'dashboard.status_healthy'
+    : usageSnapshot.state === 'loading'
+      ? 'dashboard.status_loading'
+      : usageSnapshot.state === 'error'
+        ? 'dashboard.status_attention'
+        : 'dashboard.status_unavailable';
+  const usageServiceTone = usageSnapshot.state === 'ready'
+    ? styles.healthGood
+    : usageSnapshot.state === 'error'
+      ? styles.healthBad
+      : styles.healthWarn;
+  const collectorStateKey = collectorHasError
+    ? 'dashboard.status_attention'
+    : collector
+      ? 'dashboard.status_healthy'
+      : 'dashboard.status_unavailable';
+  const collectorTone = collectorHasError
+    ? styles.healthBad
+    : collector
+      ? styles.healthGood
+      : styles.healthWarn;
+
   return (
     <div className={styles.dashboard}>
       {/* Decorative background orbs */}
@@ -326,6 +519,178 @@ export function DashboardPage() {
               {new Date(serverBuildDate).toLocaleDateString(i18n.language)}
             </span>
           )}
+        </div>
+      </section>
+
+      {/* Plus-style usage snapshot */}
+      <section className={styles.snapshotSection}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 className={styles.sectionHeading}>{t('dashboard.usage_snapshot')}</h2>
+            <p className={styles.sectionDescription}>{t('dashboard.last_24_hours')}</p>
+          </div>
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={() => void refreshUsageSnapshot()}
+            disabled={usageSnapshot.state === 'loading'}
+          >
+            <IconRefreshCw size={15} className={usageSnapshot.state === 'loading' ? styles.spinning : undefined} />
+            {t('common.refresh')}
+          </button>
+        </div>
+        <div className={styles.metricGrid}>
+          <div className={`${styles.metricCard} ${styles.metricCardAccent}`}>
+            <span className={styles.metricLabel}>{t('dashboard.requests')}</span>
+            <strong className={styles.metricValue}>
+              {usageSnapshot.state === 'loading'
+                ? '…'
+                : hasUsageData
+                  ? formatCompactNumber(usageRequests, i18n.language)
+                  : '—'}
+            </strong>
+            <span className={styles.metricMeta}>{t('dashboard.last_24_hours')}</span>
+          </div>
+          <div className={styles.metricCard}>
+            <span className={styles.metricLabel}>{t('dashboard.success_rate')}</span>
+            <strong className={styles.metricValue}>
+              {usageSuccessRate === null ? '—' : `${(usageSuccessRate * 100).toFixed(1)}%`}
+            </strong>
+            <span className={styles.metricMeta}>
+              {hasUsageData
+                ? `${formatCompactNumber(readMetricNumber(usageMetric.failures), i18n.language)} ${t('dashboard.failures')}`
+                : '—'}
+            </span>
+          </div>
+          <div className={styles.metricCard}>
+            <span className={styles.metricLabel}>{t('dashboard.total_tokens')}</span>
+            <strong className={styles.metricValue}>
+              {hasUsageData
+                ? formatCompactNumber(readMetricNumber(usageMetric.total_tokens), i18n.language)
+                : '—'}
+            </strong>
+            <span className={styles.metricMeta}>
+              {hasUsageData
+                ? `${formatCompactNumber(readMetricNumber(usageMetric.cached_tokens), i18n.language)} ${t('dashboard.cached_tokens')}`
+                : '—'}
+            </span>
+          </div>
+          <div className={styles.metricCard}>
+            <span className={styles.metricLabel}>{t('dashboard.estimated_cost')}</span>
+            <strong className={styles.metricValue}>
+              {hasUsageData ? formatCurrency(readMetricNumber(usageMetric.cost_usd), i18n.language) : '—'}
+            </strong>
+            <span className={styles.metricMeta}>
+              {usageSnapshot.refreshedAt ? formatRelativeTime(usageSnapshot.refreshedAt, i18n.language) : '—'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section className={styles.dashboardGrid}>
+        <div className={styles.panelCard}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>{t('dashboard.traffic_trend')}</h2>
+              <p className={styles.panelSubtitle}>{t('dashboard.hourly_requests')}</p>
+            </div>
+            <IconChartLine size={18} className={styles.panelIcon} />
+          </div>
+          {usageTimeline.length > 0 ? (
+            <div className={styles.chart} role="img" aria-label={t('dashboard.traffic_trend')}>
+              {usageTimeline.map((point) => {
+                const requests = readMetricNumber(point.requests);
+                const height = Math.max(6, (requests / maxTimelineRequests) * 100);
+                const timeLabel = new Date(point.bucket_ms).toLocaleTimeString(i18n.language, {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                });
+                return (
+                  <div className={styles.chartColumn} key={point.bucket_ms} title={`${timeLabel}: ${requests}`}>
+                    <span className={styles.chartBar} style={{ height: `${height}%` }} />
+                    <span className={styles.chartLabel}>{timeLabel}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.panelEmpty}>{t('dashboard.traffic_empty')}</div>
+          )}
+          <Link to="/monitoring" className={styles.panelLink}>{t('dashboard.view_monitoring')} →</Link>
+        </div>
+
+        <div className={styles.panelCard}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>{t('dashboard.model_activity')}</h2>
+              <p className={styles.panelSubtitle}>{t('dashboard.top_models')}</p>
+            </div>
+            <IconBot size={18} className={styles.panelIcon} />
+          </div>
+          {topModels.length > 0 ? (
+            <div className={styles.modelList}>
+              {topModels.map((model) => {
+                const requests = readMetricNumber(model.requests);
+                return (
+                  <div className={styles.modelRow} key={model.model}>
+                    <div className={styles.modelRowMeta}>
+                      <span className={styles.modelName} title={model.model}>{model.model}</span>
+                      <span className={styles.modelRequests}>{formatCompactNumber(requests, i18n.language)}</span>
+                    </div>
+                    <div className={styles.modelTrack}>
+                      <span className={styles.modelFill} style={{ width: `${(requests / maxModelRequests) * 100}%` }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className={styles.panelEmpty}>{t('dashboard.model_activity_empty')}</div>
+          )}
+          <Link to="/monitoring" className={styles.panelLink}>{t('dashboard.view_monitoring')} →</Link>
+        </div>
+
+        <div className={`${styles.panelCard} ${styles.healthPanel}`}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2 className={styles.panelTitle}>{t('dashboard.operational_health')}</h2>
+              <p className={styles.panelSubtitle}>{t('dashboard.service_status')}</p>
+            </div>
+            <span className={`${styles.healthSummaryDot} ${usageServiceTone}`} />
+          </div>
+          <div className={styles.healthList}>
+            <div className={styles.healthRow}>
+              <span>{t('dashboard.cpa_connection')}</span>
+              <span className={`${styles.statusBadge} ${connectionStatus === 'connected' ? styles.healthGood : styles.healthBad}`}>
+                <span className={styles.statusDotSmall} />
+                {connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+              </span>
+            </div>
+            <div className={styles.healthRow}>
+              <span>{t('dashboard.usage_service')}</span>
+              <span className={`${styles.statusBadge} ${usageServiceTone}`}>
+                <span className={styles.statusDotSmall} />
+                {t(usageServiceStateKey)}
+              </span>
+            </div>
+            <div className={styles.healthRow}>
+              <span>{t('dashboard.collector')}</span>
+              <span className={`${styles.statusBadge} ${collectorTone}`}>
+                <span className={styles.statusDotSmall} />
+                {t(collectorStateKey)}
+              </span>
+            </div>
+            <div className={styles.healthRow}>
+              <span>{t('dashboard.pending_events')}</span>
+              <strong>{collector?.pendingItems ?? '—'}</strong>
+            </div>
+            <div className={styles.healthRow}>
+              <span>{t('dashboard.last_inserted')}</span>
+              <strong>{formatRelativeTime(collector?.lastInsertedAt ?? null, i18n.language)}</strong>
+            </div>
+          </div>
+          {collector?.lastError && <p className={styles.healthError}>{collector.lastError}</p>}
+          <Link to="/logs" className={styles.panelLink}>{t('dashboard.view_logs')} →</Link>
         </div>
       </section>
 
