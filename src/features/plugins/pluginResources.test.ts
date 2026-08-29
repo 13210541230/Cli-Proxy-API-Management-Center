@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  appendPluginHostOrigin,
   buildPluginResourceRoute,
   collectPluginResourceEntries,
   getPluginTitle,
@@ -39,6 +40,8 @@ describe('plugin resource host helpers', () => {
     expect(resolvePluginAssetURL('/v0/resource/plugins/demo/page', 'http://localhost:8317/v0/management'))
       .toBe('http://localhost:8317/v0/resource/plugins/demo/page');
     expect(resolvePluginAssetURL('https://plugins.example.test/page', '')).toBe('https://plugins.example.test/page');
+    expect(appendPluginHostOrigin('https://plugins.example.test/page?tab=a#top', 'http://manager.example.test'))
+      .toBe('https://plugins.example.test/page?tab=a&cpa_plugin_host_origin=http%3A%2F%2Fmanager.example.test#top');
   });
 
   it('restricts iframe API requests to authenticated management routes', () => {

@@ -49,6 +49,23 @@ export const resolvePluginAssetURL = (value: string, apiBase: string): string =>
   return base ? `${base}${trimmed}` : trimmed;
 };
 
+export const appendPluginHostOrigin = (value: string, hostOrigin: string): string => {
+  const trimmed = value.trim();
+  const origin = hostOrigin.trim();
+  if (!trimmed || !origin || /^(data:|blob:)/i.test(trimmed)) return trimmed;
+  try {
+    if (new URL(origin).origin !== origin) return trimmed;
+  } catch {
+    return trimmed;
+  }
+  const [withoutHash, hash = ''] = trimmed.split('#', 2);
+  const separator = withoutHash.includes('?') ? '&' : '?';
+  const encodedOrigin = encodeURIComponent(origin);
+  const parameter = `cpa_plugin_host_origin=${encodedOrigin}`;
+  const replaced = withoutHash.replace(/([?&])cpa_plugin_host_origin=[^&]*/i, `$1${parameter}`);
+  return `${replaced === withoutHash ? `${withoutHash}${separator}${parameter}` : replaced}${hash ? `#${hash}` : ''}`;
+};
+
 export const collectPluginResourceEntries = (
   plugins: ManagementPluginEntry[],
 ): PluginResourceEntry[] =>

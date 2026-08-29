@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -10,6 +10,7 @@ import {
   PLUGIN_API_REQUEST_TYPE,
   PLUGIN_API_RESPONSE_TYPE,
   PLUGIN_RESOURCES_REFRESH_EVENT,
+  appendPluginHostOrigin,
   resolvePluginAssetURL,
   toPluginAPIClientPath,
 } from './pluginResources';
@@ -48,7 +49,12 @@ export function PluginResourcePage() {
     () => collectPluginResourceEntries(plugins).find((entry) => entry.pluginID === pluginId && entry.menuIndex === menuIndex),
     [menuIndex, pluginId, plugins],
   );
-  const iframeSrc = resource ? resolvePluginAssetURL(resource.menu.path, apiBase) : '';
+  const iframeSrc = resource
+    ? appendPluginHostOrigin(
+        resolvePluginAssetURL(resource.menu.path, apiBase),
+        typeof window === 'undefined' ? '' : window.location.origin,
+      )
+    : '';
 
   const loadPlugins = useCallback(async () => {
     if (connectionStatus !== 'connected') {
@@ -75,7 +81,7 @@ export function PluginResourcePage() {
     }
   }, [loadPlugins, pluginStatus]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const frame = iframeRef.current;
     if (!frame || !iframeSrc) return undefined;
     const expectedOrigin = new URL(iframeSrc, window.location.href).origin;
