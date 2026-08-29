@@ -28,6 +28,7 @@
 
 - 新接口：`POST /v0/management/monitoring/analytics`，时间范围为 `[from_ms,to_ms)`。
 - `summary`、`timeline`、`model_stats`、账号/API Key 统计、`api_key_timeline` 及 `reasoning_stats` 按 include 返回；`events` 独立使用 `(timestamp_ms,id)` keyset 分页并返回真实 `total_count`。
+- 请求明细可携带 `ttft_ms`、`service_tier`、请求/响应服务等级、`executor_type`、失败状态码和失败摘要；这些字段是可选快照，历史事件缺失时必须显示为未知或不显示，不得回写原始历史数据。
 - Rollup 尚未覆盖、失败或不适用筛选时自动回退 raw SQL；旧 GET 用量接口作为兼容和回滚路径保留。
 - 响应 `meta.source`、`meta.complete`、`meta.rollup_status` 和 `coverage_event_id` 用于运维观测，不应把分页明细当成完整统计。
 

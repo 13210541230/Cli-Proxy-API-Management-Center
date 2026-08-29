@@ -319,6 +319,13 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
       auth_provider_snapshot: item.auth_provider_snapshot,
       auth_snapshot_at_ms: item.auth_snapshot_at_ms,
       reasoning_effort: item.reasoning_effort,
+      ttft_ms: item.ttft_ms,
+      service_tier: item.service_tier,
+      request_service_tier: item.request_service_tier,
+      response_service_tier: item.response_service_tier,
+      executor_type: item.executor_type,
+      fail_status_code: item.fail_status_code,
+      fail_summary: item.fail_summary,
       latency_ms: item.latency_ms,
       failed: item.failed === true,
       tokens: {
@@ -4387,7 +4394,17 @@ export function MonitoringCenterPage() {
                     </div>
                   </td>
                   <td>
-                    <span className={styles.reasoningEffortBadge}>{row.reasoningEffort || 'unknown'}</span>
+                    <div className={styles.primaryCell}>
+                      <span className={styles.reasoningEffortBadge}>{row.reasoningEffort}</span>
+                      <small title={row.executorType || undefined}>
+                        {[
+                          row.serviceTier !== 'unknown' ? row.serviceTier : '',
+                          row.executorType,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ') || t('monitoring.reasoning_unknown', { defaultValue: 'unknown' })}
+                      </small>
+                    </div>
                   </td>
                   <td>
                     <div className={styles.recentStatusCell}>
@@ -4395,9 +4412,21 @@ export function MonitoringCenterPage() {
                     </div>
                   </td>
                   <td>
-                    <StatusBadge tone={row.failed ? 'bad' : 'good'}>
-                      {row.failed ? t('monitoring.result_failed') : t('monitoring.result_success')}
-                    </StatusBadge>
+                    <div className={styles.primaryCell}>
+                      <StatusBadge tone={row.failed ? 'bad' : 'good'}>
+                        {row.failed ? t('monitoring.result_failed') : t('monitoring.result_success')}
+                      </StatusBadge>
+                      {row.failed && (row.failStatusCode != null || row.failSummary) ? (
+                        <small title={row.failSummary || undefined}>
+                          {[
+                            row.failStatusCode == null ? '' : String(row.failStatusCode),
+                            row.failSummary,
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                        </small>
+                      ) : null}
+                    </div>
                   </td>
                   <td
                     className={
@@ -4417,17 +4446,24 @@ export function MonitoringCenterPage() {
                       : `${formatCompactNumber(row.outputTokensPerSecond)} /s`}
                   </td>
                   <td>
-                    <span
-                      className={
-                        row.latencyMs !== null && row.latencyMs >= 30000
-                          ? styles.badText
-                          : row.latencyMs !== null && row.latencyMs >= 15000
-                            ? styles.warnText
-                            : undefined
-                      }
-                    >
-                      {formatDurationMs(row.latencyMs, { locale: i18n.language })}
-                    </span>
+                    <div className={styles.primaryCell}>
+                      <span
+                        className={
+                          row.latencyMs !== null && row.latencyMs >= 30000
+                            ? styles.badText
+                            : row.latencyMs !== null && row.latencyMs >= 15000
+                              ? styles.warnText
+                              : undefined
+                        }
+                      >
+                        {formatDurationMs(row.latencyMs, { locale: i18n.language })}
+                      </span>
+                      <small>
+                        {row.ttftMs == null
+                          ? '--'
+                          : `${t('monitoring.time_to_first_token', { defaultValue: 'TTFT' })} ${formatDurationMs(row.ttftMs, { locale: i18n.language })}`}
+                      </small>
+                    </div>
                   </td>
                   <td>{new Date(row.timestampMs).toLocaleString(i18n.language)}</td>
                   <td>

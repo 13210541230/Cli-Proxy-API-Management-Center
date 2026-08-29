@@ -38,6 +38,24 @@ export interface UsageDetail {
   authSnapshotAtMs?: number;
   reasoning_effort?: string;
   reasoningEffort?: string;
+  ttft_ms?: number;
+  ttftMs?: number;
+  service_tier?: string;
+  serviceTier?: string;
+  request_service_tier?: string;
+  requestServiceTier?: string;
+  response_service_tier?: string;
+  responseServiceTier?: string;
+  executor_type?: string;
+  executorType?: string;
+  fail_status_code?: number;
+  failStatusCode?: number;
+  status_code?: number;
+  statusCode?: number;
+  fail_summary?: string;
+  failSummary?: string;
+  error_message?: string;
+  errorMessage?: string;
   latency_ms?: number;
   tokens: UsageTokens;
   failed: boolean;
@@ -285,6 +303,21 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           reasoning_effort: readDetailString(
             detailRaw.reasoning_effort ?? detailRaw.reasoningEffort
           ),
+          ttft_ms: toPositiveNumber(detailRaw.ttft_ms ?? detailRaw.ttftMs ?? detailRaw.time_to_first_token_ms),
+          service_tier: readDetailString(detailRaw.service_tier ?? detailRaw.serviceTier),
+          request_service_tier: readDetailString(
+            detailRaw.request_service_tier ?? detailRaw.requestServiceTier
+          ),
+          response_service_tier: readDetailString(
+            detailRaw.response_service_tier ?? detailRaw.responseServiceTier
+          ),
+          executor_type: readDetailString(detailRaw.executor_type ?? detailRaw.executorType),
+          fail_status_code: toPositiveNumber(
+            detailRaw.fail_status_code ?? detailRaw.failStatusCode ?? detailRaw.status_code
+          ),
+          fail_summary: readDetailString(
+            detailRaw.fail_summary ?? detailRaw.failSummary ?? detailRaw.error_message
+          ),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,
@@ -353,6 +386,21 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           ),
           reasoning_effort: readDetailString(
             detailRaw.reasoning_effort ?? detailRaw.reasoningEffort
+          ),
+          ttft_ms: toPositiveNumber(detailRaw.ttft_ms ?? detailRaw.ttftMs ?? detailRaw.time_to_first_token_ms),
+          service_tier: readDetailString(detailRaw.service_tier ?? detailRaw.serviceTier),
+          request_service_tier: readDetailString(
+            detailRaw.request_service_tier ?? detailRaw.requestServiceTier
+          ),
+          response_service_tier: readDetailString(
+            detailRaw.response_service_tier ?? detailRaw.responseServiceTier
+          ),
+          executor_type: readDetailString(detailRaw.executor_type ?? detailRaw.executorType),
+          fail_status_code: toPositiveNumber(
+            detailRaw.fail_status_code ?? detailRaw.failStatusCode ?? detailRaw.status_code
+          ),
+          fail_summary: readDetailString(
+            detailRaw.fail_summary ?? detailRaw.failSummary ?? detailRaw.error_message
           ),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),

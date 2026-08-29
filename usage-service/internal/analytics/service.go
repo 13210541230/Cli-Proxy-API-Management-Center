@@ -222,6 +222,13 @@ type EventItem struct {
 	AuthProviderSnapshot string `json:"auth_provider_snapshot,omitempty"`
 	AuthSnapshotAtMS     int64  `json:"auth_snapshot_at_ms,omitempty"`
 	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
+	TTFTMS               *int64 `json:"ttft_ms,omitempty"`
+	ServiceTier          string `json:"service_tier,omitempty"`
+	RequestServiceTier   string `json:"request_service_tier,omitempty"`
+	ResponseServiceTier  string `json:"response_service_tier,omitempty"`
+	ExecutorType         string `json:"executor_type,omitempty"`
+	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
+	FailSummary          string `json:"fail_summary,omitempty"`
 	InputTokens          int64  `json:"input_tokens"`
 	OutputTokens         int64  `json:"output_tokens"`
 	ReasoningTokens      int64  `json:"reasoning_tokens"`
@@ -894,8 +901,15 @@ func eventItems(items []store.UsageEventPageItem) []EventItem {
 			AuthType: item.AuthType, AuthIndex: item.AuthIndex, Source: usage.MaskUsageSource(item.Source), SourceHash: item.SourceHash,
 			APIKeyHash: item.APIKeyHash, AccountSnapshot: item.AccountSnapshot, AuthLabelSnapshot: item.AuthLabelSnapshot,
 			AuthFileSnapshot: item.AuthFileSnapshot, AuthProviderSnapshot: item.AuthProviderSnapshot, AuthSnapshotAtMS: item.AuthSnapshotAtMS,
-			ReasoningEffort: item.ReasoningEffort,
-			InputTokens:     item.InputTokens, OutputTokens: item.OutputTokens, ReasoningTokens: item.ReasoningTokens,
+			ReasoningEffort:     item.ReasoningEffort,
+			TTFTMS:              item.TTFTMS,
+			ServiceTier:         item.ServiceTier,
+			RequestServiceTier:  item.RequestServiceTier,
+			ResponseServiceTier: item.ResponseServiceTier,
+			ExecutorType:        item.ExecutorType,
+			FailStatusCode:      item.FailStatusCode,
+			FailSummary:         item.FailSummary,
+			InputTokens:         item.InputTokens, OutputTokens: item.OutputTokens, ReasoningTokens: item.ReasoningTokens,
 			CachedTokens: item.CachedTokens, CacheTokens: item.CacheTokens, TotalTokens: item.TotalTokens,
 			LatencyMS: item.LatencyMS, Failed: item.Failed, CreatedAtMS: item.CreatedAtMS,
 		})

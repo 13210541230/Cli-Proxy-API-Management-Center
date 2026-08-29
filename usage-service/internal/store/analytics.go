@@ -305,6 +305,13 @@ type UsageEventPageItem struct {
 	AuthProviderSnapshot string
 	AuthSnapshotAtMS     int64
 	ReasoningEffort      string
+	TTFTMS               *int64
+	ServiceTier          string
+	RequestServiceTier   string
+	ResponseServiceTier  string
+	ExecutorType         string
+	FailStatusCode       *int64
+	FailSummary          string
 	InputTokens          int64
 	OutputTokens         int64
 	ReasoningTokens      int64
@@ -343,7 +350,9 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	args = append(args, limit+1)
 	rows, err := s.db.QueryContext(ctx, `select
 		ue.id, ue.request_id, ue.event_hash, ue.timestamp_ms, ue.timestamp, ue.provider, ue.model,
-		ue.reasoning_effort, ue.endpoint, ue.method, ue.path, ue.auth_type, ue.auth_index, ue.source, ue.source_hash,
+		ue.reasoning_effort, ue.ttft_ms, ue.service_tier, ue.request_service_tier, ue.response_service_tier,
+		ue.executor_type, ue.fail_status_code, ue.fail_summary, ue.endpoint, ue.method, ue.path,
+		ue.auth_type, ue.auth_index, ue.source, ue.source_hash,
 		ue.api_key_hash, ue.account_snapshot, ue.auth_label_snapshot, ue.auth_file_snapshot,
 		ue.auth_provider_snapshot, ue.auth_snapshot_at_ms, ue.input_tokens, ue.output_tokens,
 		ue.reasoning_tokens, ue.cached_tokens, ue.cache_tokens, ue.total_tokens, ue.latency_ms,
@@ -356,14 +365,14 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	items := make([]UsageEventPageItem, 0, limit)
 	for rows.Next() {
 		var item UsageEventPageItem
-		var requestID, provider, reasoningEffort, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
+		var requestID, provider, reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
 		var apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot sql.NullString
-		var authSnapshotAt sql.NullInt64
-		var latency sql.NullInt64
+		var ttft, failStatusCode, authSnapshotAt, latency sql.NullInt64
 		var failed int
 		if err := rows.Scan(
 			&item.ID, &requestID, &item.EventHash, &item.TimestampMS, &item.Timestamp, &provider, &item.Model,
-			&reasoningEffort, &endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
+			&reasoningEffort, &ttft, &serviceTier, &requestServiceTier, &responseServiceTier, &executorType,
+			&failStatusCode, &failSummary, &endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
 			&accountSnapshot, &authLabelSnapshot, &authFileSnapshot, &authProviderSnapshot,
 			&authSnapshotAt, &item.InputTokens, &item.OutputTokens, &item.ReasoningTokens,
 			&item.CachedTokens, &item.CacheTokens, &item.TotalTokens, &latency, &failed, &item.CreatedAtMS,
@@ -385,6 +394,19 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 		item.AuthFileSnapshot = authFileSnapshot.String
 		item.AuthProviderSnapshot = authProviderSnapshot.String
 		item.ReasoningEffort = reasoningEffort.String
+		item.ServiceTier = serviceTier.String
+		item.RequestServiceTier = requestServiceTier.String
+		item.ResponseServiceTier = responseServiceTier.String
+		item.ExecutorType = executorType.String
+		item.FailSummary = failSummary.String
+		if ttft.Valid {
+			value := ttft.Int64
+			item.TTFTMS = &value
+		}
+		if failStatusCode.Valid && failStatusCode.Int64 > 0 {
+			value := failStatusCode.Int64
+			item.FailStatusCode = &value
+		}
 		if authSnapshotAt.Valid {
 			item.AuthSnapshotAtMS = authSnapshotAt.Int64
 		}

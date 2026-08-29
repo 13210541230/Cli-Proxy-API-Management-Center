@@ -33,6 +33,33 @@ func TestNormalizeRawPreservesReasoningEffort(t *testing.T) {
 	}
 }
 
+func TestNormalizeRawPreservesRequestTelemetry(t *testing.T) {
+	event, err := NormalizeRaw([]byte(`{
+		"request_id": "req-telemetry",
+		"timestamp": "2026-01-02T03:04:05Z",
+		"model": "gpt-5",
+		"ttft_ms": 420,
+		"service_tier": "priority",
+		"request_service_tier": "priority",
+		"response_service_tier": "standard",
+		"executor_type": "responses",
+		"status_code": 429,
+		"error_message": "rate limited"
+	}`))
+	if err != nil {
+		t.Fatalf("normalize telemetry: %v", err)
+	}
+	if event.TTFTMS == nil || *event.TTFTMS != 420 || event.ServiceTier != "priority" {
+		t.Fatalf("telemetry timing/tier = %#v", event)
+	}
+	if event.RequestServiceTier != "priority" || event.ResponseServiceTier != "standard" || event.ExecutorType != "responses" {
+		t.Fatalf("telemetry service fields = %#v", event)
+	}
+	if event.FailStatusCode == nil || *event.FailStatusCode != 429 || event.FailSummary != "rate limited" || !event.Failed {
+		t.Fatalf("telemetry failure fields = %#v", event)
+	}
+}
+
 func TestBuildPayloadIncludesReasoningEffort(t *testing.T) {
 	payload := BuildPayload([]Event{{
 		Timestamp:       "2026-01-02T03:04:05Z",

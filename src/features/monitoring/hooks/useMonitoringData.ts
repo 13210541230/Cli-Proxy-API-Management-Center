@@ -353,6 +353,14 @@ export type MonitoringEventRow = {
   hourLabel: string;
   model: string;
   reasoningEffort?: string;
+  ttftMs?: number | null;
+  tokensPerSecond?: number | null;
+  serviceTier?: string;
+  requestServiceTier?: string;
+  responseServiceTier?: string;
+  executorType?: string;
+  failStatusCode?: number | null;
+  failSummary?: string;
   endpoint: string;
   endpointMethod: string;
   endpointPath: string;
@@ -1496,6 +1504,35 @@ const buildEventRows = (
         extractTotalTokens(detail)
       );
       const totalCost = calculateCost(detail, modelPrices);
+      const latencyMs = typeof detail.latency_ms === 'number' && detail.latency_ms >= 0
+        ? detail.latency_ms
+        : null;
+      const ttftMsRaw = Number(detail.ttft_ms ?? detail.ttftMs);
+      const ttftMs = Number.isFinite(ttftMsRaw) && ttftMsRaw >= 0 ? ttftMsRaw : null;
+      const tokensPerSecond =
+        outputTokens > 0 && latencyMs !== null && latencyMs > 0
+          ? outputTokens / (latencyMs / 1000)
+          : null;
+      const requestServiceTier = readString(
+        detail.request_service_tier ?? detail.requestServiceTier
+      );
+      const responseServiceTier = readString(
+        detail.response_service_tier ?? detail.responseServiceTier
+      );
+      const serviceTier =
+        readString(detail.service_tier ?? detail.serviceTier) ||
+        requestServiceTier ||
+        responseServiceTier ||
+        'unknown';
+      const executorType = readString(detail.executor_type ?? detail.executorType);
+      const failStatusCodeRaw = Number(
+        detail.fail_status_code ?? detail.failStatusCode ?? detail.status_code
+      );
+      const failStatusCode =
+        Number.isFinite(failStatusCodeRaw) && failStatusCodeRaw > 0 ? failStatusCodeRaw : null;
+      const failSummary = readString(
+        detail.fail_summary ?? detail.failSummary ?? detail.error_message
+      );
       const statsIncluded = detail.failed === true || inputTokens > 0 || outputTokens > 0;
       const dayKey = buildLocalDayKey(timestampMs);
       const hourLabel = buildHourLabel(timestampMs);
@@ -1531,7 +1568,15 @@ const buildEventRows = (
         channelDisabled: channelMeta?.disabled || false,
         failed: detail.failed === true,
         statsIncluded,
-        latencyMs: typeof detail.latency_ms === 'number' ? detail.latency_ms : null,
+        latencyMs,
+        ttftMs,
+        tokensPerSecond,
+        serviceTier,
+        requestServiceTier,
+        responseServiceTier,
+        executorType,
+        failStatusCode,
+        failSummary,
         inputTokens,
         outputTokens,
         reasoningTokens,
@@ -1554,7 +1599,13 @@ const buildEventRows = (
           endpointMethod,
           authMeta?.provider || snapshotProvider,
           authMeta?.planType,
-          reasoningEffort
+          reasoningEffort,
+          serviceTier,
+          requestServiceTier,
+          responseServiceTier,
+          executorType,
+          failStatusCode === null ? '' : String(failStatusCode),
+          failSummary
         ),
       } satisfies MonitoringEventRow;
     })

@@ -21,6 +21,13 @@ type Event struct {
 	// ReasoningEffort is the request-side model reasoning setting. It is
 	// separate from response-side ReasoningTokens and may be absent in legacy events.
 	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
+	TTFTMS               *int64 `json:"ttft_ms,omitempty"`
+	ServiceTier          string `json:"service_tier,omitempty"`
+	RequestServiceTier   string `json:"request_service_tier,omitempty"`
+	ResponseServiceTier  string `json:"response_service_tier,omitempty"`
+	ExecutorType         string `json:"executor_type,omitempty"`
+	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
+	FailSummary          string `json:"fail_summary,omitempty"`
 	Endpoint             string `json:"endpoint,omitempty"`
 	Method               string `json:"method,omitempty"`
 	Path                 string `json:"path,omitempty"`
@@ -66,6 +73,13 @@ type Detail struct {
 	AuthProviderSnapshot string `json:"auth_provider_snapshot,omitempty"`
 	AuthSnapshotAtMS     int64  `json:"auth_snapshot_at_ms,omitempty"`
 	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
+	TTFTMS               *int64 `json:"ttft_ms,omitempty"`
+	ServiceTier          string `json:"service_tier,omitempty"`
+	RequestServiceTier   string `json:"request_service_tier,omitempty"`
+	ResponseServiceTier  string `json:"response_service_tier,omitempty"`
+	ExecutorType         string `json:"executor_type,omitempty"`
+	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
+	FailSummary          string `json:"fail_summary,omitempty"`
 	LatencyMS            *int64 `json:"latency_ms,omitempty"`
 	Tokens               Tokens `json:"tokens"`
 	Failed               bool   `json:"failed"`
@@ -129,6 +143,17 @@ func NormalizeRaw(raw []byte) (Event, error) {
 	}
 
 	latencyMS := readOptionalInt(record, "latency_ms", "latencyMs", "duration_ms", "durationMs", "elapsed_ms", "elapsedMs")
+	ttftMS := readOptionalInt(record, "ttft_ms", "ttftMs", "time_to_first_token_ms", "timeToFirstTokenMs")
+	failStatusCode := readOptionalPositiveInt(record, "fail_status_code", "failStatusCode", "status_code", "statusCode", "http_status", "httpStatus")
+	requestServiceTier := readString(record, "request_service_tier", "requestServiceTier")
+	responseServiceTier := readString(record, "response_service_tier", "responseServiceTier")
+	serviceTier := readString(record, "service_tier", "serviceTier")
+	if serviceTier == "" {
+		serviceTier = requestServiceTier
+	}
+	if serviceTier == "" {
+		serviceTier = responseServiceTier
+	}
 	failed := readFailed(record)
 	sourceRaw := readString(record, "source", "api_key", "apiKey", "key", "account", "email")
 	source := maskSource(sourceRaw)
@@ -142,6 +167,13 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		Provider:             readString(record, "provider", "type", "auth_type", "authType"),
 		Model:                readString(record, "model", "model_name", "modelName"),
 		ReasoningEffort:      readString(record, "reasoning_effort", "reasoningEffort", "thinking_level", "thinkingLevel"),
+		TTFTMS:               ttftMS,
+		ServiceTier:          serviceTier,
+		RequestServiceTier:   requestServiceTier,
+		ResponseServiceTier:  responseServiceTier,
+		ExecutorType:         readString(record, "executor_type", "executorType"),
+		FailStatusCode:       failStatusCode,
+		FailSummary:          readString(record, "fail_summary", "failSummary", "error_message", "errorMessage"),
 		Endpoint:             endpoint,
 		Method:               method,
 		Path:                 path,
@@ -213,6 +245,13 @@ func BuildPayload(events []Event) Payload {
 			AuthProviderSnapshot: event.AuthProviderSnapshot,
 			AuthSnapshotAtMS:     event.AuthSnapshotAtMS,
 			ReasoningEffort:      event.ReasoningEffort,
+			TTFTMS:               event.TTFTMS,
+			ServiceTier:          event.ServiceTier,
+			RequestServiceTier:   event.RequestServiceTier,
+			ResponseServiceTier:  event.ResponseServiceTier,
+			ExecutorType:         event.ExecutorType,
+			FailStatusCode:       event.FailStatusCode,
+			FailSummary:          event.FailSummary,
 			LatencyMS:            event.LatencyMS,
 			Failed:               event.Failed,
 			Tokens: Tokens{
@@ -307,6 +346,14 @@ func readFailed(record map[string]any) bool {
 func readOptionalInt(record map[string]any, keys ...string) *int64 {
 	value := readInt(record, keys...)
 	if value == 0 && first(record, keys...) == nil {
+		return nil
+	}
+	return &value
+}
+
+func readOptionalPositiveInt(record map[string]any, keys ...string) *int64 {
+	value := readInt(record, keys...)
+	if value <= 0 {
 		return nil
 	}
 	return &value
