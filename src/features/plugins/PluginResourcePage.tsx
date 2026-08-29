@@ -79,7 +79,6 @@ export function PluginResourcePage() {
     const frame = iframeRef.current;
     if (!frame || !iframeSrc) return undefined;
     const expectedOrigin = new URL(iframeSrc, window.location.href).origin;
-    if (expectedOrigin !== window.location.origin) return undefined;
 
     const handlePluginRequest = async (event: MessageEvent) => {
       if (event.source !== frame.contentWindow || event.origin !== expectedOrigin) return;
@@ -151,7 +150,7 @@ export function PluginResourcePage() {
           className={styles.frame}
           src={iframeSrc}
           title={resource.label}
-          referrerPolicy="no-referrer"
+          referrerPolicy="strict-origin-when-cross-origin"
           allow="clipboard-read; clipboard-write"
         />
       )}
