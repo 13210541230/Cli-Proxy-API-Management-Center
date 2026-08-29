@@ -12,6 +12,7 @@ import {
   useProviderRecentRequests,
 } from '@/components/providers';
 import {
+  hasDisableAllModelsRule,
   withDisableAllModelsRule,
   withoutDisableAllModelsRule,
 } from '@/components/providers/utils';
@@ -19,8 +20,16 @@ import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer'
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { ampcodeApi, providersApi } from '@/services/api';
 import { useAuthStore, useConfigStore, useNotificationStore, useThemeStore } from '@/stores';
+import iconGemini from '@/assets/icons/gemini.svg';
+import iconCodex from '@/assets/icons/codex.svg';
+import iconClaude from '@/assets/icons/claude.svg';
+import iconVertex from '@/assets/icons/vertex.svg';
+import iconAmp from '@/assets/icons/amp.svg';
+import iconOpenaiLight from '@/assets/icons/openai-light.svg';
 import type { GeminiKeyConfig, OpenAIProviderConfig, ProviderKeyConfig } from '@/types';
 import styles from './AiProvidersPage.module.scss';
+
+type ProviderFilter = 'all' | 'gemini' | 'codex' | 'claude' | 'vertex' | 'ampcode' | 'openai';
 
 export function AiProvidersPage() {
   const { t } = useTranslation();
@@ -56,16 +65,45 @@ export function AiProvidersPage() {
   );
 
   const [configSwitchingKey, setConfigSwitchingKey] = useState<string | null>(null);
+  const [providerFilter, setProviderFilter] = useState<ProviderFilter>('all');
 
   const disableControls = connectionStatus !== 'connected';
   const isSwitching = Boolean(configSwitchingKey);
-
   const pageTransitionLayer = usePageTransitionLayer();
   const isCurrentLayer = pageTransitionLayer ? pageTransitionLayer.status === 'current' : true;
 
   const { usageByProvider, loadRecentRequests, refreshRecentRequests } = useProviderRecentRequests({
     enabled: isCurrentLayer,
   });
+
+  const providerItems = [
+    { id: 'gemini' as const, label: 'Gemini', icon: iconGemini, count: geminiKeys.length },
+    { id: 'codex' as const, label: 'Codex', icon: iconCodex, count: codexConfigs.length },
+    { id: 'claude' as const, label: 'Claude', icon: iconClaude, count: claudeConfigs.length },
+    { id: 'vertex' as const, label: 'Vertex', icon: iconVertex, count: vertexConfigs.length },
+    { id: 'ampcode' as const, label: 'Ampcode', icon: iconAmp, count: config?.ampcode ? 1 : 0 },
+    { id: 'openai' as const, label: 'OpenAI', icon: iconOpenaiLight, count: openaiProviders.length },
+  ];
+  const configuredRoutes = providerItems.reduce((total, item) => total + item.count, 0);
+  const enabledRoutes = geminiKeys.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length
+    + codexConfigs.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length
+    + claudeConfigs.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length
+    + vertexConfigs.filter((item) => !hasDisableAllModelsRule(item.excludedModels)).length
+    + openaiProviders.filter((item) => item.disabled !== true).length
+    + (config?.ampcode ? 1 : 0);
+  const modelNames = new Set<string>();
+  [...geminiKeys, ...codexConfigs, ...claudeConfigs, ...vertexConfigs, ...openaiProviders].forEach((item) => {
+    item.models?.forEach((model) => {
+      if (model.name) modelNames.add(model.name);
+    });
+  });
+  const recentActivity = Array.from(usageByProvider.values()).reduce(
+    (total, entries) => Array.from(entries.values()).reduce(
+      (entryTotal, entry) => entryTotal + entry.success + entry.failed,
+      total
+    ),
+    0
+  );
 
   const getErrorMessage = (err: unknown) => {
     if (err instanceof Error) return err.message;
@@ -405,13 +443,84 @@ export function AiProvidersPage() {
     });
   };
 
+  const showProvider = (provider: ProviderFilter) => providerFilter === 'all' || providerFilter === provider;
+
+  const handleProviderFilter = (provider: ProviderFilter) => {
+    setProviderFilter(provider);
+    if (provider === 'all') {
+      document.querySelector('.content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      document.getElementById(`provider-${provider}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
   return (
     <div className={styles.container}>
-      <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.pageEyebrow}>{t('ai_providers.workspace_label')}</span>
+          <h1 className={styles.pageTitle}>{t('ai_providers.title')}</h1>
+          <p className={styles.pageSubtitle}>{t('ai_providers.workspace_desc')}</p>
+        </div>
+        <span className={`${styles.connectionBadge} ${connectionStatus === 'connected' ? styles.connectionGood : styles.connectionBad}`}>
+          <span className={styles.connectionDot} />
+          {connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+        </span>
+      </header>
+
+      <section className={styles.overviewGrid} aria-label={t('ai_providers.workspace_label')}>
+        <div className={`${styles.overviewCard} ${styles.overviewCardAccent}`}>
+          <span className={styles.overviewLabel}>{t('ai_providers.provider_types')}</span>
+          <strong className={styles.overviewValue}>{providerItems.length}</strong>
+          <span className={styles.overviewMeta}>{t('ai_providers.provider_types_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('ai_providers.configured_routes')}</span>
+          <strong className={styles.overviewValue}>{configuredRoutes}</strong>
+          <span className={styles.overviewMeta}>{t('ai_providers.configured_routes_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('ai_providers.enabled_routes')}</span>
+          <strong className={styles.overviewValue}>{enabledRoutes}</strong>
+          <span className={styles.overviewMeta}>{t('ai_providers.enabled_routes_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('ai_providers.recent_requests')}</span>
+          <strong className={styles.overviewValue}>{recentActivity}</strong>
+          <span className={styles.overviewMeta}>{t('ai_providers.recent_requests_desc')}</span>
+        </div>
+      </section>
+
+      <nav className={styles.providerSwitcher} aria-label={t('ai_providers.provider_switcher')}>
+        <button
+          type="button"
+          className={`${styles.providerSwitcherItem} ${providerFilter === 'all' ? styles.providerSwitcherItemActive : ''}`}
+          onClick={() => handleProviderFilter('all')}
+        >
+          <span>{t('common.all')}</span>
+          <span className={styles.providerSwitcherCount}>{configuredRoutes}</span>
+        </button>
+        {providerItems.map((provider) => (
+          <button
+            type="button"
+            key={provider.id}
+            className={`${styles.providerSwitcherItem} ${providerFilter === provider.id ? styles.providerSwitcherItemActive : ''}`}
+            onClick={() => handleProviderFilter(provider.id)}
+          >
+            <img src={provider.icon} alt="" className={styles.providerSwitcherIcon} />
+            <span>{provider.label}</span>
+            <span className={styles.providerSwitcherCount}>{provider.count}</span>
+          </button>
+        ))}
+      </nav>
+
       <div className={styles.content}>
         {error && <div className="error-box">{error}</div>}
 
-        <div id="provider-gemini">
+        {showProvider('gemini') && <div id="provider-gemini">
           <GeminiSection
             configs={geminiKeys}
             usageByProvider={usageByProvider}
@@ -423,9 +532,9 @@ export function AiProvidersPage() {
             onDelete={deleteGemini}
             onToggle={(index, enabled) => void setConfigEnabled('gemini', index, enabled)}
           />
-        </div>
+        </div>}
 
-        <div id="provider-codex">
+        {showProvider('codex') && <div id="provider-codex">
           <CodexSection
             configs={codexConfigs}
             usageByProvider={usageByProvider}
@@ -437,9 +546,9 @@ export function AiProvidersPage() {
             onDelete={(index) => void deleteProviderEntry('codex', index)}
             onToggle={(index, enabled) => void setConfigEnabled('codex', index, enabled)}
           />
-        </div>
+        </div>}
 
-        <div id="provider-claude">
+        {showProvider('claude') && <div id="provider-claude">
           <ClaudeSection
             configs={claudeConfigs}
             usageByProvider={usageByProvider}
@@ -451,9 +560,9 @@ export function AiProvidersPage() {
             onDelete={(index) => void deleteProviderEntry('claude', index)}
             onToggle={(index, enabled) => void setConfigEnabled('claude', index, enabled)}
           />
-        </div>
+        </div>}
 
-        <div id="provider-vertex">
+        {showProvider('vertex') && <div id="provider-vertex">
           <VertexSection
             configs={vertexConfigs}
             usageByProvider={usageByProvider}
@@ -465,9 +574,9 @@ export function AiProvidersPage() {
             onDelete={deleteVertex}
             onToggle={(index, enabled) => void setConfigEnabled('vertex', index, enabled)}
           />
-        </div>
+        </div>}
 
-        <div id="provider-ampcode">
+        {showProvider('ampcode') && <div id="provider-ampcode">
           <AmpcodeSection
             config={config?.ampcode}
             loading={loading}
@@ -475,9 +584,9 @@ export function AiProvidersPage() {
             isSwitching={isSwitching}
             onEdit={() => openEditor('/ai-providers/ampcode')}
           />
-        </div>
+        </div>}
 
-        <div id="provider-openai">
+        {showProvider('openai') && <div id="provider-openai">
           <OpenAISection
             configs={openaiProviders}
             usageByProvider={usageByProvider}
@@ -490,7 +599,7 @@ export function AiProvidersPage() {
             onDelete={deleteOpenai}
             onToggle={(index, enabled) => void setOpenAIProviderEnabled(index, enabled)}
           />
-        </div>
+        </div>}
       </div>
 
       <ProviderNav />

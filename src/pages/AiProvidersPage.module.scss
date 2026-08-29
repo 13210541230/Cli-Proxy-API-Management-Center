@@ -3,6 +3,232 @@
 
 $openai-toolbar-control-height: 36px;
 
+// ─── Plus-style provider workspace ──────────────────────
+
+.pageHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: $spacing-lg;
+  margin-bottom: $spacing-lg;
+}
+
+.pageEyebrow {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--primary-color);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.pageTitle {
+  margin: 0 0 8px;
+  font-size: clamp(24px, 3vw, 32px);
+  letter-spacing: -0.02em;
+}
+
+.pageSubtitle {
+  max-width: 620px;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.connectionBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 7px 11px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-full;
+  background: var(--glass-bg-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.connectionDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.connectionGood {
+  border-color: color-mix(in srgb, #22c55e 35%, var(--border-color));
+  color: #16a34a;
+
+  .connectionDot {
+    background: #22c55e;
+    box-shadow: 0 0 7px rgb(34 197 94 / 0.55);
+  }
+}
+
+.connectionBad {
+  border-color: color-mix(in srgb, #ef4444 35%, var(--border-color));
+  color: #dc2626;
+
+  .connectionDot {
+    background: #ef4444;
+  }
+}
+
+.overviewGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: $spacing-md;
+  margin-bottom: $spacing-lg;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.overviewCard {
+  display: flex;
+  min-height: 118px;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: $spacing-lg;
+  border: 1px solid color-mix(in srgb, var(--border-color) 72%, transparent);
+  border-radius: $radius-lg;
+  background: linear-gradient(145deg, var(--glass-bg-primary), var(--glass-bg-secondary));
+  box-shadow: 0 12px 28px rgb(0 0 0 / 0.08), inset 0 1px 0 rgb(255 255 255 / 0.03);
+}
+
+.overviewCardAccent {
+  border-color: color-mix(in srgb, var(--primary-color) 42%, var(--border-color));
+  background: linear-gradient(145deg, color-mix(in srgb, var(--primary-color) 10%, var(--bg-primary)), var(--glass-bg-secondary));
+}
+
+.overviewLabel {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.overviewValue {
+  color: var(--text-primary);
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.overviewMeta {
+  color: var(--text-tertiary);
+  font-size: 11px;
+}
+
+.providerSwitcher {
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  display: flex;
+  gap: 6px;
+  margin-bottom: $spacing-lg;
+  padding: 6px;
+  overflow-x: auto;
+  border: 1px solid color-mix(in srgb, var(--border-color) 76%, transparent);
+  border-radius: $radius-lg;
+  background: color-mix(in srgb, var(--bg-primary) 92%, transparent);
+  box-shadow: 0 8px 20px rgb(0 0 0 / 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  scrollbar-width: thin;
+}
+
+.providerSwitcherItem {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  gap: 7px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: $radius-md;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background $transition-fast, border-color $transition-fast, color $transition-fast;
+
+  &:hover {
+    background: var(--glass-bg-secondary);
+    color: var(--text-primary);
+  }
+}
+
+.providerSwitcherItemActive {
+  border-color: color-mix(in srgb, var(--primary-color) 44%, transparent);
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--glass-bg-primary));
+  color: var(--primary-color);
+}
+
+.providerSwitcherIcon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.providerSwitcherCount {
+  display: inline-flex;
+  min-width: 20px;
+  height: 20px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--text-tertiary) 12%, transparent);
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.providerSwitcherItemActive .providerSwitcherCount {
+  background: color-mix(in srgb, var(--primary-color) 18%, transparent);
+  color: var(--primary-color);
+}
+
+.content > div[id^='provider-'] {
+  scroll-margin-top: 20px;
+  animation: providerSectionEnter 0.35s ease-out both;
+}
+
+@keyframes providerSectionEnter {
+  from {
+    opacity: 0.6;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .pageHeader {
+    flex-direction: column;
+  }
+
+  .connectionBadge {
+    align-self: flex-start;
+  }
+
+  .providerSwitcher {
+    margin-right: -$spacing-sm;
+    margin-left: -$spacing-sm;
+    border-radius: $radius-md;
+  }
+}
+
 .container {
   width: 100%;
 }
@@ -19,10 +245,11 @@ $openai-toolbar-control-height: 36px;
 }
 
 .pageTitle {
-  font-size: 28px;
+  font-size: clamp(24px, 3vw, 32px);
   font-weight: 700;
   color: var(--text-primary);
-  margin: 0 0 $spacing-xl 0;
+  margin: 0 0 8px;
+  letter-spacing: -0.02em;
 }
 
 .content {
