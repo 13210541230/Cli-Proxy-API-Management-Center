@@ -3858,7 +3858,9 @@ export function MonitoringCenterPage() {
                 </div>
                 <Button
                   variant={selected ? 'primary' : 'secondary'}
-                  onClick={() => setSelectedApiKeyHash(row.apiKeyHash || 'all')}
+                  onClick={() =>
+                    setSelectedApiKeyHash(selected ? 'all' : row.apiKeyHash || 'all')
+                  }
                   disabled={!row.apiKeyHash}
                   className={styles.apiKeySummaryAction}
                 >
