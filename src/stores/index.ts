@@ -13,5 +13,6 @@ export { useQuotaStore } from './useQuotaStore';
 export { useOpenAIEditDraftStore } from './useOpenAIEditDraftStore';
 export { useClaudeEditDraftStore } from './useClaudeEditDraftStore';
 export { useEnterpriseKeyStore } from './useEnterpriseKeyStore';
+export { useEnterpriseAccessAuditStore } from './useEnterpriseAccessAuditStore';
 export { usePluginStore } from './usePluginStore';
 export { useQuotaSpendStore } from './useQuotaSpendStore';
