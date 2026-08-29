@@ -829,41 +829,78 @@ export function AuthFilesPage() {
       ? t('auth_files.delete_all_button')
       : `${t('common.delete')} ${getTypeLabel(t, filter)}`;
   })();
+  const totalFiles = files.length;
+  const healthyFiles = files.filter((file) => isHealthyAuthFile(file)).length;
+  const problemFiles = files.filter((file) => hasAuthFileStatusMessage(file)).length;
+  const disabledFiles = files.filter((file) => file.disabled === true).length;
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
-        <p className={styles.description}>{t('auth_files.description')}</p>
-      </div>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.pageEyebrow}>{t('auth_files.workspace_label')}</span>
+          <h1 className={styles.pageTitle}>{t('auth_files.title')}</h1>
+          <p className={styles.description}>{t('auth_files.description')}</p>
+        </div>
+        <span className={`${styles.connectionBadge} ${connectionStatus === 'connected' ? styles.connectionGood : styles.connectionBad}`}>
+          <span className={styles.connectionDot} />
+          {connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+        </span>
+      </header>
+
+      <section className={styles.overviewGrid} aria-label={t('auth_files.workspace_label')}>
+        <div className={`${styles.overviewCard} ${styles.overviewCardAccent}`}>
+          <span className={styles.overviewLabel}>{t('auth_files.total_files')}</span>
+          <strong className={styles.overviewValue}>{totalFiles}</strong>
+          <span className={styles.overviewMeta}>{t('auth_files.total_files_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('auth_files.healthy_files')}</span>
+          <strong className={styles.overviewValue}>{healthyFiles}</strong>
+          <span className={styles.overviewMeta}>{t('auth_files.healthy_files_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('auth_files.problem_files')}</span>
+          <strong className={styles.overviewValue}>{problemFiles}</strong>
+          <span className={styles.overviewMeta}>{t('auth_files.problem_files_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('auth_files.disabled_files')}</span>
+          <strong className={styles.overviewValue}>{disabledFiles}</strong>
+          <span className={styles.overviewMeta}>{t('auth_files.disabled_files_desc')}</span>
+        </div>
+      </section>
 
       <section className={styles.authFilesShell}>
         <div className={styles.authFilesHeader}>
           <div className={styles.authFilesTitle}>{titleNode}</div>
           <div className={styles.headerActions}>
-            <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
-              {t('common.refresh')}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setAuthJsonPasteOpen(true)}
-              disabled={disableControls || authJsonPasteSaving}
-              loading={authJsonPasteSaving}
-            >
-              {t('auth_files.paste_button')}
-            </Button>
-            <Button
-              size="sm"
-              onClick={handleUploadClick}
-              disabled={disableControls || uploading}
-              loading={uploading}
-            >
-              {t('auth_files.upload_button')}
-            </Button>
-            <Button
-              variant="danger"
-              size="sm"
+            <div className={styles.headerActionsPrimary}>
+              <Button variant="secondary" size="sm" onClick={handleHeaderRefresh} disabled={loading}>
+                {t('common.refresh')}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setAuthJsonPasteOpen(true)}
+                disabled={disableControls || authJsonPasteSaving}
+                loading={authJsonPasteSaving}
+              >
+                {t('auth_files.paste_button')}
+              </Button>
+              <Button
+                size="sm"
+                onClick={handleUploadClick}
+                disabled={disableControls || uploading}
+                loading={uploading}
+              >
+                {t('auth_files.upload_button')}
+              </Button>
+            </div>
+            <div className={styles.headerActionsDanger}>
+              <Button
+                variant="danger"
+                size="sm"
               onClick={() =>
                 handleDeleteAll({
                   filter,
@@ -879,8 +916,9 @@ export function AuthFilesPage() {
               disabled={disableControls || loading || deletingAll}
               loading={deletingAll}
             >
-              {deleteAllButtonLabel}
-            </Button>
+                {deleteAllButtonLabel}
+              </Button>
+            </div>
             <input
               ref={fileInputRef}
               type="file"

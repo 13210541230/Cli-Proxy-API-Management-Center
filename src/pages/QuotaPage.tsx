@@ -7,9 +7,10 @@ import { useTranslation } from 'react-i18next';
 import { useHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useAuthStore } from '@/stores';
 import { authFilesApi, configFileApi } from '@/services/api';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
-import { IconSearch } from '@/components/ui/icons';
+import { IconRefreshCw, IconSearch } from '@/components/ui/icons';
 import {
   QuotaSection,
   ANTIGRAVITY_CONFIG,
@@ -70,6 +71,12 @@ export function QuotaPage() {
     await Promise.all([loadConfig(), loadFiles()]);
   }, [loadConfig, loadFiles]);
 
+  const activeFiles = files.filter((file) => file.disabled !== true).length;
+  const disabledFiles = files.filter((file) => file.disabled === true).length;
+  const providerTypes = new Set(
+    files.map((file) => String(file.provider ?? file.type ?? '').trim()).filter(Boolean)
+  ).size;
+
   useHeaderRefresh(handleHeaderRefresh);
 
   useEffect(() => {
@@ -79,10 +86,51 @@ export function QuotaPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.pageHeader}>
-        <h1 className={styles.pageTitle}>{t('quota_management.title')}</h1>
-        <p className={styles.description}>{t('quota_management.description')}</p>
-      </div>
+      <header className={styles.pageHeader}>
+        <div>
+          <span className={styles.pageEyebrow}>{t('quota_management.workspace_label')}</span>
+          <h1 className={styles.pageTitle}>{t('quota_management.title')}</h1>
+          <p className={styles.description}>{t('quota_management.description')}</p>
+        </div>
+        <div className={styles.pageHeaderActions}>
+          <span className={`${styles.connectionBadge} ${connectionStatus === 'connected' ? styles.connectionGood : styles.connectionBad}`}>
+            <span className={styles.connectionDot} />
+            {connectionStatus === 'connected' ? t('common.connected') : t('common.disconnected')}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => void handleHeaderRefresh()}
+            disabled={loading}
+          >
+            <IconRefreshCw size={14} />
+            {t('common.refresh')}
+          </Button>
+        </div>
+      </header>
+
+      <section className={styles.overviewGrid} aria-label={t('quota_management.workspace_label')}>
+        <div className={`${styles.overviewCard} ${styles.overviewCardAccent}`}>
+          <span className={styles.overviewLabel}>{t('quota_management.credential_files')}</span>
+          <strong className={styles.overviewValue}>{files.length}</strong>
+          <span className={styles.overviewMeta}>{t('quota_management.credential_files_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('quota_management.provider_types')}</span>
+          <strong className={styles.overviewValue}>{providerTypes}</strong>
+          <span className={styles.overviewMeta}>{t('quota_management.provider_types_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('quota_management.active_files')}</span>
+          <strong className={styles.overviewValue}>{activeFiles}</strong>
+          <span className={styles.overviewMeta}>{t('quota_management.active_files_desc')}</span>
+        </div>
+        <div className={styles.overviewCard}>
+          <span className={styles.overviewLabel}>{t('quota_management.disabled_files')}</span>
+          <strong className={styles.overviewValue}>{disabledFiles}</strong>
+          <span className={styles.overviewMeta}>{t('quota_management.disabled_files_desc')}</span>
+        </div>
+      </section>
 
       {error && <div className={styles.errorBox}>{error}</div>}
 
