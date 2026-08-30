@@ -229,6 +229,7 @@ type EventItem struct {
 	ExecutorType         string `json:"executor_type,omitempty"`
 	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
 	FailSummary          string `json:"fail_summary,omitempty"`
+	SecuritySignal       string `json:"security_signal,omitempty"`
 	InputTokens          int64  `json:"input_tokens"`
 	OutputTokens         int64  `json:"output_tokens"`
 	ReasoningTokens      int64  `json:"reasoning_tokens"`
@@ -250,16 +251,17 @@ type EventsPage struct {
 }
 
 type Response struct {
-	Meta           Meta                `json:"meta"`
-	Summary        *Metric             `json:"summary,omitempty"`
-	Timeline       []TimelineItem      `json:"timeline,omitempty"`
-	ModelStats     []ModelStat         `json:"model_stats,omitempty"`
-	AccountStats   []DimensionStat     `json:"account_stats,omitempty"`
-	APIKeyStats    []DimensionStat     `json:"api_key_stats,omitempty"`
-	APIKeyTimeline []DimensionTimeline `json:"api_key_timeline,omitempty"`
-	ReasoningStats []DimensionStat     `json:"reasoning_stats,omitempty"`
-	Events         *EventsPage         `json:"events,omitempty"`
-	FilterOptions  map[string][]string `json:"filter_options,omitempty"`
+	Meta                Meta                `json:"meta"`
+	Summary             *Metric             `json:"summary,omitempty"`
+	Timeline            []TimelineItem      `json:"timeline,omitempty"`
+	ModelStats          []ModelStat         `json:"model_stats,omitempty"`
+	AccountStats        []DimensionStat     `json:"account_stats,omitempty"`
+	APIKeyStats         []DimensionStat     `json:"api_key_stats,omitempty"`
+	APIKeyTimeline      []DimensionTimeline `json:"api_key_timeline,omitempty"`
+	ReasoningStats      []DimensionStat     `json:"reasoning_stats,omitempty"`
+	Events              *EventsPage         `json:"events,omitempty"`
+	FilterOptions       map[string][]string `json:"filter_options,omitempty"`
+	SecuritySignalCount int64               `json:"security_signal_count"`
 }
 
 type ValidationError struct{ Message string }
@@ -356,6 +358,13 @@ func Query(ctx context.Context, st *store.Store, req Request) (Response, error) 
 		TargetEventID:   state.TargetEventID,
 	}}
 	filter := toStoreFilter(req)
+	if includes(req, "summary") || includes(req, "events") {
+		count, err := st.CountSecuritySignals(ctx, filter)
+		if err != nil {
+			return Response{}, err
+		}
+		response.SecuritySignalCount = count
+	}
 
 	needCore := includes(req, "summary") || includes(req, "timeline") || includes(req, "model_stats")
 	if needCore {
@@ -909,6 +918,7 @@ func eventItems(items []store.UsageEventPageItem) []EventItem {
 			ExecutorType:        item.ExecutorType,
 			FailStatusCode:      item.FailStatusCode,
 			FailSummary:         item.FailSummary,
+			SecuritySignal:      item.SecuritySignal,
 			InputTokens:         item.InputTokens, OutputTokens: item.OutputTokens, ReasoningTokens: item.ReasoningTokens,
 			CachedTokens: item.CachedTokens, CacheTokens: item.CacheTokens, TotalTokens: item.TotalTokens,
 			LatencyMS: item.LatencyMS, Failed: item.Failed, CreatedAtMS: item.CreatedAtMS,

@@ -191,6 +191,7 @@ func eventFromExportedRecord(record map[string]any) (Event, bool, error) {
 		ExecutorType:         readString(record, "executor_type", "executorType"),
 		FailStatusCode:       readOptionalPositiveInt(record, "fail_status_code", "failStatusCode", "status_code", "statusCode", "http_status", "httpStatus"),
 		FailSummary:          readString(record, "fail_summary", "failSummary", "error_message", "errorMessage"),
+		SecuritySignal:       readSecuritySignal(record),
 		Endpoint:             readString(record, "endpoint"),
 		Method:               readString(record, "method"),
 		Path:                 readString(record, "path"),
@@ -212,7 +213,7 @@ func eventFromExportedRecord(record map[string]any) (Event, bool, error) {
 		TotalTokens:          totalTokens,
 		LatencyMS:            readOptionalInt(record, "latency_ms", "latencyMs"),
 		Failed:               readBool(record, "failed", "is_failed", "isFailed"),
-		RawJSON:              readString(record, "raw_json", "rawJson"),
+		RawJSON:              sanitizeRawJSON(readString(record, "raw_json", "rawJson")),
 		CreatedAtMS:          readInt(record, "created_at_ms", "createdAtMs"),
 	}
 	if event.Model == "" {
@@ -348,6 +349,7 @@ func eventFromLegacyDetail(
 		ExecutorType:         readString(detail, "executor_type", "executorType"),
 		FailStatusCode:       readOptionalPositiveInt(detail, "fail_status_code", "failStatusCode", "status_code", "statusCode", "http_status", "httpStatus"),
 		FailSummary:          readString(detail, "fail_summary", "failSummary", "error_message", "errorMessage"),
+		SecuritySignal:       readSecuritySignal(detail),
 		Endpoint:             endpoint,
 		Method:               method,
 		Path:                 path,
@@ -387,7 +389,7 @@ func legacyRawJSON(endpoint string, model string, detail map[string]any) string 
 		"format":   "legacy_usage_export",
 		"endpoint": endpoint,
 		"model":    model,
-		"detail":   redactValue(detail),
+		"detail":   sanitizeStoredValue(detail),
 	}
 	raw, _ := json.Marshal(record)
 	return string(raw)

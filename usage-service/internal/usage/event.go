@@ -11,6 +11,8 @@ import (
 	"time"
 )
 
+const SecuritySignalCyberPolicy = "cyber_policy"
+
 type Event struct {
 	RequestID   string `json:"request_id,omitempty"`
 	EventHash   string `json:"event_hash"`
@@ -28,6 +30,7 @@ type Event struct {
 	ExecutorType         string `json:"executor_type,omitempty"`
 	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
 	FailSummary          string `json:"fail_summary,omitempty"`
+	SecuritySignal       string `json:"security_signal,omitempty"`
 	Endpoint             string `json:"endpoint,omitempty"`
 	Method               string `json:"method,omitempty"`
 	Path                 string `json:"path,omitempty"`
@@ -80,6 +83,7 @@ type Detail struct {
 	ExecutorType         string `json:"executor_type,omitempty"`
 	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
 	FailSummary          string `json:"fail_summary,omitempty"`
+	SecuritySignal       string `json:"security_signal,omitempty"`
 	LatencyMS            *int64 `json:"latency_ms,omitempty"`
 	Tokens               Tokens `json:"tokens"`
 	Failed               bool   `json:"failed"`
@@ -94,11 +98,12 @@ type APIAggregate struct {
 }
 
 type Payload struct {
-	TotalRequests int64                    `json:"total_requests"`
-	SuccessCount  int64                    `json:"success_count"`
-	FailureCount  int64                    `json:"failure_count"`
-	TotalTokens   int64                    `json:"total_tokens"`
-	APIs          map[string]*APIAggregate `json:"apis"`
+	TotalRequests       int64                    `json:"total_requests"`
+	SuccessCount        int64                    `json:"success_count"`
+	FailureCount        int64                    `json:"failure_count"`
+	SecuritySignalCount int64                    `json:"security_signal_count,omitempty"`
+	TotalTokens         int64                    `json:"total_tokens"`
+	APIs                map[string]*APIAggregate `json:"apis"`
 }
 
 var endpointPattern = regexp.MustCompile(`^(GET|POST|PUT|PATCH|DELETE|OPTIONS|HEAD)\s+(\S+)`)
@@ -113,7 +118,7 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		return Event{}, fmt.Errorf("usage payload is not a JSON object")
 	}
 
-	redacted := redactValue(payload)
+	redacted := sanitizeStoredValue(payload)
 	redactedJSON, _ := json.Marshal(redacted)
 
 	timestampMS, timestamp := readTimestamp(record)
@@ -174,6 +179,7 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		ExecutorType:         readString(record, "executor_type", "executorType"),
 		FailStatusCode:       failStatusCode,
 		FailSummary:          readString(record, "fail_summary", "failSummary", "error_message", "errorMessage"),
+		SecuritySignal:       readSecuritySignal(record),
 		Endpoint:             endpoint,
 		Method:               method,
 		Path:                 path,
@@ -214,6 +220,9 @@ func BuildPayload(events []Event) Payload {
 		} else {
 			payload.SuccessCount++
 		}
+		if event.SecuritySignal == SecuritySignalCyberPolicy {
+			payload.SecuritySignalCount++
+		}
 		payload.TotalTokens += event.TotalTokens
 
 		endpoint := event.Endpoint
@@ -252,6 +261,7 @@ func BuildPayload(events []Event) Payload {
 			ExecutorType:         event.ExecutorType,
 			FailStatusCode:       event.FailStatusCode,
 			FailSummary:          event.FailSummary,
+			SecuritySignal:       event.SecuritySignal,
 			LatencyMS:            event.LatencyMS,
 			Failed:               event.Failed,
 			Tokens: Tokens{
@@ -265,6 +275,13 @@ func BuildPayload(events []Event) Payload {
 		})
 	}
 	return payload
+}
+
+func readSecuritySignal(record map[string]any) string {
+	if signal := readString(record, "security_signal", "securitySignal"); signal == SecuritySignalCyberPolicy {
+		return signal
+	}
+	return ""
 }
 
 func readTimestamp(record map[string]any) (int64, string) {
@@ -503,6 +520,71 @@ func redactValue(value any) any {
 	default:
 		return value
 	}
+}
+
+func sanitizeStoredValue(value any) any {
+	redacted := redactValue(value)
+	return removeFailureBodies(redacted)
+}
+
+func sanitizeRawJSON(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	var value any
+	if err := json.Unmarshal([]byte(trimmed), &value); err != nil {
+		return ""
+	}
+	sanitized, err := json.Marshal(sanitizeStoredValue(value))
+	if err != nil {
+		return ""
+	}
+	return string(sanitized)
+}
+
+func removeFailureBodies(value any) any {
+	switch item := value.(type) {
+	case map[string]any:
+		result := make(map[string]any, len(item))
+		for key, child := range item {
+			if isFailureContainerKey(key) {
+				if nested, ok := child.(map[string]any); ok {
+					nested = removeFailureBodies(nested).(map[string]any)
+					for nestedKey := range nested {
+						if normalizeJSONKey(nestedKey) == "body" {
+							delete(nested, nestedKey)
+						}
+					}
+					result[key] = nested
+					continue
+				}
+			}
+			result[key] = removeFailureBodies(child)
+		}
+		return result
+	case []any:
+		result := make([]any, 0, len(item))
+		for _, child := range item {
+			result = append(result, removeFailureBodies(child))
+		}
+		return result
+	default:
+		return value
+	}
+}
+
+func isFailureContainerKey(key string) bool {
+	switch normalizeJSONKey(key) {
+	case "fail", "failure":
+		return true
+	default:
+		return false
+	}
+}
+
+func normalizeJSONKey(key string) string {
+	return strings.ToLower(strings.ReplaceAll(strings.TrimSpace(key), "-", "_"))
 }
 
 func isSecretKey(key string) bool {

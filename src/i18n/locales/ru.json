@@ -1266,6 +1266,8 @@
     "success_rate": "Успешность",
     "success_calls": "Успешных вызовов",
     "failure_calls": "Ошибочных вызовов",
+    "security_signal_calls": "Сигналы безопасности",
+    "security_signal_cyber_policy": "cyber_policy",
     "total_tokens": "Всего токенов",
     "avg_rpm": "Средний RPM",
     "avg_tpm": "Средний TPM",

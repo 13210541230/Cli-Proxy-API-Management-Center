@@ -1,6 +1,7 @@
 package usage
 
 import (
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -149,6 +150,56 @@ func TestParseImportPayloadPreservesExportedEventHash(t *testing.T) {
 	event := result.Events[0]
 	if event.EventHash != "stable-hash" || event.SourceHash != "source-hash" || event.APIKeyHash != "key-hash" {
 		t.Fatalf("event hashes = %#v", event)
+	}
+}
+
+func TestParseImportPayloadRoundTripsSecuritySignalWithoutFailureBody(t *testing.T) {
+	payload := `{
+		"request_id":"req-security-import",
+		"event_hash":"security-import-hash",
+		"timestamp":"2026-01-02T03:04:05Z",
+		"model":"gpt-5",
+		"endpoint":"POST /v1/responses",
+		"failed":true,
+		"security_signal":"cyber_policy"
+	}`
+	result, err := ParseImportPayload([]byte(payload))
+	if err != nil {
+		t.Fatalf("parse exported event: %v", err)
+	}
+	if len(result.Events) != 1 || result.Events[0].SecuritySignal != SecuritySignalCyberPolicy {
+		t.Fatalf("events = %#v", result.Events)
+	}
+	if strings.Contains(result.Events[0].RawJSON, "do not store") || strings.Contains(result.Events[0].RawJSON, `"body"`) {
+		t.Fatalf("import retained failure body: %s", result.Events[0].RawJSON)
+	}
+
+	rawJSON, _ := json.Marshal(map[string]any{"fail": map[string]any{"status_code": 400, "body": "exported body"}})
+	exported, _ := json.Marshal(map[string]any{
+		"event_hash":      "security-import-raw-hash",
+		"timestamp":       "2026-01-02T03:04:05Z",
+		"model":           "gpt-5",
+		"security_signal": SecuritySignalCyberPolicy,
+		"raw_json":        string(rawJSON),
+	})
+	rawResult, err := ParseImportPayload(exported)
+	if err != nil || len(rawResult.Events) != 1 {
+		t.Fatalf("parse exported raw event: err=%v events=%#v", err, rawResult.Events)
+	}
+	if strings.Contains(rawResult.Events[0].RawJSON, "exported body") || strings.Contains(rawResult.Events[0].RawJSON, `"body"`) {
+		t.Fatalf("exported import retained failure body: %s", rawResult.Events[0].RawJSON)
+	}
+
+	legacy := `{"apis":{"POST /v1/responses":{"models":{"gpt-5":{"details":[{"timestamp":"2026-01-02T03:04:05Z","security_signal":"cyber_policy","fail":{"body":"legacy body"}}]}}}}}`
+	legacyResult, err := ParseImportPayload([]byte(legacy))
+	if err != nil {
+		t.Fatalf("parse legacy event: %v", err)
+	}
+	if len(legacyResult.Events) != 1 || legacyResult.Events[0].SecuritySignal != SecuritySignalCyberPolicy {
+		t.Fatalf("legacy events = %#v", legacyResult.Events)
+	}
+	if strings.Contains(legacyResult.Events[0].RawJSON, "legacy body") || strings.Contains(legacyResult.Events[0].RawJSON, `"body"`) {
+		t.Fatalf("legacy import retained failure body: %s", legacyResult.Events[0].RawJSON)
 	}
 }
 

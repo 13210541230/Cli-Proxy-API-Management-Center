@@ -361,6 +361,7 @@ export type MonitoringEventRow = {
   executorType?: string;
   failStatusCode?: number | null;
   failSummary?: string;
+  securitySignal?: string;
   endpoint: string;
   endpointMethod: string;
   endpointPath: string;
@@ -414,6 +415,7 @@ export type MonitoringSummary = {
   approxTaskSuccessRate: number;
   zeroTokenCalls: number;
   zeroTokenModels: string[];
+  securitySignalCount: number;
 };
 
 export type MonitoringAccountModelSpendRow = {
@@ -773,6 +775,7 @@ export const buildMonitoringSummary = (rows: MonitoringEventRow[]): MonitoringSu
   const approxTasks = taskMap.size;
   const approxTaskFailures = Array.from(taskMap.values()).filter(Boolean).length;
   const zeroTokenRows = rows.filter((row) => row.totalTokens === 0);
+  const securitySignalCount = rows.filter((row) => row.securitySignal === 'cyber_policy').length;
 
   const activeDays = new Set(rows.map((row) => row.dayKey));
   const activeDayCount = Math.max(activeDays.size, 1);
@@ -805,6 +808,7 @@ export const buildMonitoringSummary = (rows: MonitoringEventRow[]): MonitoringSu
       approxTasks > 0 ? Math.max(approxTasks - approxTaskFailures, 0) / approxTasks : 1,
     zeroTokenCalls: zeroTokenRows.length,
     zeroTokenModels: Array.from(new Set(zeroTokenRows.map((row) => row.model))).sort(),
+    securitySignalCount,
   };
 };
 
@@ -1533,6 +1537,7 @@ const buildEventRows = (
       const failSummary = readString(
         detail.fail_summary ?? detail.failSummary ?? detail.error_message
       );
+      const securitySignal = readString(detail.security_signal ?? detail.securitySignal);
       const statsIncluded = detail.failed === true || inputTokens > 0 || outputTokens > 0;
       const dayKey = buildLocalDayKey(timestampMs);
       const hourLabel = buildHourLabel(timestampMs);
@@ -1577,6 +1582,7 @@ const buildEventRows = (
         executorType,
         failStatusCode,
         failSummary,
+        securitySignal,
         inputTokens,
         outputTokens,
         reasoningTokens,

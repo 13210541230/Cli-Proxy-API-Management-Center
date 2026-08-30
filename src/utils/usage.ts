@@ -54,6 +54,8 @@ export interface UsageDetail {
   statusCode?: number;
   fail_summary?: string;
   failSummary?: string;
+  security_signal?: string;
+  securitySignal?: string;
   error_message?: string;
   errorMessage?: string;
   latency_ms?: number;
@@ -318,6 +320,9 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           fail_summary: readDetailString(
             detailRaw.fail_summary ?? detailRaw.failSummary ?? detailRaw.error_message
           ),
+          security_signal: readDetailString(
+            detailRaw.security_signal ?? detailRaw.securitySignal
+          ),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,
@@ -401,6 +406,9 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           ),
           fail_summary: readDetailString(
             detailRaw.fail_summary ?? detailRaw.failSummary ?? detailRaw.error_message
+          ),
+          security_signal: readDetailString(
+            detailRaw.security_signal ?? detailRaw.securitySignal
           ),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),

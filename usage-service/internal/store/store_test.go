@@ -81,6 +81,40 @@ func TestStorePersistsAccountSnapshot(t *testing.T) {
 	}
 }
 
+func TestStorePersistsAndCountsSecuritySignals(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	from := int64(1_778_000_000_000)
+	_, err = db.InsertEvents(context.Background(), []usage.Event{
+		{EventHash: "security-1", TimestampMS: from, Timestamp: "2026-05-06T00:00:00Z", Model: "gpt-test", APIKeyHash: "key-a", SecuritySignal: usage.SecuritySignalCyberPolicy, CreatedAtMS: from},
+		{EventHash: "security-2", TimestampMS: from + 1, Timestamp: "2026-05-06T00:00:00.001Z", Model: "gpt-test", APIKeyHash: "key-b", SecuritySignal: "", CreatedAtMS: from + 1},
+		{EventHash: "security-3", TimestampMS: from + 2, Timestamp: "2026-05-06T00:00:00.002Z", Model: "other", APIKeyHash: "key-a", SecuritySignal: usage.SecuritySignalCyberPolicy, CreatedAtMS: from + 2},
+	})
+	if err != nil {
+		t.Fatalf("insert security events: %v", err)
+	}
+
+	count, err := db.CountSecuritySignals(context.Background(), UsageAggregateFilter{FromMS: from, ToMS: from + 10, APIKeyHash: "key-a", Model: "gpt-test"})
+	if err != nil {
+		t.Fatalf("count security signals: %v", err)
+	}
+	if count != 1 {
+		t.Fatalf("security signal count = %d, want 1", count)
+	}
+
+	events, err := db.RecentEvents(context.Background(), 10)
+	if err != nil {
+		t.Fatalf("read security events: %v", err)
+	}
+	if len(events) != 3 || events[0].SecuritySignal != usage.SecuritySignalCyberPolicy {
+		t.Fatalf("stored security events = %#v", events)
+	}
+}
+
 func TestStoreAPIKeyAliases(t *testing.T) {
 	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
 	if err != nil {

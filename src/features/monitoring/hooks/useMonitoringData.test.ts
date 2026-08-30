@@ -3,6 +3,7 @@ import {
   buildAccountRows,
   buildApiKeyDisplayMap,
   buildMonitoringAuthMetaMap,
+  buildMonitoringSummary,
   type MonitoringEventRow,
 } from './useMonitoringData';
 import { sha256Hex } from '@/utils/apiKeyHash';
@@ -37,6 +38,7 @@ const createMonitoringEventRow = (
   channelHost: overrides.channelHost ?? 'example.com',
   channelDisabled: overrides.channelDisabled ?? false,
   failed: overrides.failed ?? false,
+  securitySignal: overrides.securitySignal,
   statsIncluded: overrides.statsIncluded ?? true,
   latencyMs: overrides.latencyMs ?? 1200,
   inputTokens: overrides.inputTokens ?? 10,
@@ -47,6 +49,18 @@ const createMonitoringEventRow = (
   totalCost: overrides.totalCost ?? 0.12,
   taskKey: overrides.taskKey ?? 'task-1',
   searchText: overrides.searchText ?? 'amount myth resend',
+});
+
+describe('buildMonitoringSummary', () => {
+  it('counts exact cyber-policy markers in the local monitoring scope', () => {
+    const summary = buildMonitoringSummary([
+      createMonitoringEventRow({ securitySignal: 'cyber_policy' }),
+      createMonitoringEventRow({ id: 'row-2', securitySignal: 'other' }),
+      createMonitoringEventRow({ id: 'row-3' }),
+    ]);
+
+    expect(summary.securitySignalCount).toBe(1);
+  });
 });
 
 describe('buildAccountRows', () => {

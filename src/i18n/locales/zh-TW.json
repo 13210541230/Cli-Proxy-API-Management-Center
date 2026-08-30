@@ -1295,6 +1295,8 @@
     "success_rate": "成功率",
     "success_calls": "成功總數",
     "failure_calls": "失敗總數",
+    "security_signal_calls": "安全訊號",
+    "security_signal_cyber_policy": "cyber_policy",
     "total_tokens": "總 Tokens",
     "avg_rpm": "平均 RPM",
     "avg_tpm": "平均 TPM",

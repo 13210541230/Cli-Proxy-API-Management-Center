@@ -1396,6 +1396,8 @@
     "success_rate": "Success Rate",
     "success_calls": "Successful Calls",
     "failure_calls": "Failed Calls",
+    "security_signal_calls": "Security Signals",
+    "security_signal_cyber_policy": "cyber_policy",
     "total_tokens": "Total Tokens",
     "avg_rpm": "Average RPM",
     "avg_tpm": "Average TPM",

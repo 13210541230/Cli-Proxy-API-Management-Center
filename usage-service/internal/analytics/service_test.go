@@ -148,6 +148,50 @@ func TestEventsPageUsesStableKeysetAndRealCount(t *testing.T) {
 	}
 }
 
+func TestAnalyticsSecuritySignalCountCoversFullRangeBeyondEventPage(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+
+	const start = int64(1_700_000_000_000)
+	events := make([]usage.Event, 0, 3)
+	for i := 0; i < 3; i++ {
+		events = append(events, usage.Event{
+			EventHash:      string(rune('s' + i)),
+			TimestampMS:    start + int64(i),
+			Timestamp:      "security-time",
+			Model:          "security-model",
+			SecuritySignal: usage.SecuritySignalCyberPolicy,
+			CreatedAtMS:    int64(i + 1),
+		})
+	}
+	if _, err := db.InsertEvents(ctx, events); err != nil {
+		t.Fatalf("insert security events: %v", err)
+	}
+
+	response, err := Query(ctx, db, Request{
+		FromMS:  start - 1,
+		ToMS:    start + 10,
+		Include: IncludeList{"summary", "events"},
+		Limit:   1,
+	})
+	if err != nil {
+		t.Fatalf("analytics query: %v", err)
+	}
+	if response.SecuritySignalCount != 3 {
+		t.Fatalf("security signal count = %d, want 3", response.SecuritySignalCount)
+	}
+	if response.Events == nil || len(response.Events.Items) != 1 || response.Events.TotalCount != 3 {
+		t.Fatalf("bounded events = %#v", response.Events)
+	}
+	if response.Events.Items[0].SecuritySignal != usage.SecuritySignalCyberPolicy {
+		t.Fatalf("event marker = %#v", response.Events.Items[0])
+	}
+}
+
 func TestAnalyticsRequestRejectsUnknownIncludeAndInvalidCursor(t *testing.T) {
 	if err := ValidateRequest(Request{FromMS: 1, ToMS: 2, Include: IncludeList{"unknown"}}); err == nil {
 		t.Fatal("unknown include accepted")

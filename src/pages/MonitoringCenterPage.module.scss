@@ -904,7 +904,7 @@
 }
 
 .summaryHero {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .summarySub {
@@ -3202,6 +3202,26 @@
 
 .logRowFailed:hover td {
   background: color-mix(in srgb, var(--monitor-red) 9%, var(--monitor-surface-hover));
+}
+
+.logRowSecurity td {
+  background: color-mix(in srgb, var(--monitor-amber) 5%, var(--monitor-surface));
+}
+
+.securitySignalBadge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 22px;
+  padding: 0 8px;
+  border: 1px solid color-mix(in srgb, var(--monitor-amber) 34%, var(--monitor-line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--monitor-amber) 12%, var(--monitor-surface));
+  color: color-mix(in srgb, var(--monitor-amber) 76%, var(--monitor-ink));
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1;
 }
 
 .emptyBlock,

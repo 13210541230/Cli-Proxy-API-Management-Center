@@ -1,6 +1,10 @@
 package usage
 
-import "testing"
+import (
+	"encoding/json"
+	"strings"
+	"testing"
+)
 
 func TestNormalizeRawPreservesReasoningEffort(t *testing.T) {
 	event, err := NormalizeRaw([]byte(`{
@@ -57,6 +61,51 @@ func TestNormalizeRawPreservesRequestTelemetry(t *testing.T) {
 	}
 	if event.FailStatusCode == nil || *event.FailStatusCode != 429 || event.FailSummary != "rate limited" || !event.Failed {
 		t.Fatalf("telemetry failure fields = %#v", event)
+	}
+}
+
+func TestNormalizeRawStoresSignalWithoutFailureBody(t *testing.T) {
+	event, err := NormalizeRaw([]byte(`{
+		"request_id": "req-security",
+		"timestamp": "2026-01-02T03:04:05Z",
+		"model": "gpt-5",
+		"failed": true,
+		"security_signal": "cyber_policy",
+		"fail": {"status_code": 400, "body": "upstream response must not be stored"}
+	}`))
+	if err != nil {
+		t.Fatalf("normalize security event: %v", err)
+	}
+	if event.SecuritySignal != SecuritySignalCyberPolicy {
+		t.Fatalf("security signal = %q", event.SecuritySignal)
+	}
+	if strings.Contains(event.RawJSON, "upstream response must not be stored") {
+		t.Fatalf("raw JSON retained failure body: %s", event.RawJSON)
+	}
+	var stored map[string]any
+	if err := json.Unmarshal([]byte(event.RawJSON), &stored); err != nil {
+		t.Fatalf("decode stored raw JSON: %v", err)
+	}
+	fail, ok := stored["fail"].(map[string]any)
+	if !ok {
+		t.Fatalf("stored fail object = %#v", stored["fail"])
+	}
+	if _, ok := fail["body"]; ok {
+		t.Fatalf("stored fail object retained body: %#v", fail)
+	}
+}
+
+func TestBuildPayloadIncludesSecuritySignalCount(t *testing.T) {
+	payload := BuildPayload([]Event{
+		{Timestamp: "2026-01-02T03:04:05Z", Model: "gpt-5", Endpoint: "POST /v1/responses", SecuritySignal: SecuritySignalCyberPolicy},
+		{Timestamp: "2026-01-02T03:05:05Z", Model: "gpt-5", Endpoint: "POST /v1/responses", SecuritySignal: "other"},
+	})
+	if payload.SecuritySignalCount != 1 {
+		t.Fatalf("security signal count = %d, want 1", payload.SecuritySignalCount)
+	}
+	items := payload.APIs["POST /v1/responses"].Models["gpt-5"].Details
+	if len(items) != 2 || items[0].SecuritySignal != SecuritySignalCyberPolicy {
+		t.Fatalf("payload details = %#v", items)
 	}
 }
 

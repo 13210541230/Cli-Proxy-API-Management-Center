@@ -214,7 +214,8 @@ const analyticsNumber = (value: unknown): number =>
 
 const buildAnalyticsSummary = (
   metric: UsageAnalyticsMetric | undefined,
-  timeline: Array<{ bucket_ms: number }> = []
+  timeline: Array<{ bucket_ms: number }> = [],
+  securitySignalCount = 0
 ): MonitoringSummary => {
   const source = metric || {
     requests: 0,
@@ -261,6 +262,7 @@ const buildAnalyticsSummary = (
     approxTaskSuccessRate: totalCalls > 0 ? successCalls / totalCalls : 1,
     zeroTokenCalls: analyticsNumber(source.zero_token_calls),
     zeroTokenModels: [],
+    securitySignalCount,
   };
 };
 
@@ -326,6 +328,7 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
       executor_type: item.executor_type,
       fail_status_code: item.fail_status_code,
       fail_summary: item.fail_summary,
+      security_signal: item.security_signal,
       latency_ms: item.latency_ms,
       failed: item.failed === true,
       tokens: {
@@ -2759,6 +2762,9 @@ export function MonitoringCenterPage() {
     () => scopedRows.filter((row) => row.statsIncluded),
     [scopedRows]
   );
+  const securitySignalCount = analyticsMode && analytics
+    ? analyticsNumber(analytics.security_signal_count)
+    : scopedRows.filter((row) => row.securitySignal === 'cyber_policy').length;
   const accountStatusNowMs = lastRefreshedAt?.getTime() ?? Date.now();
   const accountStatusBounds = useMemo(
     () => getRangeBounds(timeRange, accountStatusNowMs, customTimeRange),
@@ -2772,9 +2778,9 @@ export function MonitoringCenterPage() {
   const scopedSummary = useMemo(
     () =>
       analyticsMode && analytics
-        ? buildAnalyticsSummary(analytics.summary, analytics.timeline)
+        ? buildAnalyticsSummary(analytics.summary, analytics.timeline, securitySignalCount)
         : buildMonitoringSummary(scopedStatsRows),
-    [analytics, analyticsMode, scopedStatsRows]
+    [analytics, analyticsMode, scopedStatsRows, securitySignalCount]
   );
   const accountRows = useMemo(
     () =>
@@ -2977,6 +2983,12 @@ export function MonitoringCenterPage() {
         ? t('monitoring.estimated_cost_hint')
         : t('monitoring.estimated_cost_missing'),
       tone: hasPrices ? undefined : 'warn',
+    },
+    {
+      label: t('monitoring.security_signal_calls', { defaultValue: '安全信号' }),
+      value: formatCompactNumber(scopedSummary.securitySignalCount),
+      meta: t('monitoring.security_signal_cyber_policy', { defaultValue: 'cyber_policy' }),
+      tone: scopedSummary.securitySignalCount > 0 ? 'bad' : 'good',
     },
   ];
 
@@ -4287,6 +4299,7 @@ export function MonitoringCenterPage() {
           <div className={`${styles.inlineMetrics} ${styles.realtimeHeaderActions}`}>
             <span>{`${t('monitoring.log_rows')}: ${realtimeLogRows.length}`}</span>
             <span>{`${t('monitoring.recent_failures')}: ${scopedFailureCount}`}</span>
+            <span>{`${t('monitoring.security_signal_calls', { defaultValue: '安全信号' })}: ${formatCompactNumber(scopedSummary.securitySignalCount)}`}</span>
             <button
               type="button"
               className={[
@@ -4322,7 +4335,15 @@ export function MonitoringCenterPage() {
             </thead>
             <tbody>
               {realtimePagination.pageItems.map((row) => (
-                <tr key={row.id} className={row.failed ? styles.logRowFailed : undefined}>
+                <tr
+                  key={row.id}
+                  className={[
+                    row.failed ? styles.logRowFailed : '',
+                    row.securitySignal === 'cyber_policy' ? styles.logRowSecurity : '',
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined}
+                >
                   <td>
                     <div className={styles.logTypeCell}>
                       <span
@@ -4369,6 +4390,11 @@ export function MonitoringCenterPage() {
                       <StatusBadge tone={row.failed ? 'bad' : 'good'}>
                         {row.failed ? t('monitoring.result_failed') : t('monitoring.result_success')}
                       </StatusBadge>
+                      {row.securitySignal === 'cyber_policy' ? (
+                        <span className={styles.securitySignalBadge}>
+                          {t('monitoring.security_signal_cyber_policy', { defaultValue: 'cyber_policy' })}
+                        </span>
+                      ) : null}
                       {row.failed && (row.failStatusCode != null || row.failSummary) ? (
                         <small title={row.failSummary || undefined}>
                           {[
