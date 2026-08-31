@@ -11,10 +11,18 @@ export const toPluginAPIClientPath = (path: string): string =>
 export const isPluginAPIRequestAllowed = (method: string, path: string, pluginID: string): boolean => {
   const normalizedPluginID = pluginID.trim().replace(/^\/+|\/+$/g, '');
   const normalizedPath = path.trim();
+  const normalizedMethod = method.trim().toUpperCase();
   if (!normalizedPluginID || !normalizedPath) return false;
   const prefix = `/v0/management/${normalizedPluginID}`;
-  return ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method.trim().toUpperCase()) &&
-    (normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`));
+  if (['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(normalizedMethod) &&
+    (normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`))) {
+    return true;
+  }
+  // The audit workspace needs the non-secret enterprise-key projection to render
+  // user names without exposing raw API keys or adding plugin-specific CPA routes.
+  return normalizedPluginID === 'enterprise-access-audit' &&
+    normalizedMethod === 'GET' &&
+    normalizedPath === '/v0/management/enterprise/key-bindings/metadata';
 };
 
 export interface PluginResourceEntry {
