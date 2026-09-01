@@ -1,8 +1,12 @@
 import { apiClient } from './client';
 
+export type QuotaLimitMode = 'cost' | 'tokens';
+
 export interface SpendLimit {
   daily_cents: number;
   weekly_cents: number;
+  daily_tokens?: number;
+  weekly_tokens?: number;
 }
 
 export interface SpendLimitEntry {
@@ -10,10 +14,13 @@ export interface SpendLimitEntry {
   apply_value: string;
   daily_cents: number;
   weekly_cents: number;
+  daily_tokens?: number;
+  weekly_tokens?: number;
 }
 
 export interface QuotaConfig {
   enabled: boolean;
+  mode?: QuotaLimitMode;
   db_path: string;
   default: SpendLimit;
   overrides: SpendLimitEntry[];

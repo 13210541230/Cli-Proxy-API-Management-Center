@@ -91,12 +91,14 @@ type apiKeyAliasesRequest struct {
 
 type quotaConfigRequest struct {
 	Enabled   *bool                   `json:"enabled"`
+	Mode      *string                 `json:"mode"`
 	Default   *store.SpendLimit       `json:"default"`
 	Overrides []store.SpendLimitEntry `json:"overrides"`
 }
 
 type downgradeQuotaConfigRequest struct {
 	Enabled       *bool                   `json:"enabled"`
+	Mode          *string                 `json:"mode"`
 	Default       *store.SpendLimit       `json:"default"`
 	Overrides     []store.SpendLimitEntry `json:"overrides"`
 	FallbackModel *string                 `json:"fallback_model"`
@@ -645,10 +647,15 @@ func (s *Server) handleQuotaConfig(w http.ResponseWriter, r *http.Request) {
 		if req.Enabled != nil {
 			current.Enabled = *req.Enabled
 		}
+		if req.Mode != nil {
+			current.Mode = normalizeSpendLimitMode(*req.Mode)
+		}
 		if req.Default != nil {
 			current.Default = *req.Default
 			current.DailyCents = 0
 			current.WeeklyCents = 0
+			current.DailyTokens = 0
+			current.WeeklyTokens = 0
 		}
 		if req.Overrides != nil {
 			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
@@ -694,10 +701,15 @@ func (s *Server) handleQuotaDowngradeConfig(w http.ResponseWriter, r *http.Reque
 		if req.Enabled != nil {
 			current.Enabled = *req.Enabled
 		}
+		if req.Mode != nil {
+			current.Mode = normalizeSpendLimitMode(*req.Mode)
+		}
 		if req.Default != nil {
 			current.Default = *req.Default
 			current.DailyCents = 0
 			current.WeeklyCents = 0
+			current.DailyTokens = 0
+			current.WeeklyTokens = 0
 		}
 		if req.Overrides != nil {
 			current.Overrides = normalizeSpendLimitOverrides(req.Overrides)
@@ -844,6 +856,7 @@ func (s *Server) writeSpendLimitConfig(w http.ResponseWriter, cfg store.SpendLim
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"enabled":   cfg.Enabled,
+		"mode":      cfg.EffectiveMode(),
 		"db_path":   s.cfg.DBPath,
 		"default":   cfg.DefaultLimit(),
 		"overrides": overrides,
@@ -857,11 +870,19 @@ func (s *Server) writeDowngradeSpendLimitConfig(w http.ResponseWriter, cfg store
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"enabled":        cfg.Enabled,
+		"mode":           cfg.EffectiveMode(),
 		"db_path":        s.cfg.DBPath,
 		"default":        cfg.DefaultLimit(),
 		"overrides":      overrides,
 		"fallback_model": cfg.EffectiveFallbackModel(),
 	})
+}
+
+func normalizeSpendLimitMode(mode string) string {
+	if strings.EqualFold(strings.TrimSpace(mode), store.SpendLimitModeTokens) {
+		return store.SpendLimitModeTokens
+	}
+	return store.SpendLimitModeCost
 }
 
 func normalizeSpendLimitOverrides(entries []store.SpendLimitEntry) []store.SpendLimitEntry {
@@ -873,10 +894,12 @@ func normalizeSpendLimitOverrides(entries []store.SpendLimitEntry) []store.Spend
 			continue
 		}
 		out = append(out, store.SpendLimitEntry{
-			ApplyTo:     applyTo,
-			ApplyValue:  applyValue,
-			DailyCents:  entry.DailyCents,
-			WeeklyCents: entry.WeeklyCents,
+			ApplyTo:      applyTo,
+			ApplyValue:   applyValue,
+			DailyCents:   entry.DailyCents,
+			WeeklyCents:  entry.WeeklyCents,
+			DailyTokens:  entry.DailyTokens,
+			WeeklyTokens: entry.WeeklyTokens,
 		})
 	}
 	return out

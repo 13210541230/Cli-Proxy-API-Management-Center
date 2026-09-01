@@ -81,25 +81,37 @@ type APIKeyAlias struct {
 	UpdatedAtMS int64  `json:"updatedAtMs"`
 }
 
-// KeySpend holds aggregated spend (in cents) for a single API key.
+const (
+	SpendLimitModeCost   = "cost"
+	SpendLimitModeTokens = "tokens"
+)
+
+// KeySpend holds daily and weekly usage for a single API key.
 type KeySpend struct {
-	KeyHash    string
-	TodayCents int64
-	WeekCents  int64
+	KeyHash     string
+	TodayCents  int64
+	WeekCents   int64
+	TodayTokens int64
+	WeekTokens  int64
 }
 
-// SpendLimit defines daily and weekly cost limits in cents.
+// SpendLimit defines daily and weekly limits in both supported units. The
+// enclosing SpendLimitConfig.Mode selects which pair is enforced.
 type SpendLimit struct {
-	DailyCents  int64 `json:"daily_cents"`
-	WeeklyCents int64 `json:"weekly_cents"`
+	DailyCents   int64 `json:"daily_cents"`
+	WeeklyCents  int64 `json:"weekly_cents"`
+	DailyTokens  int64 `json:"daily_tokens"`
+	WeeklyTokens int64 `json:"weekly_tokens"`
 }
 
 // SpendLimitEntry associates a limit override with an API key hash.
 type SpendLimitEntry struct {
-	ApplyTo     string `json:"apply_to"`
-	ApplyValue  string `json:"apply_value"`
-	DailyCents  int64  `json:"daily_cents"`
-	WeeklyCents int64  `json:"weekly_cents"`
+	ApplyTo      string `json:"apply_to"`
+	ApplyValue   string `json:"apply_value"`
+	DailyCents   int64  `json:"daily_cents"`
+	WeeklyCents  int64  `json:"weekly_cents"`
+	DailyTokens  int64  `json:"daily_tokens"`
+	WeeklyTokens int64  `json:"weekly_tokens"`
 }
 
 // SpendLimitConfig holds the quota limits read from settings.
@@ -111,12 +123,22 @@ const (
 
 type SpendLimitConfig struct {
 	Enabled        bool              `json:"enabled"`
+	Mode           string            `json:"mode,omitempty"`
 	DailyCents     int64             `json:"daily_cents,omitempty"`
 	WeeklyCents    int64             `json:"weekly_cents,omitempty"`
+	DailyTokens    int64             `json:"daily_tokens,omitempty"`
+	WeeklyTokens   int64             `json:"weekly_tokens,omitempty"`
 	Default        SpendLimit        `json:"default"`
 	Overrides      []SpendLimitEntry `json:"overrides,omitempty"`
 	ExceededAction string            `json:"exceeded_action,omitempty"`
 	FallbackModel  string            `json:"fallback_model,omitempty"`
+}
+
+func (c SpendLimitConfig) EffectiveMode() string {
+	if strings.EqualFold(strings.TrimSpace(c.Mode), SpendLimitModeTokens) {
+		return SpendLimitModeTokens
+	}
+	return SpendLimitModeCost
 }
 
 func (c SpendLimitConfig) EffectiveExceededAction() string {
@@ -136,10 +158,16 @@ func (c SpendLimitConfig) EffectiveFallbackModel() string {
 }
 
 func (c SpendLimitConfig) DefaultLimit() SpendLimit {
-	if c.Default.DailyCents != 0 || c.Default.WeeklyCents != 0 {
+	if c.Default.DailyCents != 0 || c.Default.WeeklyCents != 0 ||
+		c.Default.DailyTokens != 0 || c.Default.WeeklyTokens != 0 {
 		return c.Default
 	}
-	return SpendLimit{DailyCents: c.DailyCents, WeeklyCents: c.WeeklyCents}
+	return SpendLimit{
+		DailyCents:   c.DailyCents,
+		WeeklyCents:  c.WeeklyCents,
+		DailyTokens:  c.DailyTokens,
+		WeeklyTokens: c.WeeklyTokens,
+	}
 }
 
 func (c SpendLimitConfig) OverrideForKey(keyHash string) (SpendLimit, bool) {
@@ -148,7 +176,12 @@ func (c SpendLimitConfig) OverrideForKey(keyHash string) (SpendLimit, bool) {
 		if entry.ApplyTo != "api-key" || normalizeSpendLimitKeyHash(entry.ApplyValue) != keyHash {
 			continue
 		}
-		return SpendLimit{DailyCents: entry.DailyCents, WeeklyCents: entry.WeeklyCents}, true
+		return SpendLimit{
+			DailyCents:   entry.DailyCents,
+			WeeklyCents:  entry.WeeklyCents,
+			DailyTokens:  entry.DailyTokens,
+			WeeklyTokens: entry.WeeklyTokens,
+		}, true
 	}
 	return SpendLimit{}, false
 }
@@ -1903,8 +1936,9 @@ func (s *Store) loadSpendLimitConfig(ctx context.Context, key string) (SpendLimi
 	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
 		return SpendLimitConfig{}, false, err
 	}
-	if cfg.Default.DailyCents == 0 && cfg.Default.WeeklyCents == 0 {
-		cfg.Default = SpendLimit{DailyCents: cfg.DailyCents, WeeklyCents: cfg.WeeklyCents}
+	if cfg.Default.DailyCents == 0 && cfg.Default.WeeklyCents == 0 &&
+		cfg.Default.DailyTokens == 0 && cfg.Default.WeeklyTokens == 0 {
+		cfg.Default = cfg.DefaultLimit()
 	}
 	return cfg, true, nil
 }
@@ -1944,7 +1978,7 @@ func (s *Store) queryKeySpendAt(ctx context.Context, now time.Time) ([]KeySpend,
 	daysSinceMonday := (int(dayStart.Weekday()) + 6) % 7
 	weekStart := dayStart.AddDate(0, 0, -daysSinceMonday)
 
-	rows, err := s.db.QueryContext(ctx, keySpendWindowQuery, dayStart.UnixMilli(), weekStart.UnixMilli())
+	rows, err := s.db.QueryContext(ctx, keySpendWindowQuery, dayStart.UnixMilli(), dayStart.UnixMilli(), weekStart.UnixMilli())
 	if err != nil {
 		return nil, fmt.Errorf("query spend window: %w", err)
 	}
@@ -1953,7 +1987,13 @@ func (s *Store) queryKeySpendAt(ctx context.Context, now time.Time) ([]KeySpend,
 	result := make([]KeySpend, 0)
 	for rows.Next() {
 		var spend KeySpend
-		if err := rows.Scan(&spend.KeyHash, &spend.TodayCents, &spend.WeekCents); err != nil {
+		if err := rows.Scan(
+			&spend.KeyHash,
+			&spend.TodayCents,
+			&spend.TodayTokens,
+			&spend.WeekCents,
+			&spend.WeekTokens,
+		); err != nil {
 			return nil, err
 		}
 		result = append(result, spend)
@@ -1977,6 +2017,7 @@ const keySpendWindowQuery = `
 			+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
 			+ cast(max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)) as real) * coalesce(mp.cache_per_1m, 0)
 		else 0 end) / 1000000.0 * 100), 0) as today_cents,
+		coalesce(sum(case when ue.timestamp_ms >= ? then max(coalesce(ue.total_tokens, 0), 0) else 0 end), 0) as today_tokens,
 		coalesce(round(sum(
 			cast(max(
 				ue.input_tokens - max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)),
@@ -1984,7 +2025,8 @@ const keySpendWindowQuery = `
 			) as real) * coalesce(mp.prompt_per_1m, 0)
 			+ cast(ue.output_tokens as real) * coalesce(mp.completion_per_1m, 0)
 			+ cast(max(coalesce(ue.cached_tokens, 0), coalesce(ue.cache_tokens, 0)) as real) * coalesce(mp.cache_per_1m, 0)
-		) / 1000000.0 * 100), 0) as week_cents
+		) / 1000000.0 * 100), 0) as week_cents,
+		coalesce(sum(max(coalesce(ue.total_tokens, 0), 0)), 0) as week_tokens
 	from usage_events ue
 	left join model_prices mp on ue.model = mp.model
 	where ue.api_key_hash != ''

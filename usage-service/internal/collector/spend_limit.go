@@ -355,7 +355,7 @@ func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 		pauseExceeded := false
 		var pauseExpiresAt time.Time
 		if pauseConfigured && pauseCfg.Enabled {
-			pauseExceeded, pauseExpiresAt = spendLimitExceeded(key, pauseCfg.LimitForKey(key.KeyHash), now)
+			pauseExceeded, pauseExpiresAt = spendLimitExceededForMode(key, pauseCfg.LimitForKey(key.KeyHash), pauseCfg.EffectiveMode(), now)
 		}
 		if pauseExceeded {
 			log.Printf("spend-limit: pausing key %s", keyHash)
@@ -367,7 +367,7 @@ func ReconcileSpendLimits(s *store.Store, client *pauseClient) error {
 		downgradeExceeded := false
 		var downgradeExpiresAt time.Time
 		if downgradeConfigured && downgradeCfg.Enabled {
-			downgradeExceeded, downgradeExpiresAt = spendLimitExceeded(key, downgradeCfg.LimitForKey(key.KeyHash), now)
+			downgradeExceeded, downgradeExpiresAt = spendLimitExceededForMode(key, downgradeCfg.LimitForKey(key.KeyHash), downgradeCfg.EffectiveMode(), now)
 		}
 		if downgradeExceeded {
 			log.Printf("spend-limit: downgrading key %s to %s", keyHash, downgradeCfg.EffectiveFallbackModel())
@@ -417,11 +417,24 @@ func reconcileAutomaticDowngrade(client *pauseClient, keyHash string, exceeded b
 }
 
 func spendLimitExceeded(key store.KeySpend, limit store.SpendLimit, now time.Time) (bool, time.Time) {
+	return spendLimitExceededForMode(key, limit, store.SpendLimitModeCost, now)
+}
+
+func spendLimitExceededForMode(key store.KeySpend, limit store.SpendLimit, mode string, now time.Time) (bool, time.Time) {
 	now = now.In(shanghaiLocation)
-	if limit.DailyCents > 0 && key.TodayCents >= limit.DailyCents {
+	dailyExceeded := false
+	weeklyExceeded := false
+	if mode == store.SpendLimitModeTokens {
+		dailyExceeded = limit.DailyTokens > 0 && key.TodayTokens >= limit.DailyTokens
+		weeklyExceeded = limit.WeeklyTokens > 0 && key.WeekTokens >= limit.WeeklyTokens
+	} else {
+		dailyExceeded = limit.DailyCents > 0 && key.TodayCents >= limit.DailyCents
+		weeklyExceeded = limit.WeeklyCents > 0 && key.WeekCents >= limit.WeeklyCents
+	}
+	if dailyExceeded {
 		return true, time.Date(now.Year(), now.Month(), now.Day()+1, 0, 0, 0, 0, shanghaiLocation)
 	}
-	if limit.WeeklyCents > 0 && key.WeekCents >= limit.WeeklyCents {
+	if weeklyExceeded {
 		daysUntilMonday := (8 - int(now.Weekday())) % 7
 		if daysUntilMonday == 0 {
 			daysUntilMonday = 7

@@ -7,7 +7,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { useNotificationStore } from '@/stores';
 import type { NotificationType } from '@/types';
-import { quotaLimitsApi, type SpendLimitEntry } from '@/services/api/quotaLimits';
+import { quotaLimitsApi, type QuotaLimitMode, type SpendLimitEntry } from '@/services/api/quotaLimits';
 import { quotaPauseApi, type DowngradeEntry } from '@/services/api/quotaPause';
 import { enterpriseKeysApi } from '@/services/api/enterpriseKeys';
 import type { EnterpriseKeyBinding } from '@/types/enterpriseKey';
@@ -28,11 +28,15 @@ export function QuotaDowngradePage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [enabled, setEnabled] = useState(false);
+  const [mode, setMode] = useState<QuotaLimitMode>('cost');
   const [dailyCents, setDailyCents] = useState('0');
   const [weeklyCents, setWeeklyCents] = useState('0');
+  const [dailyTokens, setDailyTokens] = useState('0');
+  const [weeklyTokens, setWeeklyTokens] = useState('0');
   const [fallbackModel, setFallbackModel] = useState(DEFAULT_FALLBACK_MODEL);
   const [overrides, setOverrides] = useState<SpendLimitEntry[]>([]);
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
+  const [overrideSearch, setOverrideSearch] = useState('');
   const [editingOverride, setEditingOverride] = useState<SpendLimitEntry | null>(null);
   const [hashToDisplay, setHashToDisplay] = useState<Record<string, string>>({});
   const [bindings, setBindings] = useState<Map<string, EnterpriseKeyBinding>>(new Map());
@@ -49,8 +53,11 @@ export function QuotaDowngradePage() {
         quotaPauseApi.listDowngraded(),
       ]);
       setEnabled(quotaConfig.enabled);
-      setDailyCents(String(quotaConfig.default.daily_cents));
-      setWeeklyCents(String(quotaConfig.default.weekly_cents));
+      setMode(quotaConfig.mode ?? 'cost');
+      setDailyCents(String(quotaConfig.default.daily_cents ?? 0));
+      setWeeklyCents(String(quotaConfig.default.weekly_cents ?? 0));
+      setDailyTokens(String(quotaConfig.default.daily_tokens ?? 0));
+      setWeeklyTokens(String(quotaConfig.default.weekly_tokens ?? 0));
       setFallbackModel(quotaConfig.fallback_model || DEFAULT_FALLBACK_MODEL);
       setOverrides((quotaConfig.overrides ?? []).filter((entry) => entry.apply_to === 'api-key'));
 
@@ -90,6 +97,15 @@ export function QuotaDowngradePage() {
     [hashToDisplay]
   );
 
+  const filteredKeyOptions = useMemo(() => {
+    const query = overrideSearch.trim().toLocaleLowerCase();
+    if (!query) return keyOptions;
+    return keyOptions.filter((option) => `${option.label} ${option.hash}`.toLocaleLowerCase().includes(query));
+  }, [keyOptions, overrideSearch]);
+
+  const dailyLimitLabel = mode === 'tokens' ? t('quota_limits.daily_tokens') : t('quota_limits.daily_cents');
+  const weeklyLimitLabel = mode === 'tokens' ? t('quota_limits.weekly_tokens') : t('quota_limits.weekly_cents');
+
   const resolveUser = useCallback(
     (keyHash: string): string => {
       const normalized = keyHash.toLowerCase();
@@ -112,9 +128,12 @@ export function QuotaDowngradePage() {
     try {
       await quotaLimitsApi.updateDowngradeConfig({
         enabled,
+        mode,
         default: {
           daily_cents: parseInt(dailyCents, 10) || 0,
           weekly_cents: parseInt(weeklyCents, 10) || 0,
+          daily_tokens: parseInt(dailyTokens, 10) || 0,
+          weekly_tokens: parseInt(weeklyTokens, 10) || 0,
         },
         overrides,
         fallback_model: model || DEFAULT_FALLBACK_MODEL,
@@ -129,7 +148,15 @@ export function QuotaDowngradePage() {
   };
 
   const openNewOverride = () => {
-    setEditingOverride({ apply_to: 'api-key', apply_value: '', daily_cents: 0, weekly_cents: 0 });
+    setOverrideSearch('');
+    setEditingOverride({
+      apply_to: 'api-key',
+      apply_value: '',
+      daily_cents: 0,
+      weekly_cents: 0,
+      daily_tokens: 0,
+      weekly_tokens: 0,
+    });
     setOverrideModalOpen(true);
   };
 
@@ -181,12 +208,33 @@ export function QuotaDowngradePage() {
           </label>
         </div>
         <div className={styles.fieldRow}>
-          <label>{t('quota_limits.daily_cents')}</label>
-          <Input type="number" value={dailyCents} onChange={(event) => setDailyCents(event.target.value)} />
+          <label>{t('quota_limits.mode')}</label>
+          <Select
+            value={mode}
+            onChange={(value) => setMode(value === 'tokens' ? 'tokens' : 'cost')}
+            options={[
+              { value: 'cost', label: t('quota_limits.mode_cost') },
+              { value: 'tokens', label: t('quota_limits.mode_tokens') },
+            ]}
+          />
         </div>
         <div className={styles.fieldRow}>
-          <label>{t('quota_limits.weekly_cents')}</label>
-          <Input type="number" value={weeklyCents} onChange={(event) => setWeeklyCents(event.target.value)} />
+          <label>{dailyLimitLabel}</label>
+          <Input
+            type="number"
+            min="0"
+            value={mode === 'tokens' ? dailyTokens : dailyCents}
+            onChange={(event) => (mode === 'tokens' ? setDailyTokens(event.target.value) : setDailyCents(event.target.value))}
+          />
+        </div>
+        <div className={styles.fieldRow}>
+          <label>{weeklyLimitLabel}</label>
+          <Input
+            type="number"
+            min="0"
+            value={mode === 'tokens' ? weeklyTokens : weeklyCents}
+            onChange={(event) => (mode === 'tokens' ? setWeeklyTokens(event.target.value) : setWeeklyCents(event.target.value))}
+          />
         </div>
         <div className={styles.fieldRow}>
           <label>{t('quota_downgrade.fallback_model')}</label>
@@ -211,8 +259,8 @@ export function QuotaDowngradePage() {
               <tr>
                 <th>{t('quota_limits.apply_api_key')}</th>
                 <th>{t('quota_limits.apply_value')}</th>
-                <th>{t('quota_limits.daily_cents')}</th>
-                <th>{t('quota_limits.weekly_cents')}</th>
+                <th>{dailyLimitLabel}</th>
+                <th>{weeklyLimitLabel}</th>
                 <th>{t('common.actions')}</th>
               </tr>
             </thead>
@@ -224,8 +272,8 @@ export function QuotaDowngradePage() {
                     {hashToDisplay[entry.apply_value] || entry.apply_value}
                     <span className={styles.valueHash}>{entry.apply_value}</span>
                   </td>
-                  <td>{entry.daily_cents}</td>
-                  <td>{entry.weekly_cents}</td>
+                  <td>{mode === 'tokens' ? entry.daily_tokens ?? 0 : entry.daily_cents}</td>
+                  <td>{mode === 'tokens' ? entry.weekly_tokens ?? 0 : entry.weekly_cents}</td>
                   <td>
                     <Button size="sm" variant="secondary" onClick={() => setOverrides((current) => current.filter((item) => item !== entry))}>
                       {t('common.delete')}
@@ -282,33 +330,64 @@ export function QuotaDowngradePage() {
         )}
       </Card>
 
-      <Modal open={overrideModalOpen} onClose={() => setOverrideModalOpen(false)} title={t('quota_limits.edit_override')}>
+      <Modal
+        open={overrideModalOpen}
+        onClose={() => {
+          setOverrideModalOpen(false);
+          setOverrideSearch('');
+        }}
+        title={t('quota_limits.edit_override')}
+      >
         {editingOverride && (
           <div className={styles.form}>
             <label>{t('quota_limits.apply_api_key')}</label>
             {keyOptions.length > 0 ? (
-              <Select
-                value={editingOverride.apply_value}
-                onChange={(value) => setEditingOverride({ ...editingOverride, apply_value: value })}
-                options={[
-                  { value: '', label: t('quota_limits.select_user_placeholder') },
-                  ...keyOptions.map((option) => ({ value: option.hash, label: option.label })),
-                ]}
-              />
+              <>
+                <Input
+                  value={overrideSearch}
+                  onChange={(event) => setOverrideSearch(event.target.value)}
+                  placeholder={t('quota_limits.search_user_placeholder')}
+                  aria-label={t('quota_limits.search_user_placeholder')}
+                />
+                {filteredKeyOptions.length > 0 ? (
+                  <Select
+                    value={editingOverride.apply_value}
+                    onChange={(value) => setEditingOverride({ ...editingOverride, apply_value: value })}
+                    options={[
+                      { value: '', label: t('quota_limits.select_user_placeholder') },
+                      ...filteredKeyOptions.map((option) => ({ value: option.hash, label: option.label })),
+                    ]}
+                  />
+                ) : (
+                  <div className={styles.empty}>{t('quota_limits.no_matching_users')}</div>
+                )}
+              </>
             ) : (
               <div className={styles.empty}>{t('quota_limits.no_key_bindings')}</div>
             )}
-            <label>{t('quota_limits.daily_cents')}</label>
+            <label>{dailyLimitLabel}</label>
             <Input
               type="number"
-              value={String(editingOverride.daily_cents)}
-              onChange={(event) => setEditingOverride({ ...editingOverride, daily_cents: parseInt(event.target.value, 10) || 0 })}
+              min="0"
+              value={String(mode === 'tokens' ? editingOverride.daily_tokens ?? 0 : editingOverride.daily_cents ?? 0)}
+              onChange={(event) => setEditingOverride({
+                ...editingOverride,
+                ...(mode === 'tokens'
+                  ? { daily_tokens: parseInt(event.target.value, 10) || 0 }
+                  : { daily_cents: parseInt(event.target.value, 10) || 0 }),
+              })}
             />
-            <label>{t('quota_limits.weekly_cents')}</label>
+            <label>{weeklyLimitLabel}</label>
             <Input
               type="number"
-              value={String(editingOverride.weekly_cents)}
-              onChange={(event) => setEditingOverride({ ...editingOverride, weekly_cents: parseInt(event.target.value, 10) || 0 })}
+              min="0"
+              value={String(mode === 'tokens' ? editingOverride.weekly_tokens ?? 0 : editingOverride.weekly_cents ?? 0)}
+              onChange={(event) => setEditingOverride({
+                ...editingOverride,
+                ...(mode === 'tokens'
+                  ? { weekly_tokens: parseInt(event.target.value, 10) || 0 }
+                  : { weekly_cents: parseInt(event.target.value, 10) || 0 }),
+              })}
             />
             <div className={styles.formActions}>
               <Button variant="secondary" onClick={() => setOverrideModalOpen(false)}>{t('common.cancel')}</Button>

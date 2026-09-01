@@ -58,6 +58,25 @@ func TestSaveAndLoadSpendLimitConfig(t *testing.T) {
 	}
 }
 
+func TestSpendLimitConfigSupportsTokenMode(t *testing.T) {
+	cfg := SpendLimitConfig{
+		Mode:    "tokens",
+		Default: SpendLimit{DailyTokens: 1000, WeeklyTokens: 7000},
+		Overrides: []SpendLimitEntry{{
+			ApplyTo: "api-key", ApplyValue: "abcdef12", DailyTokens: 2000, WeeklyTokens: 14000,
+		}},
+	}
+	if got := cfg.EffectiveMode(); got != SpendLimitModeTokens {
+		t.Fatalf("mode = %q, want %q", got, SpendLimitModeTokens)
+	}
+	if got := cfg.LimitForKey("abcdef12"); got.DailyTokens != 2000 || got.WeeklyTokens != 14000 {
+		t.Fatalf("token override = %+v", got)
+	}
+	if got := cfg.LimitForKey("other"); got.DailyTokens != 1000 || got.WeeklyTokens != 7000 {
+		t.Fatalf("token default = %+v", got)
+	}
+}
+
 func TestSpendLimitOverrideMatchesFullAndShortAPIKeyHashes(t *testing.T) {
 	cfg := SpendLimitConfig{
 		Overrides: []SpendLimitEntry{{
@@ -74,6 +93,25 @@ func TestSpendLimitOverrideMatchesFullAndShortAPIKeyHashes(t *testing.T) {
 	limit, ok = cfg.OverrideForKey("ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789")
 	if !ok || limit.DailyCents != 100 {
 		t.Fatalf("full hash lookup = %+v, %v; want daily=100, true", limit, ok)
+	}
+}
+
+func TestQueryKeySpend_TracksTokenTotalsAndExcludesFailed(t *testing.T) {
+	db := newSpendLimitTestStore(t)
+	ctx := context.Background()
+	now := time.Date(2026, 6, 25, 12, 0, 0, 0, cstFixed)
+	insertSpendEvent(t, db, usage.Event{
+		EventHash: "token-success", TimestampMS: now.UnixMilli(), Timestamp: now.UTC().Format(time.RFC3339),
+		Model: "gpt-4", APIKeyHash: "hash-token", TotalTokens: 1234, CreatedAtMS: now.UnixMilli(),
+	})
+	insertSpendEvent(t, db, usage.Event{
+		EventHash: "token-failed", TimestampMS: now.UnixMilli(), Timestamp: now.UTC().Format(time.RFC3339),
+		Model: "gpt-4", APIKeyHash: "hash-token", TotalTokens: 9999, Failed: true, CreatedAtMS: now.UnixMilli(),
+	})
+
+	result := findSpend(t, db, ctx, now, "hash-token")
+	if result.TodayTokens != 1234 || result.WeekTokens != 1234 {
+		t.Fatalf("token spend = %+v, want today/week 1234", result)
 	}
 }
 
@@ -116,7 +154,8 @@ func TestQueryKeySpend_MatchesCostFormulaAndExcludesFailed(t *testing.T) {
 
 func TestQueryKeySpendDoesNotMaterializeAllPricedEvents(t *testing.T) {
 	db := newSpendLimitTestStore(t)
-	rows, err := db.db.Query(`explain query plan `+keySpendWindowQuery, time.Now().UnixMilli(), time.Now().UnixMilli())
+	nowMS := time.Now().UnixMilli()
+	rows, err := db.db.Query(`explain query plan `+keySpendWindowQuery, nowMS, nowMS, nowMS)
 	if err != nil {
 		t.Fatalf("explain query plan failed: %v", err)
 	}

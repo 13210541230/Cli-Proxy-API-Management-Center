@@ -8,7 +8,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { IconDownload, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
 import { useEnterpriseAccessAuditStore, useEnterpriseKeyStore, useNotificationStore, usePluginStore } from '@/stores';
-import { quotaLimitsApi, type SpendLimitEntry } from '@/services/api/quotaLimits';
+import { quotaLimitsApi, type QuotaLimitMode, type SpendLimitEntry } from '@/services/api/quotaLimits';
 import { EnterpriseAccessPolicyEditor, type EnterpriseAccessPolicyEditorTarget } from '@/components/enterpriseAccessAudit/EnterpriseAccessPolicyEditor';
 import { buildEnterprisePolicyMutationPlan } from '@/components/enterpriseAccessAudit/policyDraft';
 import { quotaPauseApi } from '@/services/api/quotaPause';
@@ -100,11 +100,14 @@ export function EnterpriseKeysPage() {
   const [pausedKeyHashes, setPausedKeyHashes] = useState<Set<string>>(new Set());
   const [quotaOverrides, setQuotaOverrides] = useState<SpendLimitEntry[]>([]);
   const [quotaEnabled, setQuotaEnabled] = useState(true);
+  const [quotaMode, setQuotaMode] = useState<QuotaLimitMode>('cost');
   const [actionTarget, setActionTarget] = useState<KeyActionTarget | null>(null);
   const [pauseReason, setPauseReason] = useState(DEFAULT_PAUSE_REASON);
   const [pauseDurationSec, setPauseDurationSec] = useState('3600');
   const [quotaDailyCents, setQuotaDailyCents] = useState('');
   const [quotaWeeklyCents, setQuotaWeeklyCents] = useState('');
+  const [quotaDailyTokens, setQuotaDailyTokens] = useState('');
+  const [quotaWeeklyTokens, setQuotaWeeklyTokens] = useState('');
   const [actionSaving, setActionSaving] = useState(false);
   const [policyEditorOpen, setPolicyEditorOpen] = useState(false);
   const [policyEditorMode, setPolicyEditorMode] = useState<'single' | 'batch'>('single');
@@ -134,6 +137,7 @@ export function EnterpriseKeysPage() {
   const loadQuotaState = useCallback(async () => {
     const [paused, quota] = await Promise.all([quotaPauseApi.listPaused(), quotaLimitsApi.getConfig()]);
     setQuotaEnabled(!!quota.enabled);
+    setQuotaMode(quota.mode ?? 'cost');
     setPausedKeyHashes(new Set((paused.entries ?? []).map((entry) => normalizeQuotaKeyHash(entry.key_hash))));
     setQuotaOverrides(
       (quota.overrides ?? [])
@@ -308,8 +312,10 @@ export function EnterpriseKeysPage() {
   const openQuotaTarget = (target: KeyActionTarget) => {
     const existing = quotaOverrides.find((entry) => target.keyHashes.includes(entry.apply_value.toLowerCase()));
     setActionTarget(target);
-    setQuotaDailyCents(existing ? String(existing.daily_cents) : '');
-    setQuotaWeeklyCents(existing ? String(existing.weekly_cents) : '');
+    setQuotaDailyCents(existing ? String(existing.daily_cents ?? 0) : '');
+    setQuotaWeeklyCents(existing ? String(existing.weekly_cents ?? 0) : '');
+    setQuotaDailyTokens(existing ? String(existing.daily_tokens ?? 0) : '');
+    setQuotaWeeklyTokens(existing ? String(existing.weekly_tokens ?? 0) : '');
     setQuotaModalOpen(true);
   };
 
@@ -598,6 +604,8 @@ export function EnterpriseKeysPage() {
     try {
       const daily = Math.round(parseFloat(quotaDailyCents) || 0);
       const weekly = Math.round(parseFloat(quotaWeeklyCents) || 0);
+      const dailyTokens = Math.round(parseFloat(quotaDailyTokens) || 0);
+      const weeklyTokens = Math.round(parseFloat(quotaWeeklyTokens) || 0);
       const config = await quotaLimitsApi.getConfig();
       const targetSet = new Set(actionTarget.keyHashes);
       const preserved = (config.overrides ?? []).filter(
@@ -610,7 +618,9 @@ export function EnterpriseKeysPage() {
           apply_value: keyHash,
           daily_cents: daily,
           weekly_cents: weekly,
-        })),
+          daily_tokens: dailyTokens,
+          weekly_tokens: weeklyTokens,
+        }))
       ];
       await quotaLimitsApi.updateConfig({ overrides: nextOverrides });
 
@@ -1198,23 +1208,46 @@ export function EnterpriseKeysPage() {
       >
         <div className={styles.modalSection}>
           <div className={styles.actionTarget}>目标：{actionTarget?.label ?? '-'}</div>
-          <div className={styles.fieldHint}>留空或不填表示不限额；填 0 表示立即停用；填整数（厘分），如 100 = $1</div>
-          <Input
-            label="每日限额（厘分）"
-            type="number"
-            min="0"
-            step="1"
-            value={quotaDailyCents}
-            onChange={(e) => setQuotaDailyCents(e.target.value)}
-          />
-          <Input
-            label="每周限额（厘分）"
-            type="number"
-            min="0"
-            step="1"
-            value={quotaWeeklyCents}
-            onChange={(e) => setQuotaWeeklyCents(e.target.value)}
-          />
+          <div className={styles.fieldHint}>当前模式：{quotaMode === 'tokens' ? '按 Token 总量' : '按使用成本'}。留空或不填表示不限额；填 0 表示立即停用。</div>
+          {quotaMode === 'tokens' ? (
+            <>
+              <Input
+                label="每日 Token 总量"
+                type="number"
+                min="0"
+                step="1"
+                value={quotaDailyTokens}
+                onChange={(e) => setQuotaDailyTokens(e.target.value)}
+              />
+              <Input
+                label="每周 Token 总量"
+                type="number"
+                min="0"
+                step="1"
+                value={quotaWeeklyTokens}
+                onChange={(e) => setQuotaWeeklyTokens(e.target.value)}
+              />
+            </>
+          ) : (
+            <>
+              <Input
+                label="每日限额（美分）"
+                type="number"
+                min="0"
+                step="1"
+                value={quotaDailyCents}
+                onChange={(e) => setQuotaDailyCents(e.target.value)}
+              />
+              <Input
+                label="每周限额（美分）"
+                type="number"
+                min="0"
+                step="1"
+                value={quotaWeeklyCents}
+                onChange={(e) => setQuotaWeeklyCents(e.target.value)}
+              />
+            </>
+          )}
         </div>
       </Modal>
     </div>
