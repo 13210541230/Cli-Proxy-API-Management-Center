@@ -48,10 +48,15 @@ describe('plugin resource host helpers', () => {
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/enterprise-access-audit/audit', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('PUT', '/v0/management/enterprise-access-audit/policy', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/enterprise/key-bindings/metadata', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/auth-files', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/auth-files/models?name=codex.json', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/model-definitions/claude', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/enterprise/key-bindings/metadata', 'other-plugin')).toBe(false);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/plugins', 'enterprise-access-audit')).toBe(false);
     expect(isPluginAPIRequestAllowed('GET', '/v0/resource/plugins/demo/page', 'enterprise-access-audit')).toBe(false);
     expect(isPluginAPIRequestAllowed('GET', 'https://example.com/secret', 'enterprise-access-audit')).toBe(false);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/auth-files/download?name=secret.json', 'enterprise-access-audit')).toBe(false);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/model-definitions/unknown', 'enterprise-access-audit')).toBe(false);
     expect(isPluginAPIRequestAllowed('OPTIONS', '/v0/management/enterprise-access-audit/audit', 'enterprise-access-audit')).toBe(false);
     expect(toPluginAPIClientPath('/v0/management/enterprise-access-audit/audit')).toBe('/enterprise-access-audit/audit');
     expect(toPluginAPIClientPath('/v0/management/enterprise-access-audit/policy')).toBe('/enterprise-access-audit/policy');

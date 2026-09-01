@@ -8,21 +8,40 @@ export const PLUGIN_API_RESPONSE_TYPE = 'cpa-plugin-api-response';
 export const toPluginAPIClientPath = (path: string): string =>
   path.trim().replace(/^\/v0\/management(?=\/|$)/, '') || '/';
 
+const pluginRequestPathname = (path: string): string => {
+  const normalized = path.trim();
+  if (!normalized || normalized.startsWith('//') || /^[a-z][a-z\d+.-]*:/i.test(normalized)) return '';
+  try {
+    return new URL(normalized, 'https://cpa-plugin-resource.invalid').pathname;
+  } catch {
+    return normalized.split(/[?#]/, 1)[0] || '';
+  }
+};
+
+const enterpriseAuditSharedPaths = new Set([
+  '/v0/management/enterprise/key-bindings/metadata',
+  '/v0/management/auth-files',
+  '/v0/management/auth-files/models',
+]);
+
+const enterpriseAuditModelDefinitionPath = /^\/v0\/management\/model-definitions\/(?:claude|gemini|gemini-interactions|vertex|aistudio|codex|kimi|antigravity|xai|grok)$/;
+
 export const isPluginAPIRequestAllowed = (method: string, path: string, pluginID: string): boolean => {
   const normalizedPluginID = pluginID.trim().replace(/^\/+|\/+$/g, '');
   const normalizedPath = path.trim();
+  const pathname = pluginRequestPathname(normalizedPath);
   const normalizedMethod = method.trim().toUpperCase();
-  if (!normalizedPluginID || !normalizedPath) return false;
+  if (!normalizedPluginID || !normalizedPath || !pathname) return false;
   const prefix = `/v0/management/${normalizedPluginID}`;
   if (['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(normalizedMethod) &&
-    (normalizedPath === prefix || normalizedPath.startsWith(`${prefix}/`))) {
+    (pathname === prefix || pathname.startsWith(`${prefix}/`))) {
     return true;
   }
-  // The audit workspace needs the non-secret enterprise-key projection to render
-  // user names without exposing raw API keys or adding plugin-specific CPA routes.
+  // The audit workspace may read only non-secret management projections and
+  // model catalogs; it cannot access raw keys or arbitrary management routes.
   return normalizedPluginID === 'enterprise-access-audit' &&
     normalizedMethod === 'GET' &&
-    normalizedPath === '/v0/management/enterprise/key-bindings/metadata';
+    (enterpriseAuditSharedPaths.has(pathname) || enterpriseAuditModelDefinitionPath.test(pathname));
 };
 
 export interface PluginResourceEntry {
