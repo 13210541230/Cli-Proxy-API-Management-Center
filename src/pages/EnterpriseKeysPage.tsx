@@ -7,7 +7,16 @@ import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
 import { Select } from '@/components/ui/Select';
 import { IconDownload, IconRefreshCw, IconTrash2 } from '@/components/ui/icons';
-import { useEnterpriseAccessAuditStore, useEnterpriseKeyStore, useNotificationStore, usePluginStore } from '@/stores';
+import {
+  useAuthStore,
+  useConfigStore,
+  useEnterpriseAccessAuditStore,
+  useEnterpriseKeyStore,
+  useModelsStore,
+  useNotificationStore,
+  usePluginStore,
+} from '@/stores';
+import { apiKeysApi } from '@/services/api/apiKeys';
 import { quotaLimitsApi, type QuotaLimitMode, type SpendLimitEntry } from '@/services/api/quotaLimits';
 import { EnterpriseAccessPolicyEditor, type EnterpriseAccessPolicyEditorTarget } from '@/components/enterpriseAccessAudit/EnterpriseAccessPolicyEditor';
 import { buildEnterprisePolicyMutationPlan } from '@/components/enterpriseAccessAudit/policyDraft';
@@ -84,6 +93,11 @@ export function EnterpriseKeysPage() {
     updatePoliciesBatch,
   } = useEnterpriseAccessAuditStore();
   const { showNotification, showConfirmation } = useNotificationStore();
+  const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const apiBase = useAuthStore((state) => state.apiBase);
+  const configuredApiKeys = useConfigStore((state) => state.config?.apiKeys);
+  const models = useModelsStore((state) => state.models);
+  const fetchModels = useModelsStore((state) => state.fetchModels);
   const enterpriseAccessAuditEnabled = usePluginStore(
     (state) => state.enterpriseAccessAudit === 'enabled'
   );
@@ -101,6 +115,7 @@ export function EnterpriseKeysPage() {
   const [quotaOverrides, setQuotaOverrides] = useState<SpendLimitEntry[]>([]);
   const [quotaEnabled, setQuotaEnabled] = useState(true);
   const [quotaMode, setQuotaMode] = useState<QuotaLimitMode>('cost');
+  const [quotaEditorMode, setQuotaEditorMode] = useState<QuotaLimitMode>('cost');
   const [actionTarget, setActionTarget] = useState<KeyActionTarget | null>(null);
   const [pauseReason, setPauseReason] = useState(DEFAULT_PAUSE_REASON);
   const [pauseDurationSec, setPauseDurationSec] = useState('3600');
@@ -145,6 +160,31 @@ export function EnterpriseKeysPage() {
         .map((entry) => ({ ...entry, apply_value: normalizeQuotaKeyHash(entry.apply_value) }))
     );
   }, []);
+
+  useEffect(() => {
+    if (!enterpriseAccessAuditEnabled || connectionStatus !== 'connected' || !apiBase) return;
+    let cancelled = false;
+    const loadModels = async () => {
+      let primaryKey = configuredApiKeys?.find((key) => key.trim())?.trim();
+      if (!primaryKey) {
+        try {
+          primaryKey = (await apiKeysApi.list()).find((key) => key.trim())?.trim();
+        } catch {
+          primaryKey = '';
+        }
+      }
+      if (cancelled) return;
+      try {
+        await fetchModels(apiBase, primaryKey || undefined);
+      } catch {
+        // The manual model-ID input remains available when model discovery fails.
+      }
+    };
+    void loadModels();
+    return () => {
+      cancelled = true;
+    };
+  }, [apiBase, connectionStatus, configuredApiKeys, enterpriseAccessAuditEnabled, fetchModels]);
 
   useEffect(() => {
     const requests = [fetchDepartments(), fetchKeyBindings(), fetchImportHistory(20), loadQuotaState()];
@@ -312,6 +352,7 @@ export function EnterpriseKeysPage() {
   const openQuotaTarget = (target: KeyActionTarget) => {
     const existing = quotaOverrides.find((entry) => target.keyHashes.includes(entry.apply_value.toLowerCase()));
     setActionTarget(target);
+    setQuotaEditorMode(quotaMode);
     setQuotaDailyCents(existing ? String(existing.daily_cents ?? 0) : '');
     setQuotaWeeklyCents(existing ? String(existing.weekly_cents ?? 0) : '');
     setQuotaDailyTokens(existing ? String(existing.daily_tokens ?? 0) : '');
@@ -622,7 +663,7 @@ export function EnterpriseKeysPage() {
           weekly_tokens: weeklyTokens,
         }))
       ];
-      await quotaLimitsApi.updateConfig({ overrides: nextOverrides });
+      await quotaLimitsApi.updateConfig({ mode: quotaEditorMode, overrides: nextOverrides });
 
       await loadQuotaState();
       setQuotaModalOpen(false);
@@ -1176,6 +1217,7 @@ export function EnterpriseKeysPage() {
         initialDeniedModels={policyEditorModels}
         initialAuditEnabled={policyEditorAudit}
         initialModelsMixed={policyEditorModelsMixed}
+        suggestions={models.map((model) => model.name)}
         saving={policyMutating}
         onClose={closePolicyEditor}
         onSave={handlePolicyEditorSave}
@@ -1208,8 +1250,19 @@ export function EnterpriseKeysPage() {
       >
         <div className={styles.modalSection}>
           <div className={styles.actionTarget}>目标：{actionTarget?.label ?? '-'}</div>
-          <div className={styles.fieldHint}>当前模式：{quotaMode === 'tokens' ? '按 Token 总量' : '按使用成本'}。留空或不填表示不限额；填 0 表示立即停用。</div>
-          {quotaMode === 'tokens' ? (
+          <label className={styles.fieldLabel} htmlFor="enterprise-quota-mode">限额模式</label>
+          <Select
+            id="enterprise-quota-mode"
+            value={quotaEditorMode}
+            options={[
+              { value: 'cost', label: '按使用成本' },
+              { value: 'tokens', label: '按消耗总 Token 数' },
+            ]}
+            onChange={(value) => setQuotaEditorMode(value === 'tokens' ? 'tokens' : 'cost')}
+            ariaLabel="限额模式"
+          />
+          <div className={styles.fieldHint}>选择后，下面的每日和每周限额将按对应单位计算。留空或不填表示不限额；填 0 表示立即停用。</div>
+          {quotaEditorMode === 'tokens' ? (
             <>
               <Input
                 label="每日 Token 总量"

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Modal } from '@/components/ui/Modal';
+import { MultiSelectDropdown } from '@/components/ui/MultiSelectDropdown';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { normalizeEnterprisePolicyModels } from '@/utils/enterpriseAccessAudit';
@@ -65,14 +66,19 @@ export function EnterpriseAccessPolicyEditor({
     setBatchAuditMode(initialAuditEnabled === null ? 'unchanged' : initialAuditEnabled ? 'enabled' : 'disabled');
   }, [initialAuditEnabled, initialDeniedModels, open, targetKey]);
 
-  const normalizedSuggestions = useMemo(() => {
+  const modelOptions = useMemo(() => {
     try {
-      return normalizeEnterprisePolicyModels(suggestions).filter((model) => !deniedModels.includes(model));
+      return normalizeEnterprisePolicyModels(suggestions);
     } catch {
       // Suggestions are optional and never make explicit model entry unavailable.
       return [];
     }
-  }, [deniedModels, suggestions]);
+  }, [suggestions]);
+  const modelOptionSet = useMemo(() => new Set(modelOptions), [modelOptions]);
+  const selectedCatalogModels = useMemo(
+    () => deniedModels.filter((model) => modelOptionSet.has(model)),
+    [deniedModels, modelOptionSet]
+  );
 
   const addModel = (value: string) => {
     try {
@@ -149,8 +155,32 @@ export function EnterpriseAccessPolicyEditor({
       <div className={styles.content}>
         <div className={styles.target}>目标：{target?.label ?? '-'}（{target?.keyHashes.length ?? 0} 个 Key）</div>
         <div className={styles.fieldHint}>
-          仅支持精确模型 ID。输入会自动去空格、转小写、去重并排序；未列出的动态模型也可以直接输入。
+          仅支持精确模型 ID。下拉列表支持批量勾选当前 CPA 支持的模型；输入会自动去空格、转小写、去重并排序，未列出的动态模型也可以直接输入。
         </div>
+        {modelOptions.length > 0 && (
+          <div className={styles.catalogField}>
+            <label className={styles.catalogLabel} htmlFor="enterprise-policy-models">从当前 CPA 支持的模型中选择</label>
+            <MultiSelectDropdown
+              id="enterprise-policy-models"
+              values={selectedCatalogModels}
+              options={modelOptions.map((model) => ({ value: model, label: model }))}
+              onChange={(selected) => {
+                setDeniedModels((current) => normalizeEnterprisePolicyModels([
+                  ...current.filter((model) => !modelOptionSet.has(model)),
+                  ...selected,
+                ]));
+                setModelsDirty(true);
+              }}
+              placeholder="请选择要禁止的模型（可多选）"
+              searchPlaceholder="搜索当前支持的模型"
+              emptyText="没有匹配的支持模型"
+              selectAllText="全选当前模型"
+              clearText="清空当前选择"
+              ariaLabel="批量选择禁止模型"
+              disabled={saving}
+            />
+          </div>
+        )}
         <div className={styles.addRow}>
           <Input
             label="禁止模型 ID"
@@ -160,23 +190,13 @@ export function EnterpriseAccessPolicyEditor({
               setInputError('');
             }}
             onKeyDown={handleInputKeyDown}
-            placeholder="例如 gpt-4o"
+            placeholder="也可以手动输入动态模型 ID"
             error={inputError}
           />
           <Button variant="secondary" onClick={() => addModel(modelInput)} disabled={!modelInput.trim() || saving}>
             添加
           </Button>
         </div>
-        {normalizedSuggestions.length > 0 && (
-          <div className={styles.suggestions}>
-            <span>可选模型：</span>
-            {normalizedSuggestions.map((model) => (
-              <Button key={model} variant="ghost" size="sm" onClick={() => addModel(model)} disabled={saving}>
-                {model}
-              </Button>
-            ))}
-          </div>
-        )}
         <div className={styles.modelList} aria-label="禁止模型列表">
           {deniedModels.map((model) => (
             <div className={styles.modelItem} key={model}>

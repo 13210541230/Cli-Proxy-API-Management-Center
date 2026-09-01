@@ -2245,7 +2245,7 @@
     "enabled": "Enable limits",
     "mode": "Limit mode",
     "mode_cost": "By usage cost",
-    "mode_tokens": "By total tokens",
+    "mode_tokens": "By total consumed tokens",
     "daily_cents": "Daily limit (cents)",
     "weekly_cents": "Weekly limit (cents)",
     "daily_tokens": "Daily token limit",

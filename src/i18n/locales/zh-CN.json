@@ -2297,7 +2297,7 @@
     "enabled": "启用限额",
     "mode": "限额模式",
     "mode_cost": "按使用成本",
-    "mode_tokens": "按 Token 总量",
+    "mode_tokens": "按消耗总 Token 数",
     "daily_cents": "每日额度（美分）",
     "weekly_cents": "每周额度（美分）",
     "daily_tokens": "每日 Token 总量",

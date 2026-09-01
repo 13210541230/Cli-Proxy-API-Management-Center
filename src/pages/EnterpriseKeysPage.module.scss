@@ -256,6 +256,12 @@
   }
 }
 
+.fieldLabel {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
 .fieldHint {
   font-size: 12px;
   color: var(--text-secondary);

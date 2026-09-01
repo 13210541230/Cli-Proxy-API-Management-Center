@@ -1,0 +1,150 @@
+@use '../../styles/mixins' as *;
+
+.root {
+  position: relative;
+  width: 100%;
+}
+
+.trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 11px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover:not(:disabled),
+  &:focus-visible:not(:disabled) {
+    border-color: var(--primary-color);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  svg {
+    flex: 0 0 auto;
+    margin-left: auto;
+    color: var(--text-tertiary);
+  }
+}
+
+.triggerText,
+.placeholder {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.placeholder {
+  color: var(--text-tertiary);
+}
+
+.count {
+  flex: 0 0 auto;
+  padding: 2px 7px;
+  border-radius: $radius-full;
+  background: color-mix(in srgb, var(--primary-color) 12%, var(--bg-primary));
+  color: var(--primary-color);
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 2020;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-md;
+  background: var(--bg-primary);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+}
+
+.search {
+  width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 7px 9px;
+  border: 1px solid var(--border-color);
+  border-radius: $radius-sm;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+
+  &:focus {
+    outline: 2px solid color-mix(in srgb, var(--primary-color) 30%, transparent);
+    outline-offset: 1px;
+  }
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 2px;
+
+  button {
+    padding: 3px 5px;
+    border: 0;
+    background: transparent;
+    color: var(--primary-color);
+    font: inherit;
+    font-size: 12px;
+    cursor: pointer;
+
+    &:disabled {
+      color: var(--text-tertiary);
+      cursor: not-allowed;
+    }
+  }
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.option {
+  min-height: 34px;
+  padding: 6px 7px;
+  border-radius: $radius-sm;
+
+  &:hover {
+    background: var(--bg-secondary);
+  }
+}
+
+.optionLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.empty {
+  padding: 18px 8px;
+  color: var(--text-tertiary);
+  font-size: 13px;
+  text-align: center;
+}
