@@ -36,7 +36,6 @@ export function QuotaDowngradePage() {
   const [fallbackModel, setFallbackModel] = useState(DEFAULT_FALLBACK_MODEL);
   const [overrides, setOverrides] = useState<SpendLimitEntry[]>([]);
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
-  const [overrideSearch, setOverrideSearch] = useState('');
   const [editingOverride, setEditingOverride] = useState<SpendLimitEntry | null>(null);
   const [hashToDisplay, setHashToDisplay] = useState<Record<string, string>>({});
   const [bindings, setBindings] = useState<Map<string, EnterpriseKeyBinding>>(new Map());
@@ -97,12 +96,6 @@ export function QuotaDowngradePage() {
     [hashToDisplay]
   );
 
-  const filteredKeyOptions = useMemo(() => {
-    const query = overrideSearch.trim().toLocaleLowerCase();
-    if (!query) return keyOptions;
-    return keyOptions.filter((option) => `${option.label} ${option.hash}`.toLocaleLowerCase().includes(query));
-  }, [keyOptions, overrideSearch]);
-
   const dailyLimitLabel = mode === 'tokens' ? t('quota_limits.daily_tokens') : t('quota_limits.daily_cents');
   const weeklyLimitLabel = mode === 'tokens' ? t('quota_limits.weekly_tokens') : t('quota_limits.weekly_cents');
 
@@ -148,7 +141,6 @@ export function QuotaDowngradePage() {
   };
 
   const openNewOverride = () => {
-    setOverrideSearch('');
     setEditingOverride({
       apply_to: 'api-key',
       apply_value: '',
@@ -332,36 +324,23 @@ export function QuotaDowngradePage() {
 
       <Modal
         open={overrideModalOpen}
-        onClose={() => {
-          setOverrideModalOpen(false);
-          setOverrideSearch('');
-        }}
+        onClose={() => setOverrideModalOpen(false)}
         title={t('quota_limits.edit_override')}
       >
         {editingOverride && (
           <div className={styles.form}>
             <label>{t('quota_limits.apply_api_key')}</label>
             {keyOptions.length > 0 ? (
-              <>
-                <Input
-                  value={overrideSearch}
-                  onChange={(event) => setOverrideSearch(event.target.value)}
-                  placeholder={t('quota_limits.search_user_placeholder')}
-                  aria-label={t('quota_limits.search_user_placeholder')}
-                />
-                {filteredKeyOptions.length > 0 ? (
-                  <Select
-                    value={editingOverride.apply_value}
-                    onChange={(value) => setEditingOverride({ ...editingOverride, apply_value: value })}
-                    options={[
-                      { value: '', label: t('quota_limits.select_user_placeholder') },
-                      ...filteredKeyOptions.map((option) => ({ value: option.hash, label: option.label })),
-                    ]}
-                  />
-                ) : (
-                  <div className={styles.empty}>{t('quota_limits.no_matching_users')}</div>
-                )}
-              </>
+              <Select
+                value={editingOverride.apply_value}
+                onChange={(value) => setEditingOverride({ ...editingOverride, apply_value: value })}
+                options={[
+                  { value: '', label: t('quota_limits.select_user_placeholder') },
+                  ...keyOptions.map((option) => ({ value: option.hash, label: option.label })),
+                ]}
+                searchable
+                searchPlaceholder={t('quota_limits.search_user_placeholder')}
+              />
             ) : (
               <div className={styles.empty}>{t('quota_limits.no_key_bindings')}</div>
             )}

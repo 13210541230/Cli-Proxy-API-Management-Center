@@ -31,6 +31,8 @@ interface SelectProps {
   ariaDescribedBy?: string;
   fullWidth?: boolean;
   id?: string;
+  searchable?: boolean;
+  searchPlaceholder?: string;
 }
 
 const VIEWPORT_MARGIN = 8;
@@ -92,11 +94,14 @@ export function Select({
   ariaDescribedBy,
   fullWidth = true,
   id,
+  searchable = false,
+  searchPlaceholder = 'Search...',
 }: SelectProps) {
   const generatedId = useId();
   const selectId = id ?? generatedId;
   const listboxId = `${selectId}-listbox`;
   const [open, setOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
@@ -171,31 +176,43 @@ export function Select({
     };
   }, [isOpen, scheduleDropdownStyleUpdate, updateDropdownStyle]);
 
-  const selectedIndex = useMemo(() => options.findIndex((option) => option.value === value), [options, value]);
+  const filteredOptions = useMemo(() => {
+    if (!searchable || !searchQuery.trim()) return options;
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return options.filter((option) => `${option.label} ${option.value}`.toLocaleLowerCase().includes(query));
+  }, [options, searchable, searchQuery]);
+  const selectedIndex = useMemo(() => filteredOptions.findIndex((option) => option.value === value), [filteredOptions, value]);
   const resolvedHighlightedIndex =
-    highlightedIndex >= 0 ? highlightedIndex : selectedIndex >= 0 ? selectedIndex : options.length > 0 ? 0 : -1;
-  const selected = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+    highlightedIndex >= 0 && highlightedIndex < filteredOptions.length
+      ? highlightedIndex
+      : selectedIndex >= 0
+        ? selectedIndex
+        : filteredOptions.length > 0
+          ? 0
+          : -1;
+  const selected = options.find((option) => option.value === value);
   const displayText = selected?.label ?? placeholder ?? '';
   const isPlaceholder = !selected && placeholder;
 
   const commitSelection = useCallback(
     (nextIndex: number) => {
-      const nextOption = options[nextIndex];
+      const nextOption = filteredOptions[nextIndex];
       if (!nextOption) return;
       onChange(nextOption.value);
       setOpen(false);
+      setSearchQuery('');
       setHighlightedIndex(nextIndex);
     },
-    [onChange, options]
+    [filteredOptions, onChange]
   );
 
   const moveHighlight = useCallback(
     (direction: 1 | -1) => {
-      if (options.length === 0) return;
-      const nextIndex = (resolvedHighlightedIndex + direction + options.length) % options.length;
+      if (filteredOptions.length === 0) return;
+      const nextIndex = (resolvedHighlightedIndex + direction + filteredOptions.length) % filteredOptions.length;
       setHighlightedIndex(nextIndex);
     },
-    [options.length, resolvedHighlightedIndex]
+    [filteredOptions.length, resolvedHighlightedIndex]
   );
 
   const handleKeyDown = useCallback(
@@ -206,6 +223,7 @@ export function Select({
         case 'ArrowDown':
           event.preventDefault();
           if (!isOpen) {
+            setSearchQuery('');
             setOpen(true);
             return;
           }
@@ -214,25 +232,27 @@ export function Select({
         case 'ArrowUp':
           event.preventDefault();
           if (!isOpen) {
+            setSearchQuery('');
             setOpen(true);
             return;
           }
           moveHighlight(-1);
           return;
         case 'Home':
-          if (!isOpen || options.length === 0) return;
+          if (!isOpen || filteredOptions.length === 0) return;
           event.preventDefault();
           setHighlightedIndex(0);
           return;
         case 'End':
-          if (!isOpen || options.length === 0) return;
+          if (!isOpen || filteredOptions.length === 0) return;
           event.preventDefault();
-          setHighlightedIndex(options.length - 1);
+          setHighlightedIndex(filteredOptions.length - 1);
           return;
         case 'Enter':
         case ' ': {
           event.preventDefault();
           if (!isOpen) {
+            setSearchQuery('');
             setOpen(true);
             return;
           }
@@ -253,7 +273,7 @@ export function Select({
           return;
       }
     },
-    [commitSelection, disabled, isOpen, moveHighlight, options.length, resolvedHighlightedIndex]
+    [commitSelection, disabled, filteredOptions.length, isOpen, moveHighlight, resolvedHighlightedIndex]
   );
 
   useEffect(() => {
@@ -273,7 +293,39 @@ export function Select({
             aria-label={ariaLabel}
             style={dropdownStyle}
           >
-            {options.map((opt, index) => {
+            {searchable && (
+              <input
+                className={styles.searchInput}
+                type="search"
+                value={searchQuery}
+                placeholder={searchPlaceholder}
+                aria-label={searchPlaceholder}
+                onChange={(event) => {
+                  setSearchQuery(event.target.value);
+                  setHighlightedIndex(0);
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setOpen(false);
+                    return;
+                  }
+                  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    moveHighlight(event.key === 'ArrowDown' ? 1 : -1);
+                    return;
+                  }
+                  if (event.key === 'Enter' && resolvedHighlightedIndex >= 0) {
+                    event.preventDefault();
+                    commitSelection(resolvedHighlightedIndex);
+                  }
+                }}
+                autoFocus
+              />
+            )}
+            {filteredOptions.length === 0 ? (
+              <div className={styles.emptyOption}>No matching options</div>
+            ) : filteredOptions.map((opt, index) => {
               const active = opt.value === value;
               const highlighted = index === resolvedHighlightedIndex;
               return (
@@ -306,7 +358,13 @@ export function Select({
           id={selectId}
           type="button"
           className={[styles.trigger, triggerClassName].filter(Boolean).join(' ')}
-          onClick={disabled ? undefined : () => setOpen((prev) => !prev)}
+          onClick={disabled ? undefined : () => setOpen((prev) => {
+            if (!prev) {
+              setSearchQuery('');
+              setHighlightedIndex(-1);
+            }
+            return !prev;
+          })}
           onKeyDown={handleKeyDown}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
