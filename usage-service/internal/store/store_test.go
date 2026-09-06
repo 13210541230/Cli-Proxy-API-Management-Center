@@ -11,6 +11,37 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
 )
 
+func TestManagerConfigTracksRuntimeFieldPresence(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+
+	_, err = db.db.ExecContext(context.Background(), `insert into settings(key, value, updated_at_ms) values(?, ?, ?)`, managerConfigKey, `{"cpaConnection":{}}`, 1)
+	if err != nil {
+		t.Fatalf("insert legacy manager config: %v", err)
+	}
+	legacy, ok, err := db.LoadManagerConfig(context.Background())
+	if err != nil || !ok {
+		t.Fatalf("load legacy manager config: ok=%v err=%v", ok, err)
+	}
+	if legacy.LocalRuntimeConfigured() {
+		t.Fatal("legacy manager config unexpectedly contains local runtime")
+	}
+
+	if err := db.SaveManagerConfig(context.Background(), ManagerConfig{}); err != nil {
+		t.Fatalf("save manager config: %v", err)
+	}
+	current, ok, err := db.LoadManagerConfig(context.Background())
+	if err != nil || !ok {
+		t.Fatalf("load current manager config: ok=%v err=%v", ok, err)
+	}
+	if !current.LocalRuntimeConfigured() {
+		t.Fatal("saved manager config does not contain local runtime")
+	}
+}
+
 func TestStorePersistsAccountSnapshot(t *testing.T) {
 	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
 	if err != nil {
@@ -410,7 +441,6 @@ func TestStoreEnterpriseKeyBindingsPersistEmail(t *testing.T) {
 	}
 }
 
-
 func TestStoreUsageReport(t *testing.T) {
 	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
 	if err != nil {
@@ -525,122 +555,122 @@ func TestStoreUsageReport(t *testing.T) {
 		t.Fatalf("insert events: %v", err)
 	}
 
-		t.Run("happy path aggregates correctly", func(t *testing.T) {
-			rows, err := db.UsageReport(ctx, 1_699_000_000_000, 1_701_000_000_000)
-			if err != nil {
-				t.Fatalf("usage report: %v", err)
-			}
-			// Expect 2 rows: lisi (alphabetically first) then zhangsan
-			if len(rows) != 2 {
-				t.Fatalf("len(rows) = %d, want 2", len(rows))
-			}
+	t.Run("happy path aggregates correctly", func(t *testing.T) {
+		rows, err := db.UsageReport(ctx, 1_699_000_000_000, 1_701_000_000_000)
+		if err != nil {
+			t.Fatalf("usage report: %v", err)
+		}
+		// Expect 2 rows: lisi (alphabetically first) then zhangsan
+		if len(rows) != 2 {
+			t.Fatalf("len(rows) = %d, want 2", len(rows))
+		}
 
-			// First row: lisi (department_name=上海总部, user_name=lisi)
-			row0 := rows[0]
-			if row0.UserName != "lisi" || row0.DepartmentName != "上海总部" || row0.Email != "lis@example.com" {
-				t.Fatalf("row0 user/dept/email = %q/%q/%q", row0.UserName, row0.DepartmentName, row0.Email)
-			}
-			if row0.APIKey != keyB {
-				t.Fatalf("row0 apiKeyHash = %q, want %q", row0.APIKey, hashB)
-			}
-			if len(row0.Models) != 1 {
-				t.Fatalf("row0 models = %d, want 1", len(row0.Models))
-			}
-			if row0.Models[0].Model != "gpt-4" {
-				t.Fatalf("row0 model[0] = %q, want gpt-4", row0.Models[0].Model)
-			}
-			m0 := row0.Models[0]
-			if m0.TotalTokens != 300 || m0.Requests != 1 || m0.FailedRequests != 0 {
-				t.Fatalf("row0 gpt-4 stats = %+v", m0)
-			}
-			if m0.CachedTokens != 30 || m0.TotalCacheTokens != 30 {
-				t.Fatalf("row0 cache stats = %+v", m0)
-			}
-			if m0.CacheHitRate != 1.0 {
-				t.Fatalf("row0 gpt-4 cacheHitRate = %f, want 1.0", m0.CacheHitRate)
-			}
-			if row0.TotalTokens != 300 || row0.TotalRequests != 1 || row0.FailedRequests != 0 {
-				t.Fatalf("row0 total aggregates = %+v", row0)
-			}
-			if row0.CachedTokens != 30 || row0.TotalCacheTokens != 30 {
-				t.Fatalf("row0 cache aggregates = %+v", row0)
-			}
-			if row0.CacheHitRate != 1.0 {
-				t.Fatalf("row0 cacheHitRate = %f, want 1.0", row0.CacheHitRate)
-			}
+		// First row: lisi (department_name=上海总部, user_name=lisi)
+		row0 := rows[0]
+		if row0.UserName != "lisi" || row0.DepartmentName != "上海总部" || row0.Email != "lis@example.com" {
+			t.Fatalf("row0 user/dept/email = %q/%q/%q", row0.UserName, row0.DepartmentName, row0.Email)
+		}
+		if row0.APIKey != keyB {
+			t.Fatalf("row0 apiKeyHash = %q, want %q", row0.APIKey, hashB)
+		}
+		if len(row0.Models) != 1 {
+			t.Fatalf("row0 models = %d, want 1", len(row0.Models))
+		}
+		if row0.Models[0].Model != "gpt-4" {
+			t.Fatalf("row0 model[0] = %q, want gpt-4", row0.Models[0].Model)
+		}
+		m0 := row0.Models[0]
+		if m0.TotalTokens != 300 || m0.Requests != 1 || m0.FailedRequests != 0 {
+			t.Fatalf("row0 gpt-4 stats = %+v", m0)
+		}
+		if m0.CachedTokens != 30 || m0.TotalCacheTokens != 30 {
+			t.Fatalf("row0 cache stats = %+v", m0)
+		}
+		if m0.CacheHitRate != 1.0 {
+			t.Fatalf("row0 gpt-4 cacheHitRate = %f, want 1.0", m0.CacheHitRate)
+		}
+		if row0.TotalTokens != 300 || row0.TotalRequests != 1 || row0.FailedRequests != 0 {
+			t.Fatalf("row0 total aggregates = %+v", row0)
+		}
+		if row0.CachedTokens != 30 || row0.TotalCacheTokens != 30 {
+			t.Fatalf("row0 cache aggregates = %+v", row0)
+		}
+		if row0.CacheHitRate != 1.0 {
+			t.Fatalf("row0 cacheHitRate = %f, want 1.0", row0.CacheHitRate)
+		}
 
-			// Second row: zhangsan
-			row1 := rows[1]
-			if row1.UserName != "zhangsan" || row1.Email != "zs@example.com" {
-				t.Fatalf("row1 user/email = %q/%q", row1.UserName, row1.Email)
-			}
-			if row1.APIKey != keyA {
-				t.Fatalf("row1 apiKey = %q, want %q", row1.APIKey, hashA)
-			}
-			if len(row1.Models) != 2 {
-				t.Fatalf("row1 models = %d, want 2", len(row1.Models))
-			}
-			if row1.Models[0].Model != "gpt-3.5-turbo" || row1.Models[1].Model != "gpt-4" {
-				t.Fatalf("row1 model order = %q, %q", row1.Models[0].Model, row1.Models[1].Model)
-			}
+		// Second row: zhangsan
+		row1 := rows[1]
+		if row1.UserName != "zhangsan" || row1.Email != "zs@example.com" {
+			t.Fatalf("row1 user/email = %q/%q", row1.UserName, row1.Email)
+		}
+		if row1.APIKey != keyA {
+			t.Fatalf("row1 apiKey = %q, want %q", row1.APIKey, hashA)
+		}
+		if len(row1.Models) != 2 {
+			t.Fatalf("row1 models = %d, want 2", len(row1.Models))
+		}
+		if row1.Models[0].Model != "gpt-3.5-turbo" || row1.Models[1].Model != "gpt-4" {
+			t.Fatalf("row1 model order = %q, %q", row1.Models[0].Model, row1.Models[1].Model)
+		}
 
-			// gpt-4 model for zhangsan: 2 requests, 1 failed, totalTokens=300
-			var m1 UsageReportModel
-			for _, m := range row1.Models {
-				if m.Model == "gpt-4" {
-					m1 = m
-					break
-				}
+		// gpt-4 model for zhangsan: 2 requests, 1 failed, totalTokens=300
+		var m1 UsageReportModel
+		for _, m := range row1.Models {
+			if m.Model == "gpt-4" {
+				m1 = m
+				break
 			}
-			if m1.Model == "" {
-				t.Fatalf("row1 missing gpt-4 model")
-			}
-			if m1.TotalTokens != 300 || m1.Requests != 2 || m1.FailedRequests != 1 {
-				t.Fatalf("row1 gpt-4 stats = %+v", m1)
-			}
-			if m1.CachedTokens != 10 || m1.TotalCacheTokens != 20 {
-				t.Fatalf("row1 gpt-4 cache stats = %+v", m1)
-			}
-			// gpt-4: e-a1 has cached_tokens>0 (cache_hit=1), e-a2 has cached_tokens=0 (cache_hit=0)
-			// cacheHitRate = 1 / 2 = 0.5
-			if m1.CacheHitRate != 0.5 {
-				t.Fatalf("row1 gpt-4 cacheHitRate = %f, want 0.5", m1.CacheHitRate)
-			}
+		}
+		if m1.Model == "" {
+			t.Fatalf("row1 missing gpt-4 model")
+		}
+		if m1.TotalTokens != 300 || m1.Requests != 2 || m1.FailedRequests != 1 {
+			t.Fatalf("row1 gpt-4 stats = %+v", m1)
+		}
+		if m1.CachedTokens != 10 || m1.TotalCacheTokens != 20 {
+			t.Fatalf("row1 gpt-4 cache stats = %+v", m1)
+		}
+		// gpt-4: e-a1 has cached_tokens>0 (cache_hit=1), e-a2 has cached_tokens=0 (cache_hit=0)
+		// cacheHitRate = 1 / 2 = 0.5
+		if m1.CacheHitRate != 0.5 {
+			t.Fatalf("row1 gpt-4 cacheHitRate = %f, want 0.5", m1.CacheHitRate)
+		}
 
-			// gpt-3.5-turbo model: 1 request, cached_tokens>0 (cache_hit=1)
-			// cacheHitRate = 1 / 1 = 1.0
-			var m2 UsageReportModel
-			for _, m := range row1.Models {
-				if m.Model == "gpt-3.5-turbo" {
-					m2 = m
-					break
-				}
+		// gpt-3.5-turbo model: 1 request, cached_tokens>0 (cache_hit=1)
+		// cacheHitRate = 1 / 1 = 1.0
+		var m2 UsageReportModel
+		for _, m := range row1.Models {
+			if m.Model == "gpt-3.5-turbo" {
+				m2 = m
+				break
 			}
-			if m2.Model == "" {
-				t.Fatalf("row1 missing gpt-3.5-turbo model")
-			}
-			if m2.TotalTokens != 50 || m2.Requests != 1 || m2.FailedRequests != 0 {
-				t.Fatalf("row1 gpt-3.5-turbo stats = %+v", m2)
-			}
-			if m2.CachedTokens != 5 || m2.TotalCacheTokens != 10 {
-				t.Fatalf("row1 gpt-3.5-turbo cache stats = %+v", m2)
-			}
-			if m2.CacheHitRate != 1.0 {
-				t.Fatalf("row1 gpt-3.5-turbo cacheHitRate = %f, want 1.0", m2.CacheHitRate)
-			}
+		}
+		if m2.Model == "" {
+			t.Fatalf("row1 missing gpt-3.5-turbo model")
+		}
+		if m2.TotalTokens != 50 || m2.Requests != 1 || m2.FailedRequests != 0 {
+			t.Fatalf("row1 gpt-3.5-turbo stats = %+v", m2)
+		}
+		if m2.CachedTokens != 5 || m2.TotalCacheTokens != 10 {
+			t.Fatalf("row1 gpt-3.5-turbo cache stats = %+v", m2)
+		}
+		if m2.CacheHitRate != 1.0 {
+			t.Fatalf("row1 gpt-3.5-turbo cacheHitRate = %f, want 1.0", m2.CacheHitRate)
+		}
 
-			// Per-key aggregate totals for zhangsan: gpt-4 (300,2,1,10,20) + gpt-3.5-turbo (50,1,0,5,10)
-			if row1.TotalTokens != 350 || row1.TotalRequests != 3 || row1.FailedRequests != 1 {
-				t.Fatalf("row1 total aggregates = %+v", row1)
-			}
-			if row1.CachedTokens != 15 || row1.TotalCacheTokens != 30 {
-				t.Fatalf("row1 cache aggregates = %+v", row1)
-			}
-			// Per-key cacheHitRate: totalCacheHits(2) / totalRequests(3)
-			if row1.CacheHitRate != 2.0/3.0 {
-				t.Fatalf("row1 cacheHitRate = %f, want %f", row1.CacheHitRate, 2.0/3.0)
-			}
-		})
+		// Per-key aggregate totals for zhangsan: gpt-4 (300,2,1,10,20) + gpt-3.5-turbo (50,1,0,5,10)
+		if row1.TotalTokens != 350 || row1.TotalRequests != 3 || row1.FailedRequests != 1 {
+			t.Fatalf("row1 total aggregates = %+v", row1)
+		}
+		if row1.CachedTokens != 15 || row1.TotalCacheTokens != 30 {
+			t.Fatalf("row1 cache aggregates = %+v", row1)
+		}
+		// Per-key cacheHitRate: totalCacheHits(2) / totalRequests(3)
+		if row1.CacheHitRate != 2.0/3.0 {
+			t.Fatalf("row1 cacheHitRate = %f, want %f", row1.CacheHitRate, 2.0/3.0)
+		}
+	})
 	t.Run("empty range returns no results", func(t *testing.T) {
 		rows, err := db.UsageReport(ctx, 1, 1)
 		if err != nil {

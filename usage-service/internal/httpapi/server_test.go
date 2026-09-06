@@ -7,6 +7,7 @@ import (
 	"math"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,8 +16,21 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/collector"
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
+	"github.com/seakee/cpa-manager/usage-service/internal/supervisor"
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
 )
+
+func TestLocalRuntimeHealthURLDoesNotUseRemoteConnection(t *testing.T) {
+	if got := localRuntimeHealthURL("http://127.0.0.1:8317", "", "https://remote.example:8317"); got != "http://127.0.0.1:8317" {
+		t.Fatalf("localRuntimeHealthURL() = %q, want local supervisor URL", got)
+	}
+	if got := localRuntimeHealthURL("", "https://remote.example:8317", "https://other.example:8317"); got != "http://127.0.0.1:8317" {
+		t.Fatalf("localRuntimeHealthURL(remote) = %q, want default local URL", got)
+	}
+	if got := localRuntimeHealthURL("", "0.0.0.0:9000", "https://remote.example:8317"); got != "http://127.0.0.1:9000" {
+		t.Fatalf("localRuntimeHealthURL(wildcard) = %q, want loopback URL", got)
+	}
+}
 
 type observedRequest struct {
 	path  string
@@ -76,6 +90,58 @@ func newTestHandlerWithConfig(t *testing.T, cfg config.Config) http.Handler {
 
 	manager := collector.NewManager(cfg, db, nil, collector.AlertConfig{})
 	return New(cfg, db, manager).Handler()
+}
+
+func TestRuntimeEndpointsRequireManagementKey(t *testing.T) {
+	handler := newTestHandler(t, "", false)
+	req := httptest.NewRequest(http.MethodGet, "/runtime", nil)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusPreconditionRequired {
+		t.Fatalf("runtime status without management key = %d, body = %s", rr.Code, rr.Body.String())
+	}
+}
+
+func TestRuntimeStatusReturnsConfiguredLocalProcess(t *testing.T) {
+	cfg := config.Config{
+		DBPath:      filepath.Join(t.TempDir(), "usage.sqlite"),
+		Queue:       "usage",
+		PopSide:     "right",
+		CORSOrigins: []string{"*"},
+	}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { _ = db.Close() })
+	if err := db.SaveSetup(context.Background(), store.Setup{
+		CPAUpstreamURL: "http://cpa.test",
+		ManagementKey:  "management-key",
+	}); err != nil {
+		t.Fatalf("save setup: %v", err)
+	}
+
+	controller := supervisor.New()
+	controller.Configure(supervisor.Config{
+		Enabled:           true,
+		CPAExecutablePath: os.Args[0],
+		WorkingDirectory:  t.TempDir(),
+	})
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{}), controller).Handler()
+	req := httptest.NewRequest(http.MethodGet, "/runtime", nil)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("runtime status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), `"enabled":true`) ||
+		!strings.Contains(rr.Body.String(), `"state":"stopped"`) {
+		t.Fatalf("runtime response = %s", rr.Body.String())
+	}
 }
 
 func TestModelListProxyPreservesAuthorization(t *testing.T) {

@@ -27,10 +27,25 @@ type Setup struct {
 }
 
 type ManagerConfig struct {
-	CPAConnection        ManagerCPAConnectionConfig        `json:"cpaConnection"`
-	Collector            ManagerCollectorConfig            `json:"collector"`
-	ExternalUsageService ManagerExternalUsageServiceConfig `json:"externalUsageService"`
-	UpdatedAtMS          int64                             `json:"updatedAtMs,omitempty"`
+	CPAConnection          ManagerCPAConnectionConfig        `json:"cpaConnection"`
+	Collector              ManagerCollectorConfig            `json:"collector"`
+	ExternalUsageService   ManagerExternalUsageServiceConfig `json:"externalUsageService"`
+	LocalRuntime           LocalRuntimeConfig                `json:"localRuntime"`
+	UpdatedAtMS            int64                             `json:"updatedAtMs,omitempty"`
+	localRuntimeConfigured bool                              `json:"-"`
+}
+
+func (cfg ManagerConfig) LocalRuntimeConfigured() bool {
+	return cfg.localRuntimeConfigured
+}
+
+type LocalRuntimeConfig struct {
+	Enabled           bool     `json:"enabled"`
+	CPAExecutablePath string   `json:"cpaExecutablePath,omitempty"`
+	WorkingDirectory  string   `json:"workingDirectory,omitempty"`
+	Arguments         []string `json:"arguments,omitempty"`
+	AutoStart         bool     `json:"autoStart"`
+	HealthURL         string   `json:"healthUrl,omitempty"`
 }
 
 type ManagerCPAConnectionConfig struct {
@@ -744,6 +759,7 @@ func (s *Store) LoadSetup(ctx context.Context) (Setup, bool, error) {
 
 func (s *Store) SaveManagerConfig(ctx context.Context, cfg ManagerConfig) error {
 	cfg.UpdatedAtMS = time.Now().UnixMilli()
+	cfg.localRuntimeConfigured = true
 	data, err := json.Marshal(cfg)
 	if err != nil {
 		return err
@@ -772,6 +788,14 @@ func (s *Store) LoadManagerConfig(ctx context.Context) (ManagerConfig, bool, err
 	var cfg ManagerConfig
 	if err := json.Unmarshal([]byte(raw), &cfg); err != nil {
 		return ManagerConfig{}, false, err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
+		return ManagerConfig{}, false, err
+	}
+	cfg.localRuntimeConfigured = false
+	if _, ok := fields["localRuntime"]; ok {
+		cfg.localRuntimeConfigured = true
 	}
 	return cfg, true, nil
 }

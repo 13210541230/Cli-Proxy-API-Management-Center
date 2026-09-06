@@ -2,10 +2,16 @@ package main
 
 import (
 	"context"
+	"encoding/json"
+	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -15,18 +21,38 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/mail"
 	"github.com/seakee/cpa-manager/usage-service/internal/rollup"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
+	"github.com/seakee/cpa-manager/usage-service/internal/supervisor"
+	"github.com/seakee/cpa-manager/usage-service/internal/update"
 )
 
 func main() {
+	if err := supervisor.IsolateProcessGroup(); err != nil {
+		log.Printf("isolate manager process group: %v", err)
+	}
+	startCPAOnLaunch := flag.Bool("start-cpa", false, "start CLIProxyAPI during manager startup")
+	flag.Parse()
+
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("load config: %v", err)
+		log.Printf("load config: %v", err)
+		return
+	}
+	if handled, err := maybeRecoverInterruptedUpdate(cfg.DBPath, *startCPAOnLaunch); err != nil {
+		log.Printf("start interrupted update recovery: %v", err)
+		return
+	} else if handled {
+		return
 	}
 	db, err := store.Open(cfg.DBPath)
 	if err != nil {
-		log.Fatalf("open sqlite: %v", err)
+		log.Printf("open sqlite: %v", err)
+		return
 	}
-	defer db.Close()
+	defer func() {
+		if err := db.Close(); err != nil {
+			log.Printf("close sqlite: %v", err)
+		}
+	}()
 
 	// Build alert config: env defaults overridden by DB-persisted config
 	alertCfg := buildAlertConfig(db, cfg)
@@ -38,6 +64,53 @@ func main() {
 		From:     alertCfg.SMTPFrom,
 		FromName: alertCfg.SMTPFromName,
 	})
+	runtimeController := supervisor.New()
+	if savedConfig, ok, err := db.LoadManagerConfig(context.Background()); err != nil {
+		log.Printf("load local runtime config: %v", err)
+	} else if ok {
+		runtimeCfg := savedConfig.LocalRuntime
+		if !savedConfig.LocalRuntimeConfigured() {
+			if defaultCfg, defaultOK := supervisor.DefaultConfig(); defaultOK {
+				runtimeCfg = store.LocalRuntimeConfig{
+					Enabled:           defaultCfg.Enabled,
+					CPAExecutablePath: defaultCfg.CPAExecutablePath,
+					WorkingDirectory:  defaultCfg.WorkingDirectory,
+					Arguments:         append([]string(nil), defaultCfg.Arguments...),
+					AutoStart:         defaultCfg.AutoStart,
+					HealthURL:         defaultCfg.HealthURL,
+				}
+			}
+		}
+		healthBaseURL := runtimeCfg.HealthURL
+		if healthBaseURL == "" {
+			healthBaseURL = savedConfig.CPAConnection.CPABaseURL
+		}
+		if healthBaseURL == "" {
+			healthBaseURL = cfg.CPAUpstreamURL
+		}
+		if healthBaseURL == "" {
+			if setup, setupOK, setupErr := db.LoadSetup(context.Background()); setupErr == nil && setupOK {
+				healthBaseURL = setup.CPAUpstreamURL
+			}
+		}
+		healthBaseURL = runtimeHealthBaseURL(healthBaseURL, "")
+		configureLocalCPA(runtimeController, supervisor.Config{
+			Enabled:           runtimeCfg.Enabled,
+			CPAExecutablePath: runtimeCfg.CPAExecutablePath,
+			WorkingDirectory:  runtimeCfg.WorkingDirectory,
+			Arguments:         runtimeCfg.Arguments,
+			AutoStart:         runtimeCfg.AutoStart,
+			HealthURL:         runtimeCfg.HealthURL,
+		}, healthBaseURL, *startCPAOnLaunch, "auto-start")
+	} else if runtimeCfg, ok := supervisor.DefaultConfig(); ok {
+		setupURL := ""
+		if setup, setupOK, setupErr := db.LoadSetup(context.Background()); setupErr == nil && setupOK {
+			setupURL = setup.CPAUpstreamURL
+		}
+		healthBaseURL := runtimeHealthBaseURL(cfg.CPAUpstreamURL, setupURL)
+		configureLocalCPA(runtimeController, runtimeCfg, healthBaseURL, false, "auto-start adjacent")
+	}
+
 	manager := collector.NewManager(cfg, db, sender, collector.AlertConfig{
 		Enabled:           alertCfg.AlertEnabled,
 		ThresholdCents:    alertCfg.ThresholdCents,
@@ -48,7 +121,7 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	// Rollup 在后台按 event id 分批追赶，避免历史重建阻塞 HTTP listener。
+	// Rollup catches up in event-id batches so historical rebuilds do not block the HTTP listener.
 	rollupWorker := rollup.NewWorker(db, rollup.Config{BatchSize: 1000})
 	rollupWorker.Start(ctx)
 
@@ -83,16 +156,24 @@ func main() {
 		log.Printf("load setup: %v", err)
 	}
 
+	managerServer := httpapi.New(cfg, db, manager, runtimeController)
+	managerServer.SetShutdown(stop)
+	if executable, executableErr := os.Executable(); executableErr == nil {
+		managerServer.SetProcessIdentity(executable, persistentArguments(os.Args[1:]))
+	} else {
+		log.Printf("resolve manager executable path: %v", executableErr)
+	}
 	server := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.New(cfg, db, manager).Handler(),
+		Handler:           managerServer.Handler(),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 
 	go func() {
 		log.Printf("cpa-manager listening on %s", cfg.HTTPAddr)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("http server: %v", err)
+			log.Printf("http server: %v", err)
+			stop()
 		}
 	}()
 
@@ -120,6 +201,11 @@ func main() {
 	}
 
 	<-ctx.Done()
+	if _, err := runtimeController.Stop(); err != nil {
+		log.Printf("stop CLIProxyAPI: %v", err)
+	} else if err := runtimeController.WaitStopped(10 * time.Second); err != nil {
+		log.Printf("wait for CLIProxyAPI shutdown: %v", err)
+	}
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	manager.Stop()
@@ -127,6 +213,126 @@ func main() {
 	if err := server.Shutdown(shutdownCtx); err != nil {
 		log.Printf("shutdown: %v", err)
 	}
+}
+
+func maybeRecoverInterruptedUpdate(dbPath string, startCPA bool) (bool, error) {
+	statusPath, err := filepath.Abs(update.StatusPath(dbPath))
+	if err != nil {
+		return false, err
+	}
+	status, ok, err := update.ReadPersistedStatus(statusPath)
+	if err != nil || !ok || status.State != update.StageApplying {
+		return false, err
+	}
+	active, err := update.TransactionActive(statusPath)
+	if err != nil {
+		return true, err
+	}
+	if active {
+		log.Printf("an update helper is still active; manager startup deferred")
+		return true, nil
+	}
+	if len(status.Backups) == 0 {
+		return false, nil
+	}
+	managerPath, err := os.Executable()
+	if err != nil {
+		return false, err
+	}
+	managerPath, err = filepath.Abs(managerPath)
+	if err != nil {
+		return false, err
+	}
+	updaterName := "cpa-updater"
+	if filepath.Ext(managerPath) != "" {
+		updaterName += filepath.Ext(managerPath)
+	}
+	updaterPath := filepath.Join(filepath.Dir(managerPath), updaterName)
+	if _, err := os.Stat(updaterPath); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	managerArgs := []string{}
+	if startCPA {
+		managerArgs = append(managerArgs, "--start-cpa")
+	}
+	encodedArgs, err := json.Marshal(managerArgs)
+	if err != nil {
+		return false, err
+	}
+	workingDirectory, err := os.Getwd()
+	if err != nil {
+		return false, err
+	}
+	command := exec.Command(updaterPath,
+		"--recover-status", statusPath,
+		"--manager-path", managerPath,
+		"--manager-pid", strconv.Itoa(os.Getpid()),
+		"--manager-args", string(encodedArgs),
+		"--manager-working-directory", workingDirectory,
+	)
+	command.Dir = filepath.Dir(updaterPath)
+	if err := command.Start(); err != nil {
+		return false, fmt.Errorf("start recovery helper: %w", err)
+	}
+	if err := command.Process.Release(); err != nil {
+		return false, fmt.Errorf("release recovery helper: %w", err)
+	}
+	log.Printf("interrupted update recovery helper started")
+	return true, nil
+}
+
+func runtimeHealthBaseURL(configuredURL, setupURL string) string {
+	for _, candidate := range []string{configuredURL, setupURL} {
+		if normalized, ok := supervisor.LocalHealthURL(candidate); ok {
+			return normalized
+		}
+	}
+	return "http://127.0.0.1:8317"
+}
+
+func configureLocalCPA(controller *supervisor.Controller, cfg supervisor.Config, healthBaseURL string, forceStart bool, startLabel string) {
+	if normalized, ok := supervisor.LocalHealthURL(cfg.HealthURL); ok {
+		cfg.HealthURL = normalized
+	} else if normalized, ok := supervisor.LocalHealthURL(healthBaseURL); ok {
+		cfg.HealthURL = normalized
+	} else {
+		cfg.HealthURL = "http://127.0.0.1:8317"
+	}
+	if err := controller.Configure(cfg); err != nil {
+		log.Printf("%s CLIProxyAPI configuration rejected: %v", startLabel, err)
+		return
+	}
+	if !cfg.Enabled {
+		return
+	}
+	if supervisor.HasHealthyLocalCPA(context.Background(), cfg.HealthURL) {
+		controller.MarkExternal()
+		log.Printf("CLIProxyAPI is already running outside CPA-Manager; automatic start skipped")
+		return
+	}
+	if !cfg.AutoStart && !forceStart {
+		return
+	}
+	status, err := controller.Start()
+	if err != nil {
+		log.Printf("%s CLIProxyAPI failed: %v", startLabel, err)
+		return
+	}
+	log.Printf("CLIProxyAPI started with pid %d", status.PID)
+}
+
+func persistentArguments(arguments []string) []string {
+	filtered := make([]string, 0, len(arguments))
+	for _, argument := range arguments {
+		if argument == "--start-cpa" {
+			continue
+		}
+		filtered = append(filtered, argument)
+	}
+	return filtered
 }
 
 func runtimeConfigFromManagerConfig(managerCfg store.ManagerConfig, base config.Config) collector.RuntimeConfig {

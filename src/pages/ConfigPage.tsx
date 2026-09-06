@@ -35,6 +35,7 @@ import {
   type CPAUsageConfig,
   type ManagerConfig,
   type ManagerConfigResponse,
+  type ManagerLocalRuntimeConfig,
 } from '@/services/api/usageService';
 import { alertConfigApi, type AlertSMTPConfig } from '@/services/api/alertConfig';
 import { detectApiBaseFromLocation } from '@/utils/connection';
@@ -51,6 +52,15 @@ const MANAGER_COLLECTOR_DEFAULT = {
   pollIntervalMs: 500,
   queryLimit: 50000,
   tlsSkipVerify: false,
+};
+
+const MANAGER_LOCAL_RUNTIME_DEFAULT: ManagerLocalRuntimeConfig = {
+  enabled: false,
+  cpaExecutablePath: '',
+  workingDirectory: '',
+  arguments: [],
+  autoStart: false,
+  healthUrl: 'http://127.0.0.1:8317',
 };
 
 const LazyConfigSourceEditor = lazy(() => import('@/components/config/ConfigSourceEditor'));
@@ -126,6 +136,22 @@ export function ConfigPage() {
   );
   const [managerQueryLimit, setManagerQueryLimit] = useState(
     String(MANAGER_COLLECTOR_DEFAULT.queryLimit)
+  );
+  const [localRuntimeEnabled, setLocalRuntimeEnabled] = useState(
+    MANAGER_LOCAL_RUNTIME_DEFAULT.enabled
+  );
+  const [localRuntimePath, setLocalRuntimePath] = useState(
+    MANAGER_LOCAL_RUNTIME_DEFAULT.cpaExecutablePath
+  );
+  const [localRuntimeWorkingDirectory, setLocalRuntimeWorkingDirectory] = useState(
+    MANAGER_LOCAL_RUNTIME_DEFAULT.workingDirectory
+  );
+  const [localRuntimeArguments, setLocalRuntimeArguments] = useState('');
+  const [localRuntimeAutoStart, setLocalRuntimeAutoStart] = useState(
+    MANAGER_LOCAL_RUNTIME_DEFAULT.autoStart
+  );
+  const [localRuntimeHealthURL, setLocalRuntimeHealthURL] = useState(
+    MANAGER_LOCAL_RUNTIME_DEFAULT.healthUrl || ''
   );
 
   // Alert config state
@@ -256,6 +282,15 @@ export function ConfigPage() {
       setManagerPollIntervalMs(String(collector.pollIntervalMs || MANAGER_COLLECTOR_DEFAULT.pollIntervalMs));
       setManagerBatchSize(String(collector.batchSize || MANAGER_COLLECTOR_DEFAULT.batchSize));
       setManagerQueryLimit(String(collector.queryLimit || MANAGER_COLLECTOR_DEFAULT.queryLimit));
+      const localRuntime = nextConfig.localRuntime ?? MANAGER_LOCAL_RUNTIME_DEFAULT;
+      setLocalRuntimeEnabled(localRuntime.enabled);
+      setLocalRuntimePath(localRuntime.cpaExecutablePath || '');
+      setLocalRuntimeWorkingDirectory(localRuntime.workingDirectory || '');
+      setLocalRuntimeArguments((localRuntime.arguments || []).join('\n'));
+      setLocalRuntimeAutoStart(localRuntime.autoStart);
+      setLocalRuntimeHealthURL(
+        localRuntime.healthUrl || MANAGER_LOCAL_RUNTIME_DEFAULT.healthUrl || ''
+      );
       setManagerDirty(false);
     },
     [managerServiceBase]
@@ -428,6 +463,7 @@ export function ConfigPage() {
           cpaConnection: { cpaBaseUrl: apiBase, managementKey },
           collector: MANAGER_COLLECTOR_DEFAULT,
           externalUsageService: { enabled: !isEmbeddedUsageService, serviceBase: !isEmbeddedUsageService ? serviceBase : '' },
+          localRuntime: MANAGER_LOCAL_RUNTIME_DEFAULT,
         }),
         cpaConnection: {
           ...(managerConfig?.cpaConnection ?? {}),
@@ -446,6 +482,17 @@ export function ConfigPage() {
           enabled: !isEmbeddedUsageService,
           serviceBase: !isEmbeddedUsageService ? serviceBase : '',
         },
+        localRuntime: {
+          enabled: localRuntimeEnabled,
+          cpaExecutablePath: localRuntimePath.trim(),
+          workingDirectory: localRuntimeWorkingDirectory.trim(),
+          arguments: localRuntimeArguments
+            .split(/\r?\n/)
+            .map((argument) => argument.trim())
+            .filter(Boolean),
+          autoStart: localRuntimeAutoStart,
+          healthUrl: localRuntimeHealthURL.trim(),
+        },
       };
       const response = await usageServiceApi.saveManagerConfig(serviceBase, nextConfig, managementKey);
       applyManagerConfigResponse(response, serviceBase);
@@ -458,7 +505,7 @@ export function ConfigPage() {
       if (alertConfig) {
         try {
           await alertConfigApi.updateConfig(serviceBase, alertConfig, managementKey);
-        } catch (alertError) {
+        } catch {
           showNotification(t('config_management.manager.alert_save_failed'), 'warning');
         }
       }
@@ -989,6 +1036,93 @@ export function ConfigPage() {
                     hint={t('config_management.manager.external_service_hint')}
                   />
                 )}
+              </section>
+
+              <section className={styles.managerSection}>
+                <div className={styles.managerSectionHeader}>
+                  <div>
+                    <h3>{t('config_management.manager.local_runtime_title')}</h3>
+                    <p>{t('config_management.manager.local_runtime_hint')}</p>
+                  </div>
+                  <ToggleSwitch
+                    label={t('config_management.manager.local_runtime_enabled')}
+                    labelPosition="left"
+                    checked={localRuntimeEnabled}
+                    onChange={(value) => {
+                      setLocalRuntimeEnabled(value);
+                      setManagerFieldDirty();
+                    }}
+                    disabled={disableControls || managerLoading}
+                  />
+                </div>
+
+                <div className={styles.managerConfigGrid}>
+                  <Input
+                    label={t('config_management.manager.local_runtime_path')}
+                    placeholder="./cli-proxy-api.exe"
+                    value={localRuntimePath}
+                    onChange={(event) => {
+                      setLocalRuntimePath(event.target.value);
+                      setManagerFieldDirty();
+                    }}
+                    disabled={disableControls || managerLoading || !localRuntimeEnabled}
+                    hint={t('config_management.manager.local_runtime_path_hint')}
+                  />
+                  <Input
+                    label={t('config_management.manager.local_runtime_working_directory')}
+                    placeholder="Leave empty to use the executable directory"
+                    value={localRuntimeWorkingDirectory}
+                    onChange={(event) => {
+                      setLocalRuntimeWorkingDirectory(event.target.value);
+                      setManagerFieldDirty();
+                    }}
+                    disabled={disableControls || managerLoading || !localRuntimeEnabled}
+                  />
+                </div>
+
+                <div className={styles.managerConfigGrid}>
+                  <Input
+                    label={t('config_management.manager.local_runtime_health_url')}
+                    placeholder="http://127.0.0.1:8317"
+                    value={localRuntimeHealthURL}
+                    onChange={(event) => {
+                      setLocalRuntimeHealthURL(event.target.value);
+                      setManagerFieldDirty();
+                    }}
+                    disabled={disableControls || managerLoading || !localRuntimeEnabled}
+                    hint={t('config_management.manager.local_runtime_health_url_hint')}
+                  />
+                  <div className={styles.managerField}>
+                    <label className={styles.managerFieldLabel} htmlFor="local-runtime-arguments">
+                      {t('config_management.manager.local_runtime_arguments')}
+                    </label>
+                    <textarea
+                      id="local-runtime-arguments"
+                      className={styles.managerRuntimeArguments}
+                      value={localRuntimeArguments}
+                      onChange={(event) => {
+                        setLocalRuntimeArguments(event.target.value);
+                        setManagerFieldDirty();
+                      }}
+                      disabled={disableControls || managerLoading || !localRuntimeEnabled}
+                      placeholder="One argument per line"
+                      rows={4}
+                    />
+                    <span className="hint">
+                      {t('config_management.manager.local_runtime_arguments_hint')}
+                    </span>
+                  </div>
+                  <ToggleSwitch
+                    label={t('config_management.manager.local_runtime_autostart')}
+                    labelPosition="left"
+                    checked={localRuntimeAutoStart}
+                    onChange={(value) => {
+                      setLocalRuntimeAutoStart(value);
+                      setManagerFieldDirty();
+                    }}
+                    disabled={disableControls || managerLoading || !localRuntimeEnabled}
+                  />
+                </div>
               </section>
 
               <section className={styles.managerSection}>

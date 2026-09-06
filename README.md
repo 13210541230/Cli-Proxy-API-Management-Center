@@ -6,7 +6,8 @@ A single-file Web UI for **CLI Proxy API (CPA)** plus an optional **Usage Servic
 
 Since v6.10.0, CPA no longer includes built-in usage statistics. This project now supports usage analytics through a long-running Usage Service that consumes the CPA usage queue, persists request events to SQLite, and exposes panel-compatible usage APIs.
 
-- **CPA Main project**: https://github.com/router-for-me/CLIProxyAPI
+- **CPA release fork**: https://github.com/13210541230/CLIProxyAPI
+- **CPA upstream project**: https://github.com/router-for-me/CLIProxyAPI
 - **Recommended CPA version**: >= v6.10.8
 
 ## Panel Preview
@@ -112,7 +113,9 @@ The published image supports `linux/amd64` and `linux/arm64`. If your image is p
 
 ### Native Packages
 
-GitHub Releases also provide native packages with the panel embedded:
+GitHub Releases for the Management Center remain available as standalone manager packages. The authoritative native CPA + CPA-Manager update packages are published by the CLIProxyAPI fork at `https://github.com/13210541230/CLIProxyAPI`.
+
+Standalone native packages with the panel embedded include:
 
 - `cpa-manager_<version>_linux_amd64.tar.gz`
 - `cpa-manager_<version>_linux_arm64.tar.gz`
@@ -147,9 +150,15 @@ Then open:
 http://<host>:18317/management.html
 ```
 
-Native packages do not include CPA itself. Run CPA separately, then enter the CPA URL and Management Key on the login page. Set `USAGE_DATA_DIR` or `USAGE_DB_PATH` only when you want to override the default data location.
+Standalone native packages do not include CPA itself. The unified packages published by the CLIProxyAPI fork include both CPA and CPA-Manager and are the recommended deployment format for local supervision and self-update:
 
-On first start, if `USAGE_DATA_DIR` and `USAGE_DB_PATH` are not set, the native package creates `config.json` next to the binary and writes SQLite data to `data/usage.sqlite` in the same directory. The extracted package directory therefore contains both the program and its user data.
+- `CLIProxyAPI-Suite_<version>_linux_<arch>.tar.gz`
+- `CLIProxyAPI-Suite_<version>_darwin_<arch>.tar.gz`
+- `CLIProxyAPI-Suite_<version>_windows_<arch>.zip`
+
+Extract a unified package and start it through `start.sh` on macOS/Linux or `start.bat` on Windows. CPA-Manager detects the adjacent `cli-proxy-api` executable, starts it as the local runtime, and serves the embedded management panel. The System page can then check the canonical CLIProxyAPI release and apply a verified suite update.
+
+Set `USAGE_DATA_DIR` or `USAGE_DB_PATH` only when you want to override the default data location. On first start, if these variables are not set, the native package creates `config.json` next to the binary and writes SQLite data to `data/usage.sqlite` in the same directory. The extracted package directory therefore contains both the program and its user data.
 
 ### Docker Compose
 
@@ -300,6 +309,13 @@ If `CPA_UPSTREAM_URL` and `CPA_MANAGEMENT_KEY` are set, collection starts automa
 | `GET /usage-service/info` | Allows the frontend to detect full Docker mode |
 | `GET /usage-service/config` | Reads persistent CPA-Manager configuration and CPA usage publishing status |
 | `PUT /usage-service/config` | Saves CPA-Manager configuration and restarts the collector when needed |
+| `GET /runtime` | Reads locally supervised CLIProxyAPI state |
+| `POST /runtime/start` | Starts the configured local CLIProxyAPI |
+| `POST /runtime/stop` | Stops the locally supervised CLIProxyAPI |
+| `GET /updates/latest` | Reads the latest verified manifest from the canonical CLIProxyAPI fork |
+| `GET /updates/status` | Reads the local update staging state |
+| `POST /updates/stage` | Downloads, verifies, and safely extracts the current platform bundle |
+| `POST /updates/apply` | Starts the updater helper and schedules a supervised local restart |
 | `POST /setup` | Save CPA URL + Management Key and start collection |
 | `GET /v0/management/usage` | Compatible usage payload for the panel |
 | `GET /v0/management/usage/export` | Export usage events as JSONL |

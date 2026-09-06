@@ -34,6 +34,9 @@ export interface UsageServiceApiError extends Error {
 export interface UsageServiceInfo {
   service?: string;
   mode?: string;
+  version?: string;
+  commit?: string;
+  buildDate?: string;
   startedAt?: number;
 }
 
@@ -95,10 +98,69 @@ export interface ManagerExternalUsageServiceConfig {
   serviceBase: string;
 }
 
+export interface ManagerLocalRuntimeConfig {
+  enabled: boolean;
+  cpaExecutablePath: string;
+  workingDirectory: string;
+  arguments: string[];
+  autoStart: boolean;
+  healthUrl?: string;
+}
+
+export interface ManagerRuntimeStatus extends ManagerLocalRuntimeConfig {
+  state: 'stopped' | 'starting' | 'running' | 'stopping' | 'failed' | string;
+  running: boolean;
+  managed: boolean;
+  external?: boolean;
+  pid?: number;
+  executablePath?: string;
+  startedAtMs?: number;
+  lastExitAtMs?: number;
+  lastError?: string;
+  health?: string;
+  healthy?: boolean;
+}
+
+export interface ManagerUpdateAsset {
+  os: string;
+  arch: string;
+  name: string;
+  format: string;
+  downloadUrl: string;
+  sha256: string;
+  size?: number;
+}
+
+export interface ManagerUpdateManifest {
+  schema: number;
+  bundleVersion: string;
+  releaseTag: string;
+  cpaVersion: string;
+  managerVersion: string;
+  releaseUrl?: string;
+  assets: ManagerUpdateAsset[];
+}
+
+export interface ManagerUpdateStageStatus {
+  state: 'idle' | 'downloading' | 'ready' | 'failed' | 'applying' | string;
+  os?: string;
+  arch?: string;
+  manifest?: ManagerUpdateManifest;
+  asset?: ManagerUpdateAsset;
+  archivePath?: string;
+  stagingPath?: string;
+  managerPath?: string;
+  cpaPath?: string;
+  startedAtMs?: number;
+  completedAtMs?: number;
+  error?: string;
+}
+
 export interface ManagerConfig {
   cpaConnection: ManagerCPAConnectionConfig;
   collector: ManagerCollectorConfig;
   externalUsageService: ManagerExternalUsageServiceConfig;
+  localRuntime: ManagerLocalRuntimeConfig;
   updatedAtMs?: number;
 }
 
@@ -373,6 +435,66 @@ export const usageServiceApi = {
     });
   },
 
+  getLatestUpdate: async (
+    base: string,
+    managementKey?: string
+  ): Promise<ManagerUpdateManifest> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.get<ManagerUpdateManifest>(buildUrl(base, '/updates/latest'), {
+        timeout: USAGE_SERVICE_TIMEOUT_MS,
+        headers: authHeaders(managementKey),
+      });
+      return response.data;
+    });
+  },
+
+  getUpdateStatus: async (
+    base: string,
+    managementKey?: string
+  ): Promise<ManagerUpdateStageStatus> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.get<ManagerUpdateStageStatus>(buildUrl(base, '/updates/status'), {
+        timeout: USAGE_SERVICE_TIMEOUT_MS,
+        headers: authHeaders(managementKey),
+      });
+      return response.data;
+    });
+  },
+
+  stageUpdate: async (
+    base: string,
+    managementKey?: string
+  ): Promise<ManagerUpdateStageStatus> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.post<ManagerUpdateStageStatus>(
+        buildUrl(base, '/updates/stage'),
+        undefined,
+        {
+          timeout: USAGE_SERVICE_TRANSFER_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
+  applyUpdate: async (
+    base: string,
+    managementKey?: string
+  ): Promise<{ state: string; cpaVersion?: string; managerVersion?: string }> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.post<{ state: string; cpaVersion?: string; managerVersion?: string }>(
+        buildUrl(base, '/updates/apply'),
+        undefined,
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
   getManagerConfig: async (
     base: string,
     managementKey?: string,
@@ -400,6 +522,47 @@ export const usageServiceApi = {
       const response = await axios.put<ManagerConfigResponse>(
         buildUrl(base, '/usage-service/config'),
         { config },
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
+  getRuntimeStatus: async (
+    base: string,
+    managementKey?: string
+  ): Promise<ManagerRuntimeStatus> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.get<ManagerRuntimeStatus>(buildUrl(base, '/runtime'), {
+        timeout: USAGE_SERVICE_TIMEOUT_MS,
+        headers: authHeaders(managementKey),
+      });
+      return response.data;
+    });
+  },
+
+  startRuntime: async (base: string, managementKey?: string): Promise<ManagerRuntimeStatus> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.post<ManagerRuntimeStatus>(
+        buildUrl(base, '/runtime/start'),
+        undefined,
+        {
+          timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
+  stopRuntime: async (base: string, managementKey?: string): Promise<ManagerRuntimeStatus> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.post<ManagerRuntimeStatus>(
+        buildUrl(base, '/runtime/stop'),
+        undefined,
         {
           timeout: USAGE_SERVICE_TIMEOUT_MS,
           headers: authHeaders(managementKey),

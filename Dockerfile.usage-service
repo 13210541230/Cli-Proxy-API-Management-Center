@@ -4,17 +4,24 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN VERSION=$VERSION npm run build
+RUN apk add --no-cache python3
+RUN VERSION=$VERSION npm run build && \
+    python3 bin/release/normalize-embedded-html.py dist/index.html dist/normalized-index.html
 
 FROM --platform=$BUILDPLATFORM golang:1.24-alpine AS service-build
 ARG TARGETOS
 ARG TARGETARCH
+ARG VERSION=dev
+ARG COMMIT=none
+ARG BUILD_DATE=unknown
 WORKDIR /src
 COPY usage-service ./usage-service
-COPY --from=web-build /app/dist/index.html ./usage-service/internal/httpapi/web/management.html
+COPY --from=web-build /app/dist/normalized-index.html ./usage-service/internal/httpapi/web/management.html
 WORKDIR /src/usage-service
 RUN go mod download
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build -o /out/cpa-manager ./cmd/cpa-manager
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH go build \
+    -ldflags="-s -w -X github.com/seakee/cpa-manager/usage-service/internal/buildinfo.Version=$VERSION -X github.com/seakee/cpa-manager/usage-service/internal/buildinfo.Commit=$COMMIT -X github.com/seakee/cpa-manager/usage-service/internal/buildinfo.BuildDate=$BUILD_DATE" \
+    -o /out/cpa-manager ./cmd/cpa-manager
 
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates wget

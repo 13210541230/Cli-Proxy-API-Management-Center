@@ -31,6 +31,11 @@ jobs:
           go-version: '1.24.x'
           cache-dependency-path: usage-service/go.sum
 
+      - name: Generate build metadata
+        run: |
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
       - name: Install dependencies
         run: npm ci
 
@@ -89,6 +94,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Generate build metadata
+        run: |
+          echo "COMMIT=$(git rev-parse --short HEAD)" >> "$GITHUB_ENV"
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
@@ -142,6 +152,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             VERSION=${{ github.ref_name }}
+            COMMIT=${{ env.COMMIT }}
+            BUILD_DATE=${{ env.BUILD_DATE }}
 
       - name: Update DockerHub overview
         uses: peter-evans/dockerhub-description@v4

@@ -3,36 +3,51 @@ package httpapi
 import (
 	"context"
 	"embed"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"mime"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
+	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/seakee/cpa-manager/usage-service/internal/buildinfo"
 	"github.com/seakee/cpa-manager/usage-service/internal/collector"
 	"github.com/seakee/cpa-manager/usage-service/internal/config"
 	"github.com/seakee/cpa-manager/usage-service/internal/store"
+	"github.com/seakee/cpa-manager/usage-service/internal/supervisor"
+	"github.com/seakee/cpa-manager/usage-service/internal/update"
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
-
-	"encoding/csv"
 )
 
 //go:embed web/management.html
 var embeddedPanel embed.FS
 
 type Server struct {
-	cfg       config.Config
-	store     *store.Store
-	collector *collector.Manager
-	startedAt int64
+	cfg               config.Config
+	store             *store.Store
+	collector         *collector.Manager
+	supervisor        *supervisor.Controller
+	update            *update.Client
+	stager            *update.Stager
+	shutdown          func()
+	managerExecutable string
+	managerArguments  []string
+	startedAt         int64
+	lifecycleMu       sync.Mutex
+	localRuntimeMu    sync.Mutex
+	updateApplying    bool
 }
 
 type setupSource string
@@ -143,13 +158,30 @@ type keyBindingImportRequest struct {
 	FileName string                    `json:"fileName"`
 }
 
-func New(cfg config.Config, store *store.Store, collector *collector.Manager) *Server {
-	return &Server{
-		cfg:       cfg,
-		store:     store,
-		collector: collector,
-		startedAt: time.Now().UnixMilli(),
+func New(cfg config.Config, store *store.Store, collector *collector.Manager, controllers ...*supervisor.Controller) *Server {
+	var processController *supervisor.Controller
+	if len(controllers) > 0 {
+		processController = controllers[0]
 	}
+	updateClient := update.NewClient()
+	return &Server{
+		cfg:        cfg,
+		store:      store,
+		collector:  collector,
+		supervisor: processController,
+		update:     updateClient,
+		stager:     update.NewStager(updateClient, update.StatusPath(cfg.DBPath)),
+		startedAt:  time.Now().UnixMilli(),
+	}
+}
+
+func (s *Server) SetShutdown(fn func()) {
+	s.shutdown = fn
+}
+
+func (s *Server) SetProcessIdentity(executable string, arguments []string) {
+	s.managerExecutable = executable
+	s.managerArguments = append([]string(nil), arguments...)
 }
 
 func (s *Server) Handler() http.Handler {
@@ -158,6 +190,13 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/status", s.withCORS(s.handleStatus))
 	mux.HandleFunc("/usage-service/info", s.withCORS(s.handleInfo))
 	mux.HandleFunc("/usage-service/config", s.withCORS(s.handleManagerConfig))
+	mux.HandleFunc("/runtime", s.withCORS(s.handleRuntime))
+	mux.HandleFunc("/runtime/start", s.withCORS(s.handleRuntimeStart))
+	mux.HandleFunc("/runtime/stop", s.withCORS(s.handleRuntimeStop))
+	mux.HandleFunc("/updates/latest", s.withCORS(s.handleLatestUpdate))
+	mux.HandleFunc("/updates/status", s.withCORS(s.handleUpdateStatus))
+	mux.HandleFunc("/updates/stage", s.withCORS(s.handleUpdateStage))
+	mux.HandleFunc("/updates/apply", s.withCORS(s.handleUpdateApply))
 	mux.HandleFunc("/setup", s.withCORS(s.handleSetup))
 	mux.HandleFunc("/management.html", s.handlePanel)
 	mux.HandleFunc("/", s.handleRoot)
@@ -240,7 +279,11 @@ func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"ok": true, "service": serviceID})
+	response := map[string]any{"ok": true, "service": serviceID}
+	if s.supervisor != nil {
+		response["cpaRunning"] = s.supervisor.Status().Running
+	}
+	writeJSON(w, http.StatusOK, response)
 }
 
 func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
@@ -251,8 +294,342 @@ func (s *Server) handleInfo(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]any{
 		"service":   serviceID,
 		"mode":      "embedded",
+		"version":   buildinfo.Version,
+		"commit":    buildinfo.Commit,
+		"buildDate": buildinfo.BuildDate,
 		"startedAt": s.startedAt,
 	})
+}
+
+func (s *Server) handleLatestUpdate(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	if s.update == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("update checks are unavailable"))
+		return
+	}
+	manifest, err := s.update.CheckLatest(r.Context())
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, manifest)
+}
+
+func (s *Server) handleUpdateStatus(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	if s.stager == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("update staging is unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.stager.Status())
+}
+
+func (s *Server) handleUpdateStage(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if s.stager == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("update staging is unavailable"))
+		return
+	}
+	var request struct {
+		OS   string `json:"os"`
+		Arch string `json:"arch"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if request.OS == "" || request.Arch == "" {
+		request.OS, request.Arch = update.CurrentTarget()
+	}
+	status, err := s.stager.Stage(r.Context(), request.OS, request.Arch)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if s.stager == nil || s.supervisor == nil || s.shutdown == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("local update is unavailable"))
+		return
+	}
+	if s.managerExecutable == "" {
+		writeError(w, http.StatusNotImplemented, errors.New("manager process identity is unavailable"))
+		return
+	}
+	s.localRuntimeMu.Lock()
+	defer s.localRuntimeMu.Unlock()
+	if !s.beginUpdateApply() {
+		writeError(w, http.StatusConflict, errors.New("an update is already being applied"))
+		return
+	}
+	accepted := false
+	defer func() {
+		if !accepted {
+			s.endUpdateApply()
+			if err := s.stager.ReleaseApplyLock(); err != nil {
+				log.Printf("release update apply lock: %v", err)
+			}
+		}
+	}()
+	runtimeBeforeUpdate := s.supervisor.Status()
+	if runtimeBeforeUpdate.External {
+		writeError(w, http.StatusConflict, errors.New("CLIProxyAPI is running outside CPA-Manager; stop it manually before applying an update"))
+		return
+	}
+	staged, err := s.stager.BeginApply()
+	if err != nil {
+		writeError(w, http.StatusConflict, err)
+		return
+	}
+	cpaConfig := s.supervisor.Config()
+	cpaPath, workingDirectory, err := supervisor.ResolveConfig(cpaConfig)
+	if err != nil {
+		s.failUpdateStatus(err)
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	helperName := "cpa-updater"
+	if runtime.GOOS == "windows" {
+		helperName += ".exe"
+	}
+	helperPath := filepath.Join(filepath.Dir(s.managerExecutable), helperName)
+	if _, err := os.Stat(helperPath); err != nil {
+		s.failUpdateStatus(err)
+		writeError(w, http.StatusNotImplemented, fmt.Errorf("update helper is not installed: %w", err))
+		return
+	}
+	cpaWasRunning := runtimeBeforeUpdate.Managed
+	restartCPA := func() error {
+		if !cpaWasRunning {
+			return nil
+		}
+		status := s.supervisor.Status()
+		if status.External {
+			return errors.New("CLIProxyAPI became externally managed; refusing to start another process")
+		}
+		if status.Running {
+			if waitErr := s.supervisor.WaitStopped(2 * time.Second); waitErr != nil {
+				return errors.New("CLIProxyAPI is still running; refusing to start a duplicate process")
+			}
+			status = s.supervisor.Status()
+		}
+		if status.External {
+			return errors.New("CLIProxyAPI became externally managed; refusing to start another process")
+		}
+		if _, restartErr := s.supervisor.Start(); restartErr != nil {
+			return fmt.Errorf("restore CLIProxyAPI: %w", restartErr)
+		}
+		return nil
+	}
+	if _, err := s.supervisor.Stop(); err != nil {
+		if restoreErr := restartCPA(); restoreErr != nil {
+			err = errors.Join(err, restoreErr)
+		}
+		s.failUpdateStatus(err)
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if err := s.supervisor.WaitStopped(30 * time.Second); err != nil {
+		if restoreErr := restartCPA(); restoreErr != nil {
+			err = errors.Join(err, restoreErr)
+		}
+		s.failUpdateStatus(err)
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	managerWorkingDirectory := filepath.Dir(s.managerExecutable)
+	if strings.TrimSpace(managerWorkingDirectory) == "" {
+		managerWorkingDirectory, err = os.Getwd()
+		if err != nil {
+			wrappedErr := fmt.Errorf("resolve manager working directory: %w", err)
+			if restoreErr := restartCPA(); restoreErr != nil {
+				wrappedErr = errors.Join(wrappedErr, restoreErr)
+			}
+			s.failUpdateStatus(wrappedErr)
+			writeError(w, http.StatusInternalServerError, wrappedErr)
+			return
+		}
+	}
+	healthURL := s.cfg.HTTPAddr
+	switch {
+	case strings.HasPrefix(healthURL, ":"):
+		healthURL = "http://127.0.0.1" + healthURL
+	case strings.HasPrefix(healthURL, "0.0.0.0:"):
+		healthURL = "http://127.0.0.1:" + strings.TrimPrefix(healthURL, "0.0.0.0:")
+	case strings.HasPrefix(healthURL, "[::]:"):
+		healthURL = "http://127.0.0.1:" + strings.TrimPrefix(healthURL, "[::]:")
+	case !strings.HasPrefix(healthURL, "http://") && !strings.HasPrefix(healthURL, "https://"):
+		healthURL = "http://" + healthURL
+	}
+	healthURL = strings.TrimRight(healthURL, "/") + "/health"
+	startCPA := false
+	managerStartCPA := cpaWasRunning && !cpaConfig.AutoStart
+	expectCPA := cpaWasRunning || cpaConfig.AutoStart
+	cpaHealthURL := ""
+	if expectCPA {
+		cpaHealthURL = strings.TrimRight(cpaConfig.HealthURL, "/")
+		if cpaHealthURL != "" {
+			cpaHealthURL += "/healthz"
+		}
+	}
+	helperCmd, err := update.StartHelper(helperPath, update.ApplyOptions{
+		StagingPath:             staged.StagingPath,
+		ResultPath:              s.stager.StatusPath(),
+		OS:                      staged.OS,
+		Arch:                    staged.Arch,
+		TransactionID:           staged.TransactionID,
+		CPAVersion:              staged.Manifest.CPAVersion,
+		ManagerVersion:          staged.Manifest.ManagerVersion,
+		ManagerExecutablePath:   s.managerExecutable,
+		ManagerWorkingDirectory: managerWorkingDirectory,
+		CPAExecutablePath:       cpaPath,
+		ManagerArguments:        s.managerArguments,
+		CPAArguments:            cpaConfig.Arguments,
+		CPAWorkingDirectory:     workingDirectory,
+		ManagerHealthURL:        healthURL,
+		CPAHealthURL:            cpaHealthURL,
+		ManagerPID:              os.Getpid(),
+		PreviousCPAWasRunning:   cpaWasRunning,
+		RestoreOnFailure:        true,
+		StartCPA:                startCPA,
+		ManagerStartCPA:         managerStartCPA,
+		OwnsTransactionLock:     true,
+	})
+	if err != nil {
+		if restoreErr := restartCPA(); restoreErr != nil {
+			err = errors.Join(err, restoreErr)
+		}
+		s.failUpdateStatus(err)
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if err := s.stager.TransferApplyLock(helperCmd.Process.Pid, staged.TransactionID, helperCmd.Path); err != nil {
+		update.TerminateStartedProcess(helperCmd)
+		if restoreErr := restartCPA(); restoreErr != nil {
+			err = errors.Join(err, restoreErr)
+		}
+		s.failUpdateStatus(err)
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	accepted = true
+	go func() {
+		time.Sleep(100 * time.Millisecond)
+		s.shutdown()
+	}()
+	writeJSON(w, http.StatusAccepted, map[string]any{
+		"state":          "applying",
+		"cpaVersion":     staged.Manifest.CPAVersion,
+		"managerVersion": staged.Manifest.ManagerVersion,
+	})
+}
+
+func (s *Server) handleRuntime(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodGet {
+		methodNotAllowed(w)
+		return
+	}
+	if s.supervisor == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("local runtime supervision is unavailable"))
+		return
+	}
+	writeJSON(w, http.StatusOK, s.supervisor.Status())
+}
+
+func (s *Server) handleRuntimeStart(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if s.supervisor == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("local runtime supervision is unavailable"))
+		return
+	}
+	s.localRuntimeMu.Lock()
+	defer s.localRuntimeMu.Unlock()
+	if s.isUpdateApplying() {
+		writeError(w, http.StatusConflict, errors.New("CLIProxyAPI update is being applied"))
+		return
+	}
+	statusBeforeStart := s.supervisor.Status()
+	if !statusBeforeStart.Running || statusBeforeStart.External {
+		localHealthURL := s.supervisor.Config().HealthURL
+		if supervisor.HasHealthyLocalCPA(r.Context(), localHealthURL) {
+			if !statusBeforeStart.Managed {
+				s.supervisor.MarkExternal()
+			}
+			writeError(w, http.StatusConflict, errors.New("an externally started CLIProxyAPI is still running; stop it manually before starting a managed process"))
+			return
+		}
+		if statusBeforeStart.External {
+			s.supervisor.ClearExternal()
+		}
+	}
+	status, err := s.supervisor.Start()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
+}
+
+func (s *Server) handleRuntimeStop(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if s.supervisor == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("local runtime supervision is unavailable"))
+		return
+	}
+	s.localRuntimeMu.Lock()
+	defer s.localRuntimeMu.Unlock()
+	if s.isUpdateApplying() {
+		writeError(w, http.StatusConflict, errors.New("CLIProxyAPI update is being applied"))
+		return
+	}
+	status, err := s.supervisor.Stop()
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, status)
 }
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
@@ -309,10 +686,22 @@ func (s *Server) handleManagerConfig(w http.ResponseWriter, r *http.Request) {
 			CPAUsage: cpaUsage,
 		})
 	case http.MethodPut:
+		s.localRuntimeMu.Lock()
+		defer s.localRuntimeMu.Unlock()
 		var req struct {
-			Config store.ManagerConfig `json:"config"`
+			Config json.RawMessage `json:"config"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		var submitted store.ManagerConfig
+		if err := json.Unmarshal(req.Config, &submitted); err != nil {
+			writeError(w, http.StatusBadRequest, err)
+			return
+		}
+		var submittedFields map[string]json.RawMessage
+		if err := json.Unmarshal(req.Config, &submittedFields); err != nil {
 			writeError(w, http.StatusBadRequest, err)
 			return
 		}
@@ -321,7 +710,12 @@ func (s *Server) handleManagerConfig(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusInternalServerError, err)
 			return
 		}
-		next := s.mergeSubmittedManagerConfig(current, req.Config)
+		_, localRuntimeSubmitted := submittedFields["localRuntime"]
+		next := s.mergeSubmittedManagerConfig(current, submitted, localRuntimeSubmitted)
+		if err := s.canApplyLocalRuntimeConfig(next); err != nil {
+			writeError(w, http.StatusConflict, err)
+			return
+		}
 		if source == setupSourceEnv && managerConfigConnectionDiffers(current, next) {
 			writeError(w, http.StatusConflict, errors.New("connection setup is managed by environment variables"))
 			return
@@ -363,6 +757,10 @@ func (s *Server) handleManagerConfig(w http.ResponseWriter, r *http.Request) {
 				writeError(w, http.StatusInternalServerError, err)
 				return
 			}
+			if err := s.applyLocalRuntimeConfig(next); err != nil {
+				writeError(w, http.StatusConflict, err)
+				return
+			}
 			s.collector.Stop()
 			writeJSON(w, http.StatusOK, managerConfigResponse{
 				Config: next,
@@ -372,6 +770,10 @@ func (s *Server) handleManagerConfig(w http.ResponseWriter, r *http.Request) {
 		}
 		if err := s.store.SaveManagerConfig(r.Context(), next); err != nil {
 			writeError(w, http.StatusInternalServerError, err)
+			return
+		}
+		if err := s.applyLocalRuntimeConfig(next); err != nil {
+			writeError(w, http.StatusConflict, err)
 			return
 		}
 		setup := setupFromManagerConfig(next)
@@ -398,6 +800,8 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
+	s.localRuntimeMu.Lock()
+	defer s.localRuntimeMu.Unlock()
 	var req setupRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeError(w, http.StatusBadRequest, err)
@@ -453,6 +857,9 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if ok {
 		managerCfg = existingManagerCfg
+		if !existingManagerCfg.LocalRuntimeConfigured() {
+			managerCfg.LocalRuntime = s.defaultManagerConfig().LocalRuntime
+		}
 	}
 	managerCfg.CPAConnection.CPABaseURL = req.CPAUpstreamURL
 	managerCfg.CPAConnection.ManagementKey = req.ManagementKey
@@ -464,6 +871,10 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	managerCfg.Collector.PollIntervalMS = req.PollIntervalMS
 	managerCfg.Collector.QueryLimit = req.QueryLimit
 	managerCfg.Collector.TLSSkipVerify = req.TLSSkipVerify
+	if err := s.canApplyLocalRuntimeConfig(managerCfg); err != nil {
+		writeError(w, http.StatusConflict, err)
+		return
+	}
 	if requestMonitoringEnabled {
 		if err := validateCollectorAgainstCPA(r.Context(), managerCfg); err != nil {
 			writeError(w, http.StatusBadRequest, err)
@@ -492,6 +903,10 @@ func (s *Server) handleSetup(w http.ResponseWriter, r *http.Request) {
 	}
 	if err := s.store.SaveManagerConfig(r.Context(), managerCfg); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
+		return
+	}
+	if err := s.applyLocalRuntimeConfig(managerCfg); err != nil {
+		writeError(w, http.StatusConflict, err)
 		return
 	}
 	if requestMonitoringEnabled {
@@ -1926,7 +2341,7 @@ func (s *Server) resolveManagerConfigWithSource(ctx context.Context) (store.Mana
 	if saved, ok, err := s.store.LoadManagerConfig(ctx); err != nil {
 		return cfg, source, false, err
 	} else if ok {
-		cfg = s.mergeSubmittedManagerConfig(cfg, saved)
+		cfg = s.mergeSubmittedManagerConfig(cfg, saved, saved.LocalRuntimeConfigured())
 		source = setupSourceDB
 		found = true
 	}
@@ -1975,6 +2390,85 @@ func setupFromManagerConfig(cfg store.ManagerConfig) store.Setup {
 	}
 }
 
+func (s *Server) canApplyLocalRuntimeConfig(cfg store.ManagerConfig) error {
+	if s.supervisor == nil {
+		return nil
+	}
+	if s.isUpdateApplying() {
+		return errors.New("CLIProxyAPI update is being applied")
+	}
+	runtimeCfg := cfg.LocalRuntime
+	return s.supervisor.CanConfigure(supervisor.Config{
+		Enabled:           runtimeCfg.Enabled,
+		CPAExecutablePath: runtimeCfg.CPAExecutablePath,
+		WorkingDirectory:  runtimeCfg.WorkingDirectory,
+		Arguments:         runtimeCfg.Arguments,
+		AutoStart:         runtimeCfg.AutoStart,
+		HealthURL:         localRuntimeHealthURL(s.supervisor.Config().HealthURL, runtimeCfg.HealthURL, cfg.CPAConnection.CPABaseURL),
+	})
+}
+
+func (s *Server) applyLocalRuntimeConfig(cfg store.ManagerConfig) error {
+	if s.supervisor == nil {
+		return nil
+	}
+	runtimeCfg := cfg.LocalRuntime
+	return s.supervisor.Configure(supervisor.Config{
+		Enabled:           runtimeCfg.Enabled,
+		CPAExecutablePath: runtimeCfg.CPAExecutablePath,
+		WorkingDirectory:  runtimeCfg.WorkingDirectory,
+		Arguments:         runtimeCfg.Arguments,
+		AutoStart:         runtimeCfg.AutoStart,
+		HealthURL:         localRuntimeHealthURL(s.supervisor.Config().HealthURL, runtimeCfg.HealthURL, cfg.CPAConnection.CPABaseURL),
+	})
+}
+
+func (s *Server) failUpdateStatus(err error) {
+	if s.stager == nil {
+		return
+	}
+	if persistErr := s.stager.Fail(err); persistErr != nil {
+		log.Printf("persist update failure status: %v", persistErr)
+	}
+}
+
+func (s *Server) beginUpdateApply() bool {
+	s.lifecycleMu.Lock()
+	defer s.lifecycleMu.Unlock()
+	if s.updateApplying {
+		return false
+	}
+	if s.stager != nil && s.stager.Status().State == update.StageApplying {
+		return false
+	}
+	s.updateApplying = true
+	return true
+}
+
+func (s *Server) endUpdateApply() {
+	s.lifecycleMu.Lock()
+	s.updateApplying = false
+	s.lifecycleMu.Unlock()
+}
+
+func (s *Server) isUpdateApplying() bool {
+	s.lifecycleMu.Lock()
+	defer s.lifecycleMu.Unlock()
+	if s.updateApplying {
+		return true
+	}
+	return s.stager != nil && s.stager.Status().State == update.StageApplying
+}
+
+func localRuntimeHealthURL(current, configured, connection string) string {
+	for _, candidate := range []string{configured, current, connection} {
+		if normalized, ok := supervisor.LocalHealthURL(candidate); ok {
+			return normalized
+		}
+	}
+	return "http://127.0.0.1:8317"
+}
+
 func runtimeConfigFromManagerConfig(cfg store.ManagerConfig) collector.RuntimeConfig {
 	return collector.RuntimeConfig{
 		CPAUpstreamURL: cfg.CPAConnection.CPABaseURL,
@@ -1990,7 +2484,28 @@ func runtimeConfigFromManagerConfig(cfg store.ManagerConfig) collector.RuntimeCo
 
 func (s *Server) defaultManagerConfig() store.ManagerConfig {
 	pollIntervalMS := int(s.cfg.PollInterval / time.Millisecond)
+	localRuntime := store.LocalRuntimeConfig{}
+	if s.supervisor != nil {
+		runtimeCfg := s.supervisor.Config()
+		localRuntime = store.LocalRuntimeConfig{
+			Enabled:           runtimeCfg.Enabled,
+			CPAExecutablePath: runtimeCfg.CPAExecutablePath,
+			WorkingDirectory:  runtimeCfg.WorkingDirectory,
+			Arguments:         append([]string(nil), runtimeCfg.Arguments...),
+			AutoStart:         runtimeCfg.AutoStart,
+			HealthURL:         runtimeCfg.HealthURL,
+		}
+	} else if defaultRuntime, ok := supervisor.DefaultConfig(); ok {
+		localRuntime = store.LocalRuntimeConfig{
+			Enabled:           defaultRuntime.Enabled,
+			CPAExecutablePath: defaultRuntime.CPAExecutablePath,
+			WorkingDirectory:  defaultRuntime.WorkingDirectory,
+			AutoStart:         defaultRuntime.AutoStart,
+			HealthURL:         defaultRuntime.HealthURL,
+		}
+	}
 	return store.ManagerConfig{
+		LocalRuntime: localRuntime,
 		Collector: store.ManagerCollectorConfig{
 			Enabled:        boolPtr(true),
 			CollectorMode:  collectorMode(s.cfg.CollectorMode),
@@ -2004,7 +2519,7 @@ func (s *Server) defaultManagerConfig() store.ManagerConfig {
 	}
 }
 
-func (s *Server) mergeSubmittedManagerConfig(base store.ManagerConfig, submitted store.ManagerConfig) store.ManagerConfig {
+func (s *Server) mergeSubmittedManagerConfig(base store.ManagerConfig, submitted store.ManagerConfig, localRuntimeSubmitted bool) store.ManagerConfig {
 	next := base
 
 	if submitted.CPAConnection.CPABaseURL != "" || submitted.CPAConnection.ManagementKey != "" {
@@ -2029,7 +2544,40 @@ func (s *Server) mergeSubmittedManagerConfig(base store.ManagerConfig, submitted
 		next.ExternalUsageService.ServiceBase = ""
 	}
 
+	if localRuntimeSubmitted {
+		next.LocalRuntime = submitted.LocalRuntime
+		next.LocalRuntime.CPAExecutablePath = strings.TrimSpace(next.LocalRuntime.CPAExecutablePath)
+		next.LocalRuntime.WorkingDirectory = strings.TrimSpace(next.LocalRuntime.WorkingDirectory)
+		next.LocalRuntime.Arguments = trimArguments(next.LocalRuntime.Arguments)
+	}
+
 	return next
+}
+
+func trimArguments(arguments []string) []string {
+	trimmed := make([]string, 0, len(arguments))
+	for _, argument := range arguments {
+		if value := strings.TrimSpace(argument); value != "" {
+			trimmed = append(trimmed, value)
+		}
+	}
+	return trimmed
+}
+
+func localRuntimeConfigDiffers(left store.LocalRuntimeConfig, right store.LocalRuntimeConfig) bool {
+	if left.Enabled != right.Enabled ||
+		left.CPAExecutablePath != right.CPAExecutablePath ||
+		left.WorkingDirectory != right.WorkingDirectory ||
+		left.AutoStart != right.AutoStart ||
+		len(left.Arguments) != len(right.Arguments) {
+		return true
+	}
+	for i := range left.Arguments {
+		if left.Arguments[i] != right.Arguments[i] {
+			return true
+		}
+	}
+	return false
 }
 
 func managerConfigConnectionDiffers(left store.ManagerConfig, right store.ManagerConfig) bool {
@@ -2095,6 +2643,23 @@ func setupRequestMonitoringEnabled(req setupRequest) bool {
 		return true
 	}
 	return *req.RequestMonitoringEnabled
+}
+
+func (s *Server) requireManagementKey(w http.ResponseWriter, r *http.Request) bool {
+	setup, ok, err := s.resolveSetup(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err)
+		return false
+	}
+	if !ok || setup.ManagementKey == "" {
+		writeError(w, http.StatusPreconditionRequired, errors.New("management key is required"))
+		return false
+	}
+	if authMatches(r, setup.ManagementKey) {
+		return true
+	}
+	writeError(w, http.StatusUnauthorized, errors.New("invalid management key"))
+	return false
 }
 
 func (s *Server) authorizeIfConfigured(w http.ResponseWriter, r *http.Request) bool {

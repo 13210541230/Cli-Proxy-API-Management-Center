@@ -11,8 +11,15 @@ import {
   useNotificationStore,
   useModelsStore,
   useThemeStore,
+  useUsageServiceStore,
 } from '@/stores';
-import { configApi, versionApi } from '@/services/api';
+import {
+  configApi,
+  usageServiceApi,
+  versionApi,
+  type ManagerRuntimeStatus,
+  type ManagerUpdateManifest,
+} from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
@@ -91,8 +98,18 @@ export function SystemPage() {
   const [requestLogDraft, setRequestLogDraft] = useState(false);
   const [requestLogTouched, setRequestLogTouched] = useState(false);
   const [requestLogSaving, setRequestLogSaving] = useState(false);
-  const [checkingAppVersion, setCheckingAppVersion] = useState(false);
   const [checkingVersion, setCheckingVersion] = useState(false);
+  const [runtimeStatus, setRuntimeStatus] = useState<ManagerRuntimeStatus | null>(null);
+  const [runtimeLoading, setRuntimeLoading] = useState(false);
+  const [runtimeAction, setRuntimeAction] = useState<'start' | 'stop' | null>(null);
+  const [latestUpdate, setLatestUpdate] = useState<ManagerUpdateManifest | null>(null);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [updateChecking, setUpdateChecking] = useState(false);
+  const [updateAction, setUpdateAction] = useState<'stage' | 'apply' | null>(null);
+
+  const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
+  const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
+  const runtimeBase = usageServiceEnabled && usageServiceBase ? usageServiceBase : auth.apiBase;
 
   const apiKeysCache = useRef<string[]>([]);
   const versionTapCount = useRef(0);
@@ -282,40 +299,188 @@ export function SystemPage() {
     }
   };
 
-  const handleAppVersionCheck = useCallback(async () => {
-    setCheckingAppVersion(true);
+  const refreshRuntimeStatus = useCallback(async () => {
+    if (!runtimeBase) {
+      setRuntimeStatus(null);
+      return;
+    }
+    setRuntimeLoading(true);
     try {
-      const data = await versionApi.checkManagerLatest();
-      const latestRaw = data?.tag_name ?? data?.name ?? data?.latest_version ?? data?.latest ?? '';
-      const latest = typeof latestRaw === 'string' ? latestRaw : String(latestRaw ?? '');
-      const comparison = compareVersions(latest, __APP_VERSION__);
+      const status = await usageServiceApi.getRuntimeStatus(runtimeBase, auth.managementKey);
+      setRuntimeStatus(status);
+    } catch {
+      setRuntimeStatus(null);
+    } finally {
+      setRuntimeLoading(false);
+    }
+  }, [auth.managementKey, runtimeBase]);
 
-      if (!latest) {
-        showNotification(t('system_info.manager_version_check_error'), 'error');
-        return;
-      }
-
-      if (comparison === null) {
-        showNotification(t('system_info.manager_version_current_missing'), 'warning');
-        return;
-      }
-
-      if (comparison > 0) {
+  const handleRuntimeAction = useCallback(
+    async (action: 'start' | 'stop') => {
+      if (!runtimeBase) return;
+      setRuntimeAction(action);
+      try {
+        const status =
+          action === 'start'
+            ? await usageServiceApi.startRuntime(runtimeBase, auth.managementKey)
+            : await usageServiceApi.stopRuntime(runtimeBase, auth.managementKey);
+        setRuntimeStatus(status);
         showNotification(
-          t('system_info.manager_version_update_available', { version: latest }),
+          action === 'start'
+            ? t('system_info.local_runtime_started')
+            : t('system_info.local_runtime_stopped'),
+          'success'
+        );
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+        showNotification(
+          `${t('system_info.local_runtime_action_failed')}${message ? `: ${message}` : ''}`,
+          'error'
+        );
+        await refreshRuntimeStatus();
+      } finally {
+        setRuntimeAction(null);
+      }
+    },
+    [auth.managementKey, refreshRuntimeStatus, runtimeBase, showNotification, t]
+  );
+
+  useEffect(() => {
+    if (auth.connectionStatus !== 'connected' || !runtimeBase) {
+      setRuntimeStatus(null);
+      return;
+    }
+    void refreshRuntimeStatus();
+  }, [auth.connectionStatus, refreshRuntimeStatus, runtimeBase]);
+
+  const handleUpdateCheck = useCallback(async () => {
+    if (!runtimeBase) {
+      showNotification(t('system_info.manager_version_check_error'), 'error');
+      return;
+    }
+    setUpdateChecking(true);
+    try {
+      const manifest = await usageServiceApi.getLatestUpdate(runtimeBase, auth.managementKey);
+      setLatestUpdate(manifest);
+      const managerComparison = compareVersions(manifest.managerVersion, __APP_VERSION__);
+      const cpaComparison = compareVersions(manifest.cpaVersion, auth.serverVersion);
+      const available = managerComparison === 1 || cpaComparison === 1;
+      setUpdateAvailable(available);
+      if (available) {
+        showNotification(
+          t('system_info.suite_update_available', {
+            cpaVersion: manifest.cpaVersion,
+            managerVersion: manifest.managerVersion,
+          }),
           'warning'
         );
       } else {
-        showNotification(t('system_info.manager_version_is_latest'), 'success');
+        showNotification(t('system_info.suite_is_latest'), 'success');
+      }
+    } catch (error: unknown) {
+      setLatestUpdate(null);
+      setUpdateAvailable(false);
+      const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
+      showNotification(
+        `${t('system_info.manager_version_check_error')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
+    } finally {
+      setUpdateChecking(false);
+    }
+  }, [auth.managementKey, auth.serverVersion, runtimeBase, showNotification, t]);
+
+  const waitForManagerRecovery = useCallback(
+    async (expectedManagerVersion?: string): Promise<'updated' | 'rolled_back' | 'failed' | 'timeout'> => {
+      let managerWasUnavailable = false;
+      for (let attempt = 0; attempt < 70; attempt += 1) {
+        await new Promise((resolve) => window.setTimeout(resolve, 1000));
+        if (!runtimeBase) return 'timeout';
+        try {
+          const status = await usageServiceApi.getRuntimeStatus(runtimeBase, auth.managementKey);
+          const updateStatus = await usageServiceApi.getUpdateStatus(runtimeBase, auth.managementKey);
+          const info = await usageServiceApi.getInfo(runtimeBase);
+          const versionComparison = expectedManagerVersion && info.version
+            ? compareVersions(info.version, expectedManagerVersion)
+            : null;
+          setRuntimeStatus(status);
+          if (updateStatus.state === 'succeeded') return 'updated';
+          if (updateStatus.state === 'rolled_back') return 'rolled_back';
+          if (updateStatus.state === 'failed') return 'failed';
+          if (!managerWasUnavailable && (attempt < 5 || (expectedManagerVersion && versionComparison !== 0))) {
+            continue;
+          }
+        } catch {
+          managerWasUnavailable = true;
+          // The manager is expected to be unavailable while the new process starts.
+        }
+      }
+      return 'timeout';
+    },
+    [auth.managementKey, runtimeBase]
+  );
+
+  const handleUpdateNow = useCallback(async () => {
+    if (!runtimeBase || !updateAvailable) return;
+    setUpdateAction('stage');
+    try {
+      const staged = await usageServiceApi.stageUpdate(runtimeBase, auth.managementKey);
+      if (staged.state !== 'ready') {
+        throw new Error(staged.error || t('system_info.suite_update_stage_failed'));
+      }
+      if (staged.manifest) {
+        setLatestUpdate(staged.manifest);
+      }
+      setUpdateAction('apply');
+      await usageServiceApi.applyUpdate(runtimeBase, auth.managementKey);
+      showNotification(t('system_info.suite_update_restarting'), 'warning');
+      const recovery = await waitForManagerRecovery(
+        staged.manifest?.managerVersion || latestUpdate?.managerVersion
+      );
+      if (recovery === 'updated') {
+        setUpdateAvailable(false);
+        showNotification(t('system_info.suite_update_success'), 'success');
+      } else if (recovery === 'rolled_back') {
+        showNotification(t('system_info.suite_update_rolled_back'), 'error');
+      } else if (recovery === 'failed') {
+        showNotification(t('system_info.suite_update_failed'), 'error');
+      } else {
+        showNotification(t('system_info.suite_update_recovery_timeout'), 'warning');
       }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
-      const suffix = message ? `: ${message}` : '';
-      showNotification(`${t('system_info.manager_version_check_error')}${suffix}`, 'error');
+      showNotification(
+        `${t('system_info.suite_update_failed')}${message ? `: ${message}` : ''}`,
+        'error'
+      );
     } finally {
-      setCheckingAppVersion(false);
+      setUpdateAction(null);
     }
-  }, [showNotification, t]);
+  }, [
+    auth.managementKey,
+    latestUpdate,
+    runtimeBase,
+    showNotification,
+    t,
+    updateAvailable,
+    waitForManagerRecovery,
+  ]);
+
+  const confirmSuiteUpdate = useCallback(() => {
+    if (!latestUpdate || !updateAvailable) return;
+    showConfirmation({
+      title: t('system_info.suite_update_confirm_title', { defaultValue: 'Update CPA suite' }),
+      message: t('system_info.suite_update_confirm_message', {
+        defaultValue:
+          'CPA-Manager and CLIProxyAPI will restart. Continue with CPA {{cpaVersion}} / CPA-Manager {{managerVersion}}?',
+        cpaVersion: latestUpdate.cpaVersion,
+        managerVersion: latestUpdate.managerVersion,
+      }),
+      variant: 'danger',
+      confirmText: t('system_info.suite_update_now'),
+      onConfirm: () => void handleUpdateNow(),
+    });
+  }, [handleUpdateNow, latestUpdate, showConfirmation, t, updateAvailable]);
 
   const handleVersionCheck = useCallback(async () => {
     setCheckingVersion(true);
@@ -417,10 +582,10 @@ export function SystemPage() {
                   className={styles.tileAction}
                   onClick={(event) => {
                     event.stopPropagation();
-                    void handleAppVersionCheck();
+                    void handleUpdateCheck();
                   }}
                   onKeyDown={(event) => event.stopPropagation()}
-                  loading={checkingAppVersion}
+                  loading={updateChecking}
                   title={t('system_info.version_check_button')}
                   aria-label={t('system_info.version_check_button')}
                 >
@@ -462,11 +627,113 @@ export function SystemPage() {
           </div>
         </Card>
 
+        {(runtimeLoading || runtimeStatus || latestUpdate || updateChecking) && (
+          <Card
+            title={t('system_info.local_runtime_title')}
+            extra={
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => void refreshRuntimeStatus()}
+                loading={runtimeLoading}
+              >
+                {t('common.refresh')}
+              </Button>
+            }
+          >
+            <p className={styles.sectionDescription}>
+              {t('system_info.local_runtime_hint')}
+            </p>
+            {runtimeStatus && (
+              <div className={styles.runtimePanel}>
+                <div className={styles.runtimeDetails}>
+                  <div>
+                    <span>{t('system_info.local_runtime_state')}</span>
+                    <strong>{t(`system_info.local_runtime_state_${runtimeStatus.state}`, { defaultValue: runtimeStatus.state })}</strong>
+                  </div>
+                  <div>
+                    <span>{t('system_info.local_runtime_path')}</span>
+                    <strong>{runtimeStatus.executablePath || t('system_info.version_unknown')}</strong>
+                  </div>
+                  {runtimeStatus.pid ? (
+                    <div>
+                      <span>{t('system_info.local_runtime_pid')}</span>
+                      <strong>{runtimeStatus.pid}</strong>
+                    </div>
+                  ) : null}
+                  <div>
+                    <span>{t('system_info.local_runtime_health')}</span>
+                    <strong>
+                      {t(`system_info.local_runtime_health_${runtimeStatus.health || 'unknown'}`, {
+                        defaultValue: runtimeStatus.health || t('system_info.local_runtime_health_unknown'),
+                      })}
+                    </strong>
+                  </div>
+                  {runtimeStatus.lastError ? (
+                    <div className={styles.runtimeError}>
+                      <span>{t('system_info.local_runtime_error')}</span>
+                      <strong>{runtimeStatus.lastError}</strong>
+                    </div>
+                  ) : null}
+                </div>
+                {latestUpdate && (
+                  <div className={styles.runtimeUpdateSummary}>
+                    <span>{t('system_info.suite_latest_release')}</span>
+                    <strong>
+                      {latestUpdate.cpaVersion} / {latestUpdate.managerVersion}
+                    </strong>
+                  </div>
+                )}
+                <div className={styles.runtimeActions}>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void handleUpdateCheck()}
+                    loading={updateChecking}
+                  >
+                    {t('system_info.suite_check_update')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={confirmSuiteUpdate}
+                    loading={updateAction !== null}
+                    disabled={
+                      !updateAvailable ||
+                      !runtimeStatus.enabled ||
+                      runtimeStatus.external === true ||
+                      runtimeStatus.state === 'failed'
+                    }
+                  >
+                    {t('system_info.suite_update_now')}
+                  </Button>
+                  <Button
+                    size="sm"
+                    onClick={() => void handleRuntimeAction('start')}
+                    loading={runtimeAction === 'start'}
+                    disabled={runtimeStatus.running || !runtimeStatus.enabled}
+                  >
+                    {t('system_info.local_runtime_start')}
+                  </Button>
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={() => void handleRuntimeAction('stop')}
+                    loading={runtimeAction === 'stop'}
+                    disabled={!runtimeStatus.running || runtimeStatus.external === true}
+                  >
+                    {t('system_info.local_runtime_stop')}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </Card>
+        )}
+
         <Card title={t('system_info.quick_links_title')}>
           <p className={styles.sectionDescription}>{t('system_info.quick_links_desc')}</p>
           <div className={styles.quickLinks}>
             <a
-              href="https://github.com/router-for-me/CLIProxyAPI"
+              href="https://github.com/13210541230/CLIProxyAPI"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.linkCard}
@@ -484,7 +751,7 @@ export function SystemPage() {
             </a>
 
             <a
-              href="https://github.com/seakee/CPA-Manager"
+              href="https://github.com/13210541230/Cli-Proxy-API-Management-Center"
               target="_blank"
               rel="noopener noreferrer"
               className={styles.linkCard}

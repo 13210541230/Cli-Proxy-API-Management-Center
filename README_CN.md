@@ -6,7 +6,8 @@
 
 CPA 自 v6.10.0 起不再内置用量统计。当前方案通过常驻 Usage Service 消费 CPA 的用量队列，把请求级事件写入 SQLite，并向面板提供兼容的用量查询接口。
 
-- **CPA 主项目**: https://github.com/router-for-me/CLIProxyAPI
+- **CPA 发布 fork**: https://github.com/13210541230/CLIProxyAPI
+- **CPA 上游项目**: https://github.com/router-for-me/CLIProxyAPI
 - **推荐 CPA 版本**: >= v6.10.8
 
 ## 面板预览
@@ -147,9 +148,15 @@ Windows 可直接双击 `cpa-manager.exe` 启动，但推荐用 PowerShell 运�
 http://<host>:18317/management.html
 ```
 
-原生包不包含 CPA 本体。请让 CPA 独立运行，并在登录页填写 CPA 地址和 Management Key。需要自定义数据位置时，可以设置 `USAGE_DATA_DIR` 或 `USAGE_DB_PATH` 覆盖默认值。
+上述原生包不包含 CPA 本体。CLIProxyAPI fork 发布的联合包同时包含 CPA、CPA-Manager 和 `cpa-updater`，是同机部署、单入口启动和自更新的推荐格式：
 
-原生包首次启动时，如果没有设置 `USAGE_DATA_DIR` 或 `USAGE_DB_PATH`，会在程序所在目录自动生成 `config.json`，并把 SQLite 数据写入同目录下的 `data/usage.sqlite`。这样解压后的目录就是完整的程序和用户数据目录。
+- `CLIProxyAPI-Suite_<version>_linux_<arch>.tar.gz`
+- `CLIProxyAPI-Suite_<version>_darwin_<arch>.tar.gz`
+- `CLIProxyAPI-Suite_<version>_windows_<arch>.zip`
+
+解压联合包后，macOS/Linux 执行 `start.sh`，Windows 执行 `start.bat`。CPA-Manager 会自动识别同目录下的 `cli-proxy-api`，启动并监控 CPA，同时提供内嵌管理面板。之后可在「系统」页面检查 CLIProxyAPI fork 的联合 Release，并执行校验后的联合更新。
+
+需要自定义数据位置时，可以设置 `USAGE_DATA_DIR` 或 `USAGE_DB_PATH` 覆盖默认值。原生包首次启动时，如果没有设置这些变量，会在程序所在目录自动生成 `config.json`，并把 SQLite 数据写入同目录下的 `data/usage.sqlite`。这样解压后的目录就是完整的程序和用户数据目录。
 
 ### Docker Compose
 

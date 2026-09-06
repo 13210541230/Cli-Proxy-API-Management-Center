@@ -32,7 +32,10 @@ try {
       $panel = Invoke-WebRequest -Uri $panelUri -UseBasicParsing -TimeoutSec 2
       if ($health.StatusCode -eq 200 -and $panel.StatusCode -eq 200) {
         $html = [string]$panel.Content
-        if ($html.Contains('<div id="root">') -and $html.Length -gt 1000000) {
+        if ($html.Contains('<div id="root">') -and
+            $html.Contains('local_runtime_title') -and
+            $html.Contains('suite_update_now') -and
+            $html.Length -gt 1000000) {
           $ready = $true
           Write-Host "HTTP health: $($health.StatusCode)"
           Write-Host "Embedded panel: $($panel.StatusCode), $($html.Length) bytes"

@@ -408,6 +408,13 @@
   font-weight: 600;
 }
 
+.managerRuntimeArguments {
+  min-height: 108px;
+  resize: vertical;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  line-height: 1.5;
+}
+
 .managerSelectTrigger {
   height: 46px !important;
   padding: 10px 12px !important;

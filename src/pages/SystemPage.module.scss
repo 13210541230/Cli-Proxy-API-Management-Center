@@ -222,6 +222,81 @@
   margin: 0 0 $spacing-md 0;
 }
 
+.runtimePanel {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
+}
+
+.runtimeDetails {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: $spacing-sm;
+
+  > div {
+    min-width: 0;
+    padding: $spacing-sm $spacing-md;
+    border: 1px solid var(--border-color);
+    border-radius: $radius-md;
+    background: var(--bg-secondary);
+  }
+
+  span,
+  strong {
+    display: block;
+    overflow-wrap: anywhere;
+  }
+
+  span {
+    margin-bottom: 4px;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-size: 14px;
+  }
+}
+
+.runtimeError {
+  border-color: var(--warning-border) !important;
+  background: var(--warning-bg) !important;
+
+  strong {
+    color: var(--warning-text);
+  }
+}
+
+.runtimeUpdateSummary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-sm;
+  padding: $spacing-sm $spacing-md;
+  border: 1px solid color-mix(in srgb, var(--primary-color) 24%, var(--border-color));
+  border-radius: $radius-md;
+  background: color-mix(in srgb, var(--primary-color) 7%, var(--bg-secondary));
+
+  span {
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+
+  strong {
+    color: var(--text-primary);
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 13px;
+  }
+}
+
+.runtimeActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: $spacing-sm;
+  flex-wrap: wrap;
+}
+
 .clearLoginActions {
   display: flex;
   justify-content: flex-end;
