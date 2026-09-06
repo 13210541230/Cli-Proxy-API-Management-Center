@@ -2,13 +2,15 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { useAuthStore, usePluginStore } from '@/stores';
+import { useAuthStore, useConfigStore, useModelsStore, usePluginStore } from '@/stores';
 import { apiClient } from '@/services/api/client';
+import { apiKeysApi } from '@/services/api/apiKeys';
 import {
   collectPluginResourceEntries,
   isPluginAPIRequestAllowed,
   PLUGIN_API_REQUEST_TYPE,
   PLUGIN_API_RESPONSE_TYPE,
+  PLUGIN_HOST_MODELS_PATH,
   PLUGIN_RESOURCES_REFRESH_EVENT,
   appendPluginHostOrigin,
   resolvePluginAssetURL,
@@ -30,6 +32,23 @@ const parseMenuIndex = (value = '') => {
 };
 
 const getErrorMessage = (error: unknown) => (error instanceof Error ? error.message : 'Request failed');
+
+const loadPluginHostModels = async () => {
+  const apiBase = useAuthStore.getState().apiBase.trim();
+  if (!apiBase) throw new Error('管理中心尚未连接 CPA');
+
+  let primaryKey = useConfigStore.getState().config?.apiKeys?.find((key) => key.trim())?.trim();
+  if (!primaryKey) {
+    try {
+      primaryKey = (await apiKeysApi.list()).find((key) => key.trim())?.trim();
+    } catch {
+      primaryKey = '';
+    }
+  }
+
+  const models = await useModelsStore.getState().fetchModels(apiBase, primaryKey || undefined);
+  return { models: models.map((model) => ({ id: model.name, alias: model.alias })) };
+};
 
 const handlePluginAPIRequest = async (event: MessageEvent) => {
   if (typeof window === 'undefined' || !event.data || typeof event.data !== 'object') return;
@@ -65,6 +84,11 @@ const handlePluginAPIRequest = async (event: MessageEvent) => {
   }
 
   try {
+    if (method === 'GET' && path.split(/[?#]/, 1)[0] === PLUGIN_HOST_MODELS_PATH) {
+      respond({ ok: true, status: 200, data: await loadPluginHostModels() });
+      return;
+    }
+
     const apiBase = useAuthStore.getState().apiBase.trim();
     const response = await apiClient.requestRaw({
       method,

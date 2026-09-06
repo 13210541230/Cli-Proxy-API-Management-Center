@@ -4,6 +4,7 @@ import type { ManagementPluginEntry, ManagementPluginMenu } from '@/types/plugin
 export const PLUGIN_RESOURCES_REFRESH_EVENT = 'plugin-resources-refresh';
 export const PLUGIN_API_REQUEST_TYPE = 'cpa-plugin-api-request';
 export const PLUGIN_API_RESPONSE_TYPE = 'cpa-plugin-api-response';
+export const PLUGIN_HOST_MODELS_PATH = '/v0/management/plugin-host/models';
 
 export const toPluginAPIClientPath = (path: string): string =>
   path.trim().replace(/^\/v0\/management(?=\/|$)/, '') || '/';
@@ -22,6 +23,7 @@ const enterpriseAuditSharedPaths = new Set([
   '/v0/management/enterprise/key-bindings/metadata',
   '/v0/management/auth-files',
   '/v0/management/auth-files/models',
+  PLUGIN_HOST_MODELS_PATH,
 ]);
 
 const enterpriseAuditModelDefinitionPath = /^\/v0\/management\/model-definitions\/(?:claude|gemini|gemini-interactions|vertex|aistudio|codex|kimi|antigravity|xai|grok)$/;
