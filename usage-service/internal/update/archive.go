@@ -46,6 +46,9 @@ func (c *Client) DownloadAsset(ctx context.Context, asset Asset, destination str
 	}
 	request.Header.Set("Accept", "application/octet-stream")
 	request.Header.Set("User-Agent", "CLIProxyAPI-Manager/update")
+	if token := strings.TrimSpace(c.GitHubToken); token != "" {
+		request.Header.Set("Authorization", "Bearer "+token)
+	}
 	client := c.HTTPClient
 	if client == nil {
 		client = http.DefaultClient
@@ -285,6 +288,24 @@ func validateReleaseDownloadURL(raw string) error {
 		return nil
 	}
 	return fmt.Errorf("update asset URL is outside the canonical repository: %q", raw)
+}
+
+func validateReleaseDownloadURLForTag(raw, tag string) error {
+	if err := validateReleaseDownloadURL(raw); err != nil {
+		return err
+	}
+	parsed, err := url.Parse(strings.TrimSpace(raw))
+	if err != nil {
+		return err
+	}
+	if strings.ToLower(parsed.Hostname()) != "github.com" {
+		return fmt.Errorf("direct release asset URL must use github.com: %q", raw)
+	}
+	prefix := "/" + strings.ToLower(CanonicalRepository) + "/releases/download/" + strings.ToLower(url.PathEscape(strings.TrimSpace(tag))) + "/"
+	if !strings.HasPrefix(strings.ToLower(parsed.Path), prefix) {
+		return fmt.Errorf("direct release asset URL does not match release %s: %q", tag, raw)
+	}
+	return nil
 }
 
 func isSHA256(value string) bool {

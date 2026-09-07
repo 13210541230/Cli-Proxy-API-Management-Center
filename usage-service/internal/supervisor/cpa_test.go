@@ -153,6 +153,62 @@ func TestControllerStartsAndStopsManagedProcess(t *testing.T) {
 	t.Fatalf("process did not stop: %#v", controller.Status())
 }
 
+func TestControllerAllowsHealthURLUpdateWhileRunning(t *testing.T) {
+	var healthOneReady atomic.Bool
+	healthOne := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/healthz" {
+			http.NotFound(w, r)
+			return
+		}
+		if !healthOneReady.Load() {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			return
+		}
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer healthOne.Close()
+
+	healthTwo := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/healthz" {
+			http.NotFound(w, r)
+			return
+		}
+		_, _ = w.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer healthTwo.Close()
+
+	t.Setenv("SUPERVISOR_HELPER", "1")
+	controller := New()
+	config := Config{
+		Enabled:           true,
+		CPAExecutablePath: os.Args[0],
+		WorkingDirectory:  t.TempDir(),
+		Arguments:         []string{"-test.run=TestSupervisorHelperProcess", "--", "health-url"},
+		HealthURL:         healthOne.URL,
+	}
+	if err := controller.Configure(config); err != nil {
+		t.Fatalf("initial Configure() error = %v", err)
+	}
+	if _, err := controller.Start(); err != nil {
+		t.Fatalf("Start() error = %v", err)
+	}
+	healthOneReady.Store(true)
+	t.Cleanup(func() {
+		_, _ = controller.Stop()
+		_ = controller.WaitStopped(2 * time.Second)
+	})
+
+	updated := config
+	updated.HealthURL = healthTwo.URL
+	if err := controller.Configure(updated); err != nil {
+		t.Fatalf("health URL Configure() while running error = %v", err)
+	}
+	if got := controller.Config().HealthURL; got != healthTwo.URL {
+		t.Fatalf("configured health URL = %q, want %q", got, healthTwo.URL)
+	}
+	waitForHealthState(t, controller, HealthHealthy)
+}
+
 func TestControllerTracksCPAHealth(t *testing.T) {
 	var healthy atomic.Bool
 	health := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

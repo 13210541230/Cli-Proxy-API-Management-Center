@@ -41,6 +41,53 @@ func TestClientCheckLatestLoadsAndSelectsManifestAsset(t *testing.T) {
 	}
 }
 
+func TestClientCheckLatestUsesDirectManifestBeforeAPI(t *testing.T) {
+	var apiCalls int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/latest-manifest.json":
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprintf(w, `{"schema":1,"bundleVersion":"7.2.147","releaseTag":"v7.2.147","cpaVersion":"7.2.147","managerVersion":"1.21.11","assets":[{"os":"windows","arch":"amd64","name":"bundle.zip","format":"zip","downloadUrl":"https://github.com/%s/releases/download/v7.2.147/bundle.zip","sha256":"%s"}]}`, CanonicalRepository, strings.Repeat("b", 64))
+		case "/repos/" + CanonicalRepository + "/releases/latest":
+			apiCalls++
+			http.Error(w, "API should not be called", http.StatusInternalServerError)
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	manifest, err := (&Client{
+		HTTPClient:        server.Client(),
+		DirectManifestURL: server.URL + "/latest-manifest.json",
+		APIBaseURL:        server.URL,
+	}).CheckLatest(context.Background())
+	if err != nil {
+		t.Fatalf("CheckLatest() error = %v", err)
+	}
+	if manifest.ReleaseTag != "v7.2.147" || manifest.ManagerVersion != "1.21.11" {
+		t.Fatalf("manifest = %#v", manifest)
+	}
+	if apiCalls != 0 {
+		t.Fatalf("API calls = %d, want 0", apiCalls)
+	}
+}
+
+func TestClientAddsGitHubToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if got := r.Header.Get("Authorization"); got != "Bearer test-token" {
+			t.Fatalf("Authorization = %q, want Bearer test-token", got)
+		}
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	client := &Client{HTTPClient: server.Client(), GitHubToken: "test-token"}
+	if _, err := client.getJSON(context.Background(), server.URL, "application/json"); err != nil {
+		t.Fatalf("getJSON() error = %v", err)
+	}
+}
+
 func TestNormalizeManifestUsesReleaseAssetURL(t *testing.T) {
 	manifest := Manifest{
 		Schema:         ManifestSchema,

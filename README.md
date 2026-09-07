@@ -254,6 +254,7 @@ Most users can configure CPA URL, Management Key, request monitoring enablement,
 | `CPA_UPSTREAM_URL` | empty | Optional CPA base URL for unattended startup |
 | `CPA_MANAGEMENT_KEY` | empty | Optional CPA Management Key for unattended startup |
 | `CPA_MANAGEMENT_KEY_FILE` | `/run/secrets/cpa_management_key` | Optional file containing the Management Key |
+| `CPA_MANAGER_GITHUB_TOKEN` | empty | Optional GitHub token for the joint-update API fallback; `GITHUB_TOKEN` or `GH_TOKEN` are also accepted |
 | `USAGE_COLLECTOR_MODE` | `auto` | Collection mode: `auto` prefers the HTTP usage queue and falls back to RESP for older CPA; `http` forces HTTP; `resp` forces RESP |
 | `USAGE_RESP_QUEUE` | `usage` | RESP key argument; CPA currently ignores it, leave the default unless upstream changes |
 | `USAGE_RESP_POP_SIDE` | `right` | `right` uses `RPOP`; `left` uses `LPOP` |
@@ -274,6 +275,8 @@ Startup configuration precedence is: environment variables > `config.json` > pro
 ```
 
 If `CPA_UPSTREAM_URL` and `CPA_MANAGEMENT_KEY` are set, collection starts automatically on boot and the connection is shown as environment-managed in the panel. Otherwise, use the web panel setup flow; the result is saved to SQLite `settings.manager_config_v1`. The legacy `settings.setup` value is still written for compatibility and rollback.
+
+Joint updates first fetch `manifest.json` directly from the user-maintained GitHub Release, avoiding the low quota of unauthenticated GitHub API requests. The GitHub Releases API is used only as a fallback. To provide a higher-quota API fallback, set `CPA_MANAGER_GITHUB_TOKEN` before starting CPA-Manager; `GITHUB_TOKEN` and `GH_TOKEN` are also accepted. Never put the token in frontend configuration or commit it to the repository.
 
 ### CPA vs CPA-Manager Configuration Boundary
 

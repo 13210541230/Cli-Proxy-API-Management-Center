@@ -252,6 +252,7 @@ docker compose -f docker-compose.usage.yml up --build
 | `CPA_UPSTREAM_URL` | 空 | 可选 CPA 地址，用于无人值守启动 |
 | `CPA_MANAGEMENT_KEY` | 空 | 可选 CPA Management Key，用于无人值守启动 |
 | `CPA_MANAGEMENT_KEY_FILE` | `/run/secrets/cpa_management_key` | 可选密钥文件 |
+| `CPA_MANAGER_GITHUB_TOKEN` | 空 | 可选 GitHub Token，用于联合更新的 API 备用请求；也可使用 `GITHUB_TOKEN` 或 `GH_TOKEN` |
 | `USAGE_COLLECTOR_MODE` | `auto` | 采集方式：`auto` 优先 HTTP 用量队列并在旧版 CPA 回退 RESP；`http` 强制 HTTP；`resp` 强制 RESP |
 | `USAGE_RESP_QUEUE` | `usage` | RESP key 参数；当前 CPA 会忽略该值，除非上游行为变化，否则保持默认即可 |
 | `USAGE_RESP_POP_SIDE` | `right` | `right` 使用 `RPOP`；`left` 使用 `LPOP` |
@@ -272,6 +273,8 @@ docker compose -f docker-compose.usage.yml up --build
 ```
 
 如果设置了 `CPA_UPSTREAM_URL` 和 `CPA_MANAGEMENT_KEY`，服务启动后会自动开始采集，并作为环境变量管理的连接配置展示在面板中。否则通过面板 setup 流程配置，保存到 SQLite `settings.manager_config_v1`；旧版 `settings.setup` 会继续写入，用于兼容已有数据和回滚。
+
+联合更新默认优先从用户维护的 GitHub Release 直接下载 `manifest.json`，避免未认证 GitHub API 的低额度限制。直接下载失败时才回退到 GitHub Releases API；如需 API 备用请求的更高额度，可在启动 CPA-Manager 前设置 `CPA_MANAGER_GITHUB_TOKEN`，不要把 Token 写入前端配置或提交到仓库。
 
 ### CPA 与 CPA-Manager 配置边界
 

@@ -7,16 +7,19 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 )
 
 const (
-	CanonicalRepository = "13210541230/CLIProxyAPI"
-	ManifestAssetName   = "manifest.json"
-	ManifestSchema      = 1
-	githubAPIBaseURL    = "https://api.github.com"
+	CanonicalRepository     = "13210541230/CLIProxyAPI"
+	ManifestAssetName       = "manifest.json"
+	ManifestSchema          = 1
+	githubAPIBaseURL        = "https://api.github.com"
+	githubLatestManifestURL = "https://github.com/13210541230/CLIProxyAPI/releases/latest/download/manifest.json"
+	githubTokenEnvPrimary   = "CPA_MANAGER_GITHUB_TOKEN"
 )
 
 type Manifest struct {
@@ -53,12 +56,19 @@ type releaseAsset struct {
 }
 
 type Client struct {
-	HTTPClient *http.Client
-	APIBaseURL string
+	HTTPClient        *http.Client
+	APIBaseURL        string
+	DirectManifestURL string
+	GitHubToken       string
 }
 
 func NewClient() *Client {
-	return &Client{HTTPClient: http.DefaultClient, APIBaseURL: githubAPIBaseURL}
+	return &Client{
+		HTTPClient:        http.DefaultClient,
+		APIBaseURL:        githubAPIBaseURL,
+		DirectManifestURL: githubLatestManifestURL,
+		GitHubToken:       githubTokenFromEnvironment(),
+	}
 }
 
 func (c *Client) CheckLatest(ctx context.Context) (Manifest, error) {
@@ -69,6 +79,21 @@ func (c *Client) CheckLatest(ctx context.Context) (Manifest, error) {
 	if baseURL == "" {
 		baseURL = githubAPIBaseURL
 	}
+	if directURL := strings.TrimSpace(c.DirectManifestURL); directURL != "" {
+		manifest, directErr := c.checkLatestFromDirectManifest(ctx, directURL)
+		if directErr == nil {
+			return manifest, nil
+		}
+		manifest, apiErr := c.checkLatestFromAPI(ctx, baseURL)
+		if apiErr == nil {
+			return manifest, nil
+		}
+		return Manifest{}, fmt.Errorf("direct manifest: %v; GitHub API: %w", directErr, apiErr)
+	}
+	return c.checkLatestFromAPI(ctx, baseURL)
+}
+
+func (c *Client) checkLatestFromAPI(ctx context.Context, baseURL string) (Manifest, error) {
 	endpoint := baseURL + "/repos/" + CanonicalRepository + "/releases/latest"
 	response, err := c.getJSON(ctx, endpoint, "application/vnd.github+json")
 	if err != nil {
@@ -110,6 +135,48 @@ func (c *Client) CheckLatest(ctx context.Context) (Manifest, error) {
 	return manifest, nil
 }
 
+func (c *Client) checkLatestFromDirectManifest(ctx context.Context, endpoint string) (Manifest, error) {
+	manifestData, err := c.getJSON(ctx, endpoint, "application/octet-stream")
+	if err != nil {
+		return Manifest{}, fmt.Errorf("fetch latest release manifest directly: %w", err)
+	}
+	var manifest Manifest
+	if err := json.Unmarshal(manifestData, &manifest); err != nil {
+		return Manifest{}, fmt.Errorf("decode direct release manifest: %w", err)
+	}
+	if strings.TrimSpace(manifest.ReleaseTag) == "" {
+		return Manifest{}, errors.New("direct release manifest is missing releaseTag")
+	}
+	for _, asset := range manifest.Assets {
+		if err := validateReleaseDownloadURLForTag(asset.DownloadURL, manifest.ReleaseTag); err != nil {
+			return Manifest{}, fmt.Errorf("release manifest asset %s: %w", asset.Name, err)
+		}
+	}
+	release := releaseResponse{
+		TagName: manifest.ReleaseTag,
+		HTMLURL: "https://github.com/" + CanonicalRepository + "/releases/tag/" + url.PathEscape(manifest.ReleaseTag),
+	}
+	for _, asset := range manifest.Assets {
+		release.Assets = append(release.Assets, releaseAsset{
+			Name:               asset.Name,
+			BrowserDownloadURL: asset.DownloadURL,
+		})
+	}
+	if err := normalizeAndValidate(&manifest, release, releaseAsset{Name: ManifestAssetName}); err != nil {
+		return Manifest{}, err
+	}
+	return manifest, nil
+}
+
+func githubTokenFromEnvironment() string {
+	for _, key := range []string{githubTokenEnvPrimary, "GITHUB_TOKEN", "GH_TOKEN"} {
+		if value := strings.TrimSpace(os.Getenv(key)); value != "" {
+			return value
+		}
+	}
+	return ""
+}
+
 func (m Manifest) AssetFor(goos, goarch string) (Asset, error) {
 	goos = strings.ToLower(strings.TrimSpace(goos))
 	goarch = strings.ToLower(strings.TrimSpace(goarch))
@@ -138,6 +205,9 @@ func (c *Client) getJSON(ctx context.Context, endpoint, accept string) ([]byte, 
 	}
 	request.Header.Set("Accept", accept)
 	request.Header.Set("User-Agent", "CLIProxyAPI-Manager/update")
+	if token := strings.TrimSpace(c.GitHubToken); token != "" {
+		request.Header.Set("Authorization", "Bearer "+token)
+	}
 	client := c.HTTPClient
 	if client == nil {
 		client = http.DefaultClient

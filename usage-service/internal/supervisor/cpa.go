@@ -157,7 +157,7 @@ func (c *Controller) CanConfigure(cfg Config) error {
 }
 
 func (c *Controller) canConfigureLocked(cfg Config) error {
-	if c.cmd != nil && c.cmd.ProcessState == nil && !sameConfig(c.config, cfg) {
+	if c.cmd != nil && c.cmd.ProcessState == nil && !sameProcessConfig(c.config, cfg) {
 		return errors.New("stop CLIProxyAPI before changing its local runtime configuration")
 	}
 	return nil
@@ -511,12 +511,11 @@ func executableDirectory() (string, error) {
 	return filepath.Dir(executable), nil
 }
 
-func sameConfig(left, right Config) bool {
+func sameProcessConfig(left, right Config) bool {
 	if left.Enabled != right.Enabled ||
 		left.CPAExecutablePath != right.CPAExecutablePath ||
 		left.WorkingDirectory != right.WorkingDirectory ||
 		left.AutoStart != right.AutoStart ||
-		left.HealthURL != right.HealthURL ||
 		len(left.Arguments) != len(right.Arguments) {
 		return false
 	}
