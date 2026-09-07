@@ -1,12 +1,40 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/seakee/cpa-manager/usage-service/internal/supervisor"
+	"github.com/seakee/cpa-manager/usage-service/internal/update"
 )
+
+func TestMaybeRecoverInterruptedUpdateKeepsManagerAvailableWhileHelperRuns(t *testing.T) {
+	dbPath := filepath.Join(t.TempDir(), "usage.sqlite")
+	statusPath := update.StatusPath(dbPath)
+	if err := update.WritePersistedStatus(statusPath, update.PersistedStatus{
+		State:         update.StageApplying,
+		TransactionID: "active-update",
+	}); err != nil {
+		t.Fatalf("write applying status: %v", err)
+	}
+	lockPath := statusPath + ".lock"
+	if err := os.WriteFile(lockPath, []byte(fmt.Sprintf(`{"pid":%d,"transactionId":"active-update"}`, os.Getpid())), 0o600); err != nil {
+		t.Fatalf("write active update lock: %v", err)
+	}
+	t.Cleanup(func() { _ = os.Remove(lockPath) })
+
+	handled, err := maybeRecoverInterruptedUpdate(dbPath, false)
+	if err != nil {
+		t.Fatalf("maybeRecoverInterruptedUpdate() error = %v", err)
+	}
+	if handled {
+		t.Fatal("maybeRecoverInterruptedUpdate() deferred manager startup while updater was active")
+	}
+}
 
 func TestRuntimeHealthBaseURLPrefersConfiguredEndpoint(t *testing.T) {
 	if got := runtimeHealthBaseURL("http://127.0.0.1:9000", "http://127.0.0.1:8317"); got != "http://127.0.0.1:9000" {
