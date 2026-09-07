@@ -29,6 +29,7 @@ export interface EnterpriseKeyMetadata {
   userName: string;
   email?: string;
   departmentId: string;
+  departmentName?: string;
 }
 
 export interface EnterpriseImportHistory {

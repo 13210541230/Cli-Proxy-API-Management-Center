@@ -325,6 +325,13 @@ func TestStoreEnterpriseKeyMetadataExcludesRawKey(t *testing.T) {
 	t.Cleanup(func() { _ = db.Close() })
 
 	ctx := context.Background()
+	if err := db.UpsertEnterpriseDepartments(ctx, []EnterpriseDepartment{{
+		ID:      "dept_sh",
+		Name:    "上海总部",
+		Enabled: true,
+	}}); err != nil {
+		t.Fatalf("upsert department: %v", err)
+	}
 	if err := db.UpsertEnterpriseKeyBindings(ctx, []EnterpriseKeyBinding{{
 		APIKey:       "secret-enterprise-key",
 		UserName:     "zhangsan",
@@ -341,7 +348,7 @@ func TestStoreEnterpriseKeyMetadataExcludesRawKey(t *testing.T) {
 	if len(items) != 1 {
 		t.Fatalf("len(metadata) = %d, want 1", len(items))
 	}
-	if items[0].UserName != "zhangsan" || items[0].Email != "zs@example.com" {
+	if items[0].UserName != "zhangsan" || items[0].DepartmentName != "上海总部" || items[0].Email != "zs@example.com" {
 		t.Fatalf("metadata = %#v", items[0])
 	}
 	if items[0].APIKeyHash == "" || items[0].APIKeyHash == "secret-enterprise-key" {

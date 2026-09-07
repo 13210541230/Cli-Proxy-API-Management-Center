@@ -1300,7 +1300,15 @@ func TestEnterpriseKeyMetadataEndpointExcludesRawKey(t *testing.T) {
 		t.Fatalf("open store: %v", err)
 	}
 	t.Cleanup(func() { _ = db.Close() })
-	if err := db.UpsertEnterpriseKeyBindings(context.Background(), []store.EnterpriseKeyBinding{{
+	ctx := context.Background()
+	if err := db.UpsertEnterpriseDepartments(ctx, []store.EnterpriseDepartment{{
+		ID:      "dept_sh",
+		Name:    "上海总部",
+		Enabled: true,
+	}}); err != nil {
+		t.Fatalf("upsert department: %v", err)
+	}
+	if err := db.UpsertEnterpriseKeyBindings(ctx, []store.EnterpriseKeyBinding{{
 		APIKey:       "secret-enterprise-key",
 		UserName:     "zhangsan",
 		DepartmentID: "dept_sh",
@@ -1323,16 +1331,17 @@ func TestEnterpriseKeyMetadataEndpointExcludesRawKey(t *testing.T) {
 	}
 	var response struct {
 		Items []struct {
-			APIKeyHash   string `json:"apiKeyHash"`
-			UserName     string `json:"userName"`
-			DepartmentID string `json:"departmentId"`
-			Email        string `json:"email"`
+			APIKeyHash     string `json:"apiKeyHash"`
+			UserName       string `json:"userName"`
+			DepartmentID   string `json:"departmentId"`
+			DepartmentName string `json:"departmentName"`
+			Email          string `json:"email"`
 		} `json:"items"`
 	}
 	if err := json.Unmarshal(rr.Body.Bytes(), &response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if len(response.Items) != 1 || response.Items[0].UserName != "zhangsan" || response.Items[0].Email != "zs@example.com" || response.Items[0].APIKeyHash == "" {
+	if len(response.Items) != 1 || response.Items[0].UserName != "zhangsan" || response.Items[0].DepartmentName != "上海总部" || response.Items[0].Email != "zs@example.com" || response.Items[0].APIKeyHash == "" {
 		t.Fatalf("metadata response = %#v", response.Items)
 	}
 }
