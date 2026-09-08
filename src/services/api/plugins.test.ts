@@ -139,7 +139,7 @@ describe('pluginsApi', () => {
     await pluginsApi.patchConfig('demo/plugin', { enabled: true });
     await pluginsApi.deletePlugin('demo/plugin');
     await pluginsApi.listStore();
-    await pluginsApi.installFromStore('demo/plugin');
+    await pluginsApi.installFromStore('demo/plugin', '1.2.3');
 
     expect(apiClient.patch).toHaveBeenNthCalledWith(1, '/plugins/demo%2Fplugin/enabled', {
       enabled: false,
@@ -150,7 +150,11 @@ describe('pluginsApi', () => {
       enabled: true,
     });
     expect(apiClient.delete).toHaveBeenCalledWith('/plugins/demo%2Fplugin');
-    expect(apiClient.get).toHaveBeenCalledWith('/plugin-store');
-    expect(apiClient.post).toHaveBeenCalledWith('/plugin-store/demo%2Fplugin/install', undefined);
+    expect(apiClient.get).toHaveBeenCalledWith('/plugin-store', { timeout: 90_000 });
+    expect(apiClient.post).toHaveBeenCalledWith(
+      '/plugin-store/demo%2Fplugin/install',
+      { version: '1.2.3' },
+      { timeout: 180_000 }
+    );
   });
 });

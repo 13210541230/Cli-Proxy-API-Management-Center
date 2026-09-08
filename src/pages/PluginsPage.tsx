@@ -162,9 +162,19 @@ export function PluginsPage() {
     setError('');
     setMarketNotice('');
     try {
-      const response = await pluginsApi.installFromStore(plugin.id);
-      await fetchPlugins(true);
-      await loadMarket(true);
+      const response = await pluginsApi.installFromStore(plugin.id, plugin.version || undefined);
+      let refreshFailed = false;
+      try {
+        await fetchPlugins(true);
+      } catch {
+        refreshFailed = true;
+      }
+      try {
+        await loadMarket(true);
+      } catch {
+        refreshFailed = true;
+      }
+      setError('');
       notifyPluginResourcesChanged();
       if (response.restart_required) {
         setMarketNotice(
@@ -175,7 +185,9 @@ export function PluginsPage() {
       } else {
         setMarketNotice(
           t('plugins.market_install_success', {
-            defaultValue: `${plugin.name} installed successfully.`,
+            defaultValue: refreshFailed
+              ? `${plugin.name} installed successfully. The plugin list will refresh when the market is available.`
+              : `${plugin.name} installed successfully.`,
           })
         );
       }

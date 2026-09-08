@@ -17,6 +17,9 @@ import type {
 
 type RecordValue = Record<string, unknown>;
 
+const PLUGIN_MARKET_REQUEST_TIMEOUT_MS = 90_000;
+const PLUGIN_INSTALL_REQUEST_TIMEOUT_MS = 180_000;
+
 const isRecord = (value: unknown): value is RecordValue =>
   value !== null && typeof value === 'object' && !Array.isArray(value);
 
@@ -220,13 +223,16 @@ export const pluginsApi = {
   },
 
   async listStore(): Promise<ManagementPluginStoreListResponse> {
-    return normalizePluginStoreList(await apiClient.get('/plugin-store'));
+    return normalizePluginStoreList(
+      await apiClient.get('/plugin-store', { timeout: PLUGIN_MARKET_REQUEST_TIMEOUT_MS })
+    );
   },
 
   installFromStore: (id: string, version?: string): Promise<ManagementPluginInstallResponse> =>
     apiClient.post<ManagementPluginInstallResponse>(
       `/plugin-store/${encodeURIComponent(id)}/install`,
-      version ? { version } : undefined
+      version ? { version } : undefined,
+      { timeout: PLUGIN_INSTALL_REQUEST_TIMEOUT_MS }
     ),
 
   updateEnabled: (id: string, enabled: boolean) =>
