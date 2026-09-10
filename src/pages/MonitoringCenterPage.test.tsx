@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { TFunction } from 'i18next';
 import { AccountExpandedDetails, AccountOverviewCard } from './MonitoringCenterPage';
+import { buildMonitoringAnalyticsRequest } from '@/features/monitoring/analyticsRequest';
 import { buildEmptyMonitoringStatusData } from '@/features/monitoring/accountOverviewState';
 
 const t = ((key: string, options?: Record<string, unknown>) => {
@@ -61,6 +62,33 @@ const t = ((key: string, options?: Record<string, unknown>) => {
   });
   return value;
 }) as TFunction;
+
+describe('MonitoringCenterPage analytics request', () => {
+  it('uses aggregate dimensions and skips expensive legacy option/count scans', () => {
+    const request = buildMonitoringAnalyticsRequest(1000, 2000, 'all');
+
+    expect(request.include).toEqual([
+      'summary',
+      'timeline',
+      'model_stats',
+      'account_stats',
+      'api_key_stats',
+      'provider_stats',
+      'reasoning_stats',
+      'events',
+    ]);
+    expect(request.include).not.toContain('filter_options');
+    expect(request.include).not.toContain('api_key_timeline');
+    expect(request.events_page).toEqual({ limit: 200, include_total_count: false });
+
+    const filtered = buildMonitoringAnalyticsRequest(1000, 2000, 'all', {
+      api_key_hash: 'hash-a',
+      model: 'model-a',
+    }, true);
+    expect(filtered.filters).toEqual({ api_key_hash: 'hash-a', model: 'model-a' });
+    expect(filtered.include).toContain('api_key_timeline');
+  });
+});
 
 describe('MonitoringCenterPage account card', () => {
   it('renders bulk action buttons for mixed account auth state', () => {

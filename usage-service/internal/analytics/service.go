@@ -28,6 +28,7 @@ var allowedIncludes = map[string]struct{}{
 	"account_stats":    {},
 	"api_key_stats":    {},
 	"api_key_timeline": {},
+	"provider_stats":   {},
 	"reasoning_stats":  {},
 	"events":           {},
 	"filter_options":   {},
@@ -109,9 +110,10 @@ type Filters struct {
 }
 
 type EventsPageRequest struct {
-	Limit    int    `json:"limit,omitempty"`
-	BeforeMS *int64 `json:"before_ms,omitempty"`
-	BeforeID *int64 `json:"before_id,omitempty"`
+	Limit             int    `json:"limit,omitempty"`
+	BeforeMS          *int64 `json:"before_ms,omitempty"`
+	BeforeID          *int64 `json:"before_id,omitempty"`
+	IncludeTotalCount *bool  `json:"include_total_count,omitempty"`
 }
 
 type Request struct {
@@ -258,6 +260,7 @@ type Response struct {
 	AccountStats        []DimensionStat     `json:"account_stats,omitempty"`
 	APIKeyStats         []DimensionStat     `json:"api_key_stats,omitempty"`
 	APIKeyTimeline      []DimensionTimeline `json:"api_key_timeline,omitempty"`
+	ProviderStats       []DimensionStat     `json:"provider_stats,omitempty"`
 	ReasoningStats      []DimensionStat     `json:"reasoning_stats,omitempty"`
 	Events              *EventsPage         `json:"events,omitempty"`
 	FilterOptions       map[string][]string `json:"filter_options,omitempty"`
@@ -409,6 +412,14 @@ func Query(ctx context.Context, st *store.Store, req Request) (Response, error) 
 		response.APIKeyTimeline = timeline
 		response.Meta.Source = combineSource(response.Meta.Source, source)
 	}
+	if includes(req, "provider_stats") {
+		rows, source, err := queryDimension(ctx, st, filter, "provider", state.CoverageEventID, useRollup)
+		if err != nil {
+			return Response{}, err
+		}
+		response.ProviderStats = dimensionStats(rows)
+		response.Meta.Source = combineSource(response.Meta.Source, source)
+	}
 	if includes(req, "reasoning_stats") {
 		rows, source, err := queryDimension(ctx, st, filter, "reasoning_effort", state.CoverageEventID, useRollup)
 		if err != nil {
@@ -430,7 +441,15 @@ func Query(ctx context.Context, st *store.Store, req Request) (Response, error) 
 		if req.EventsPage != nil && pageLimit == 0 {
 			pageLimit = req.EventsPage.Limit
 		}
-		pageQuery := store.UsageEventPageQuery{UsageAggregateFilter: filter, Limit: pageLimit}
+		includeTotalCount := true
+		if req.EventsPage != nil && req.EventsPage.IncludeTotalCount != nil {
+			includeTotalCount = *req.EventsPage.IncludeTotalCount
+		}
+		pageQuery := store.UsageEventPageQuery{
+			UsageAggregateFilter: filter,
+			Limit:                pageLimit,
+			IncludeTotalCount:    includeTotalCount,
+		}
 		if pageQuery.Limit == 0 {
 			pageQuery.Limit = analyticsPageDefault
 		}
@@ -478,9 +497,15 @@ func queryDimension(ctx context.Context, st *store.Store, filter store.UsageAggr
 	if err != nil {
 		return nil, "", err
 	}
+	prices, err := st.LoadModelPrices(ctx)
+	if err != nil {
+		return nil, "", err
+	}
 	result := make(map[string]store.UsageMetric)
 	for _, row := range rollups {
-		result[row.DimensionKey] = addMetric(result[row.DimensionKey], row.Metric)
+		metric := row.Metric
+		metric.CostUSD = metricCost(metric, prices[row.Model])
+		result[row.DimensionKey] = addMetric(result[row.DimensionKey], metric)
 	}
 	hasRollup := len(rollups) > 0
 	source := "raw"
@@ -516,26 +541,6 @@ func queryDimension(ctx context.Context, st *store.Store, filter store.UsageAggr
 		}
 	}
 
-	// Dimension rollups intentionally omit per-event billing counters. Replace
-	// only cost with an exact bounded SQL aggregate, preserving the existing
-	// model_prices semantics until the pricing fan-out is added later.
-	prices, err := st.LoadModelPrices(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	if len(prices) > 0 && hasRollup {
-		costRows, err := st.AggregateUsageDimension(ctx, filter, dimension)
-		if err != nil {
-			return nil, "", err
-		}
-		for _, row := range costRows {
-			metric := result[row.Dimension]
-			metric.CostUSD = row.Metric.CostUSD
-			result[row.Dimension] = metric
-		}
-		source = combineSource(source, "raw")
-	}
-
 	keys := make([]string, 0, len(result))
 	for key := range result {
 		keys = append(keys, key)
@@ -563,13 +568,19 @@ func queryDimensionTimeline(ctx context.Context, st *store.Store, filter store.U
 			return nil, "", err
 		}
 		hasRollup = len(rollups) > 0
+		prices, err := st.LoadModelPrices(ctx)
+		if err != nil {
+			return nil, "", err
+		}
 		for _, row := range rollups {
 			byBucket := result[row.DimensionKey]
 			if byBucket == nil {
 				byBucket = make(map[int64]store.UsageMetric)
 				result[row.DimensionKey] = byBucket
 			}
-			byBucket[row.BucketMS] = addMetric(byBucket[row.BucketMS], row.Metric)
+			metric := row.Metric
+			metric.CostUSD = metricCost(metric, prices[row.Model])
+			byBucket[row.BucketMS] = addMetric(byBucket[row.BucketMS], metric)
 		}
 		if hasRollup {
 			source = "rollup"
@@ -610,29 +621,6 @@ func queryDimensionTimeline(ctx context.Context, st *store.Store, filter store.U
 		}
 		if len(rows) > 0 && useRollup && hasRollup {
 			source = "rollup+raw"
-		}
-	}
-	if hasRollup {
-		prices, err := st.LoadModelPrices(ctx)
-		if err != nil {
-			return nil, "", err
-		}
-		if len(prices) > 0 {
-			costRows, err := st.AggregateUsageDimensionTimeline(ctx, filter, dimension)
-			if err != nil {
-				return nil, "", err
-			}
-			for _, row := range costRows {
-				byBucket := result[row.Dimension]
-				if byBucket == nil {
-					byBucket = make(map[int64]store.UsageMetric)
-					result[row.Dimension] = byBucket
-				}
-				metric := byBucket[row.BucketMS]
-				metric.CostUSD = row.Metric.CostUSD
-				byBucket[row.BucketMS] = metric
-			}
-			source = combineSource(source, "raw")
 		}
 	}
 	keys := make([]string, 0, len(result))
@@ -678,8 +666,14 @@ func queryCore(ctx context.Context, st *store.Store, filter store.UsageAggregate
 		if err != nil {
 			return nil, "", err
 		}
+		prices, err := st.LoadModelPrices(ctx)
+		if err != nil {
+			return nil, "", err
+		}
 		for _, row := range rollups {
-			result[aggregateKey(row.BucketMS, row.Model)] = rollupToMetric(row)
+			metric := rollupToMetric(row)
+			metric.CostUSD = metricCost(metric, prices[row.Model])
+			result[aggregateKey(row.BucketMS, row.Model)] = metric
 		}
 		hasRollup = len(rollups) > 0
 		if hasRollup {
@@ -721,27 +715,6 @@ func queryCore(ctx context.Context, st *store.Store, filter store.UsageAggregate
 		if len(rows) > 0 && useRollup && hasRollup {
 			source = "rollup+raw"
 		}
-	}
-	// T1 intentionally stores operational counters, not per-event billable
-	// prompt/cache counters. Recompute cost in one SQL aggregate so cost stays
-	// exactly compatible with the existing frontend price semantics while the
-	// response remains small. T3 can replace this read with a pricing rollup.
-	prices, err := st.LoadModelPrices(ctx)
-	if err != nil {
-		return nil, "", err
-	}
-	if len(prices) > 0 && useRollup {
-		costRows, err := st.AggregateUsageEvents(ctx, filter)
-		if err != nil {
-			return nil, "", err
-		}
-		for _, row := range costRows {
-			key := aggregateKey(row.BucketMS, row.Model)
-			metric := result[key]
-			metric.CostUSD = row.Metric.CostUSD
-			result[key] = metric
-		}
-		source = combineSource(source, "raw")
 	}
 	return result, source, nil
 }
@@ -796,12 +769,20 @@ func fullHourRange(fromMS, toMS int64) (int64, int64) {
 
 func aggregateKey(bucket int64, model string) string { return fmt.Sprintf("%d\x00%s", bucket, model) }
 
+func metricCost(metric store.UsageMetric, price store.ModelPrice) float64 {
+	return (float64(metric.BillablePromptTokens)*price.Prompt +
+		float64(metric.BillableCacheTokens)*price.Cache +
+		float64(metric.BillableCompletionTokens)*price.Completion) / 1_000_000
+}
+
 func rollupToMetric(row store.HourlyRollup) store.UsageMetric {
 	return store.UsageMetric{
 		Requests: row.Requests, Successes: row.Successes, Failures: row.Failures,
 		InputTokens: row.InputTokens, OutputTokens: row.OutputTokens, ReasoningTokens: row.ReasoningTokens,
 		CachedTokens: row.CachedTokens, CacheTokens: row.CacheTokens, TotalTokens: row.TotalTokens,
-		LatencySumMS: row.LatencySumMS, LatencySamples: row.LatencySamples, ZeroTokenCalls: row.ZeroTokenCalls,
+		BillablePromptTokens: row.BillablePromptTokens, BillableCacheTokens: row.BillableCacheTokens,
+		BillableCompletionTokens: row.BillableCompletionTokens,
+		LatencySumMS:             row.LatencySumMS, LatencySamples: row.LatencySamples, ZeroTokenCalls: row.ZeroTokenCalls,
 	}
 }
 
@@ -818,6 +799,9 @@ func addMetric(left, right store.UsageMetric) store.UsageMetric {
 	left.LatencySumMS += right.LatencySumMS
 	left.LatencySamples += right.LatencySamples
 	left.ZeroTokenCalls += right.ZeroTokenCalls
+	left.BillablePromptTokens += right.BillablePromptTokens
+	left.BillableCacheTokens += right.BillableCacheTokens
+	left.BillableCompletionTokens += right.BillableCompletionTokens
 	left.CostUSD += right.CostUSD
 	return left
 }

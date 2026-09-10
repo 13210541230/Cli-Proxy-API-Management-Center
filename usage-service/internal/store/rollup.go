@@ -43,20 +43,23 @@ func rollupFailureMarkerPath(path string) string {
 
 // HourlyRollup 是 usage_events 的可重建小时派生统计，不保存原始请求或明文密钥。
 type HourlyRollup struct {
-	BucketMS        int64  `json:"bucketMs"`
-	Model           string `json:"model"`
-	Requests        int64  `json:"requests"`
-	Successes       int64  `json:"successes"`
-	Failures        int64  `json:"failures"`
-	InputTokens     int64  `json:"inputTokens"`
-	OutputTokens    int64  `json:"outputTokens"`
-	ReasoningTokens int64  `json:"reasoningTokens"`
-	CachedTokens    int64  `json:"cachedTokens"`
-	CacheTokens     int64  `json:"cacheTokens"`
-	TotalTokens     int64  `json:"totalTokens"`
-	LatencySumMS    int64  `json:"latencySumMs"`
-	LatencySamples  int64  `json:"latencySamples"`
-	ZeroTokenCalls  int64  `json:"zeroTokenCalls"`
+	BucketMS                 int64  `json:"bucketMs"`
+	Model                    string `json:"model"`
+	Requests                 int64  `json:"requests"`
+	Successes                int64  `json:"successes"`
+	Failures                 int64  `json:"failures"`
+	InputTokens              int64  `json:"inputTokens"`
+	OutputTokens             int64  `json:"outputTokens"`
+	ReasoningTokens          int64  `json:"reasoningTokens"`
+	CachedTokens             int64  `json:"cachedTokens"`
+	CacheTokens              int64  `json:"cacheTokens"`
+	TotalTokens              int64  `json:"totalTokens"`
+	LatencySumMS             int64  `json:"latencySumMs"`
+	LatencySamples           int64  `json:"latencySamples"`
+	ZeroTokenCalls           int64  `json:"zeroTokenCalls"`
+	BillablePromptTokens     int64  `json:"billablePromptTokens"`
+	BillableCacheTokens      int64  `json:"billableCacheTokens"`
+	BillableCompletionTokens int64  `json:"billableCompletionTokens"`
 }
 
 // DailyDimensionRollup stores the same additive metrics as the hourly layer,
@@ -68,6 +71,13 @@ type DailyDimensionRollup struct {
 	DimensionKey string
 	Model        string
 	Metric       UsageMetric
+}
+
+func maxInt64(left, right int64) int64 {
+	if left > right {
+		return left
+	}
+	return right
 }
 
 func updateUsageMetric(metric *UsageMetric, failed bool, input, output, reasoning, cached, cache, total, latency int64, latencyValid bool) {
@@ -90,6 +100,13 @@ func updateUsageMetric(metric *UsageMetric, failed bool, input, output, reasonin
 	if input == 0 && output == 0 && reasoning == 0 && cached == 0 && cache == 0 && total == 0 {
 		metric.ZeroTokenCalls++
 	}
+	cachedForBilling := cached
+	if cache > cachedForBilling {
+		cachedForBilling = cache
+	}
+	metric.BillablePromptTokens += maxInt64(0, input-cachedForBilling)
+	metric.BillableCacheTokens += cachedForBilling
+	metric.BillableCompletionTokens += maxInt64(0, output)
 }
 
 func updateHourlyRollupMetric(rollup *HourlyRollup, failed bool, input, output, reasoning, cached, cache, total, latency int64, latencyValid bool) {
@@ -98,12 +115,17 @@ func updateHourlyRollupMetric(rollup *HourlyRollup, failed bool, input, output, 
 		InputTokens: rollup.InputTokens, OutputTokens: rollup.OutputTokens, ReasoningTokens: rollup.ReasoningTokens,
 		CachedTokens: rollup.CachedTokens, CacheTokens: rollup.CacheTokens, TotalTokens: rollup.TotalTokens,
 		LatencySumMS: rollup.LatencySumMS, LatencySamples: rollup.LatencySamples, ZeroTokenCalls: rollup.ZeroTokenCalls,
+		BillablePromptTokens: rollup.BillablePromptTokens, BillableCacheTokens: rollup.BillableCacheTokens,
+		BillableCompletionTokens: rollup.BillableCompletionTokens,
 	}
 	updateUsageMetric(&metric, failed, input, output, reasoning, cached, cache, total, latency, latencyValid)
 	rollup.Requests, rollup.Successes, rollup.Failures = metric.Requests, metric.Successes, metric.Failures
 	rollup.InputTokens, rollup.OutputTokens, rollup.ReasoningTokens = metric.InputTokens, metric.OutputTokens, metric.ReasoningTokens
 	rollup.CachedTokens, rollup.CacheTokens, rollup.TotalTokens = metric.CachedTokens, metric.CacheTokens, metric.TotalTokens
 	rollup.LatencySumMS, rollup.LatencySamples, rollup.ZeroTokenCalls = metric.LatencySumMS, metric.LatencySamples, metric.ZeroTokenCalls
+	rollup.BillablePromptTokens = metric.BillablePromptTokens
+	rollup.BillableCacheTokens = metric.BillableCacheTokens
+	rollup.BillableCompletionTokens = metric.BillableCompletionTokens
 }
 
 // RollupState 描述小时派生层的消费进度和可用性。
@@ -125,10 +147,47 @@ func (s *Store) ensureRollupStateSchema() error {
 	}); err != nil {
 		return err
 	}
+	metricColumns := []string{"zero_token_calls", "billable_prompt_tokens", "billable_cache_tokens", "billable_completion_tokens"}
+	needsRebuild := false
+	for _, column := range metricColumns {
+		exists, err := s.tableHasColumn("usage_hourly_rollups", column)
+		if err != nil {
+			return err
+		}
+		needsRebuild = needsRebuild || !exists
+	}
 	if err := s.ensureTableColumns("usage_hourly_rollups", []tableColumn{
 		{name: "zero_token_calls", definition: "zero_token_calls integer not null default 0"},
+		{name: "billable_prompt_tokens", definition: "billable_prompt_tokens integer not null default 0"},
+		{name: "billable_cache_tokens", definition: "billable_cache_tokens integer not null default 0"},
+		{name: "billable_completion_tokens", definition: "billable_completion_tokens integer not null default 0"},
 	}); err != nil {
 		return err
+	}
+	for _, column := range []string{"billable_prompt_tokens", "billable_cache_tokens", "billable_completion_tokens"} {
+		exists, err := s.tableHasColumn("usage_daily_dimension_rollups", column)
+		if err != nil {
+			return err
+		}
+		needsRebuild = needsRebuild || !exists
+	}
+	if err := s.ensureTableColumns("usage_daily_dimension_rollups", []tableColumn{
+		{name: "billable_prompt_tokens", definition: "billable_prompt_tokens integer not null default 0"},
+		{name: "billable_cache_tokens", definition: "billable_cache_tokens integer not null default 0"},
+		{name: "billable_completion_tokens", definition: "billable_completion_tokens integer not null default 0"},
+	}); err != nil {
+		return err
+	}
+	if needsRebuild {
+		if _, err := s.db.Exec(`delete from usage_hourly_rollups`); err != nil {
+			return err
+		}
+		if _, err := s.db.Exec(`delete from usage_daily_dimension_rollups`); err != nil {
+			return err
+		}
+		if _, err := s.db.Exec(`update usage_rollup_state set checkpoint_id = 0, coverage_event_id = 0, target_event_id = 0, status = ?, last_error = null, updated_at_ms = ? where id = 1`, RollupStatusPending, time.Now().UnixMilli()); err != nil {
+			return err
+		}
 	}
 	_, err := s.db.Exec(`update usage_rollup_state
 		set coverage_event_id = checkpoint_id, target_event_id = checkpoint_id
@@ -298,8 +357,10 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 	for _, aggregate := range aggregates {
 		if _, err := tx.ExecContext(ctx, `insert into usage_hourly_rollups(
 			bucket_ms, model, requests, successes, failures, input_tokens, output_tokens,
-			reasoning_tokens, cached_tokens, cache_tokens, total_tokens, latency_sum_ms, latency_samples, zero_token_calls
-		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
+			billable_prompt_tokens, billable_cache_tokens, billable_completion_tokens,
+			latency_sum_ms, latency_samples, zero_token_calls
+		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 on conflict(bucket_ms, model) do update set
 			requests = usage_hourly_rollups.requests + excluded.requests,
 			successes = usage_hourly_rollups.successes + excluded.successes,
@@ -312,11 +373,14 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			total_tokens = usage_hourly_rollups.total_tokens + excluded.total_tokens,
 			latency_sum_ms = usage_hourly_rollups.latency_sum_ms + excluded.latency_sum_ms,
 			latency_samples = usage_hourly_rollups.latency_samples + excluded.latency_samples,
-			zero_token_calls = usage_hourly_rollups.zero_token_calls + excluded.zero_token_calls`,
+			zero_token_calls = usage_hourly_rollups.zero_token_calls + excluded.zero_token_calls,
+			billable_prompt_tokens = usage_hourly_rollups.billable_prompt_tokens + excluded.billable_prompt_tokens,
+			billable_cache_tokens = usage_hourly_rollups.billable_cache_tokens + excluded.billable_cache_tokens,
+			billable_completion_tokens = usage_hourly_rollups.billable_completion_tokens + excluded.billable_completion_tokens`,
 			aggregate.BucketMS, aggregate.Model, aggregate.Requests, aggregate.Successes, aggregate.Failures,
 			aggregate.InputTokens, aggregate.OutputTokens, aggregate.ReasoningTokens, aggregate.CachedTokens,
-			aggregate.CacheTokens, aggregate.TotalTokens, aggregate.LatencySumMS, aggregate.LatencySamples,
-			aggregate.ZeroTokenCalls); err != nil {
+			aggregate.CacheTokens, aggregate.TotalTokens, aggregate.BillablePromptTokens, aggregate.BillableCacheTokens,
+			aggregate.BillableCompletionTokens, aggregate.LatencySumMS, aggregate.LatencySamples, aggregate.ZeroTokenCalls); err != nil {
 			return s.rollupBatchError(tx, err)
 		}
 	}
@@ -325,8 +389,9 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 		if _, err := tx.ExecContext(ctx, `insert into usage_daily_dimension_rollups(
 			bucket_ms, dimension, dimension_key, model, requests, successes, failures,
 			input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
+			billable_prompt_tokens, billable_cache_tokens, billable_completion_tokens,
 			latency_sum_ms, latency_samples, zero_token_calls
-		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			on conflict(bucket_ms, dimension, dimension_key, model) do update set
 			requests = usage_daily_dimension_rollups.requests + excluded.requests,
 			successes = usage_daily_dimension_rollups.successes + excluded.successes,
@@ -339,11 +404,15 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			total_tokens = usage_daily_dimension_rollups.total_tokens + excluded.total_tokens,
 			latency_sum_ms = usage_daily_dimension_rollups.latency_sum_ms + excluded.latency_sum_ms,
 			latency_samples = usage_daily_dimension_rollups.latency_samples + excluded.latency_samples,
-			zero_token_calls = usage_daily_dimension_rollups.zero_token_calls + excluded.zero_token_calls`,
+			zero_token_calls = usage_daily_dimension_rollups.zero_token_calls + excluded.zero_token_calls,
+			billable_prompt_tokens = usage_daily_dimension_rollups.billable_prompt_tokens + excluded.billable_prompt_tokens,
+			billable_cache_tokens = usage_daily_dimension_rollups.billable_cache_tokens + excluded.billable_cache_tokens,
+			billable_completion_tokens = usage_daily_dimension_rollups.billable_completion_tokens + excluded.billable_completion_tokens`,
 			aggregate.BucketMS, aggregate.Dimension, aggregate.DimensionKey, aggregate.Model,
 			aggregate.Metric.Requests, aggregate.Metric.Successes, aggregate.Metric.Failures, aggregate.Metric.InputTokens,
 			aggregate.Metric.OutputTokens, aggregate.Metric.ReasoningTokens, aggregate.Metric.CachedTokens, aggregate.Metric.CacheTokens,
-			aggregate.Metric.TotalTokens, aggregate.Metric.LatencySumMS, aggregate.Metric.LatencySamples, aggregate.Metric.ZeroTokenCalls); err != nil {
+			aggregate.Metric.TotalTokens, aggregate.Metric.BillablePromptTokens, aggregate.Metric.BillableCacheTokens,
+			aggregate.Metric.BillableCompletionTokens, aggregate.Metric.LatencySumMS, aggregate.Metric.LatencySamples, aggregate.Metric.ZeroTokenCalls); err != nil {
 			return s.rollupBatchError(tx, err)
 		}
 	}
@@ -580,7 +649,8 @@ func (s *Store) LoadRollupState(ctx context.Context) (RollupState, error) {
 // LoadHourlyRollups loads complete hourly rows. A zero bound means unbounded.
 func (s *Store) LoadHourlyRollups(ctx context.Context, fromMS, toMS int64) ([]HourlyRollup, error) {
 	query := `select bucket_ms, model, requests, successes, failures, input_tokens, output_tokens,
-		reasoning_tokens, cached_tokens, cache_tokens, total_tokens, latency_sum_ms, latency_samples, zero_token_calls
+		reasoning_tokens, cached_tokens, cache_tokens, total_tokens, billable_prompt_tokens,
+		billable_cache_tokens, billable_completion_tokens, latency_sum_ms, latency_samples, zero_token_calls
 		from usage_hourly_rollups`
 	args := make([]any, 0, 2)
 	conditions := make([]string, 0, 2)
@@ -606,7 +676,8 @@ func (s *Store) LoadHourlyRollups(ctx context.Context, fromMS, toMS int64) ([]Ho
 		var row HourlyRollup
 		if err := rows.Scan(&row.BucketMS, &row.Model, &row.Requests, &row.Successes, &row.Failures,
 			&row.InputTokens, &row.OutputTokens, &row.ReasoningTokens, &row.CachedTokens, &row.CacheTokens,
-			&row.TotalTokens, &row.LatencySumMS, &row.LatencySamples, &row.ZeroTokenCalls); err != nil {
+			&row.TotalTokens, &row.BillablePromptTokens, &row.BillableCacheTokens, &row.BillableCompletionTokens,
+			&row.LatencySumMS, &row.LatencySamples, &row.ZeroTokenCalls); err != nil {
 			return nil, err
 		}
 		result = append(result, row)

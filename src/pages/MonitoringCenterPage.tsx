@@ -73,6 +73,7 @@ import {
   type MonitoringAccountOverviewMode,
 } from '@/features/monitoring/accountOverviewState';
 import { sortAccountOverviewCardMetrics } from '@/features/monitoring/accountOverviewCardMetrics';
+import { buildMonitoringAnalyticsRequest } from '@/features/monitoring/analyticsRequest';
 import {
   buildMonitoringAccountQuotaTargetsByAccount,
   type MonitoringAccountQuotaTarget,
@@ -2282,11 +2283,7 @@ export function MonitoringCenterPage() {
     }
     return (
       deferredSearch.trim() === '' &&
-      selectedAccount === 'all' &&
-      selectedProvider === 'all' &&
-      selectedModel === 'all' &&
       selectedChannel === 'all' &&
-      selectedApiKeyHash === 'all' &&
       selectedStatus === 'all'
     );
   }, [
@@ -2294,11 +2291,7 @@ export function MonitoringCenterPage() {
     analyticsScopeKey,
     customTimeRange,
     deferredSearch,
-    selectedAccount,
-    selectedApiKeyHash,
     selectedChannel,
-    selectedModel,
-    selectedProvider,
     selectedStatus,
     timeRange,
   ]);
@@ -2306,26 +2299,27 @@ export function MonitoringCenterPage() {
     const bounds = getRangeBounds(timeRange, Date.now(), customTimeRange);
     const fromMs = bounds && Number.isFinite(bounds.startMs) ? Math.max(0, bounds.startMs) : 0;
     const toMs = bounds && Number.isFinite(bounds.endMs) ? bounds.endMs : Date.now();
-    return {
-      from_ms: fromMs,
-      to_ms: Math.max(toMs, fromMs + 1),
-      include: [
-        'summary',
-        'timeline',
-        'model_stats',
-        'account_stats',
-        'api_key_stats',
-        'api_key_timeline',
-        'filter_options',
-        'events',
-      ],
-      filters:
-        selectedReasoningEffort !== 'all'
-          ? { reasoning_effort: selectedReasoningEffort }
-          : undefined,
-      events_page: { limit: 200 },
-    };
-  }, [customTimeRange, selectedReasoningEffort, timeRange]);
+    const filters: Record<string, string> = {};
+    if (selectedAccount !== 'all') filters.account_snapshot = selectedAccount;
+    if (selectedProvider !== 'all') filters.provider = selectedProvider;
+    if (selectedModel !== 'all') filters.model = selectedModel;
+    if (selectedApiKeyHash !== 'all') filters.api_key_hash = selectedApiKeyHash;
+    return buildMonitoringAnalyticsRequest(
+      fromMs,
+      toMs,
+      selectedReasoningEffort,
+      filters,
+      selectedApiKeyHash !== 'all'
+    );
+  }, [
+    customTimeRange,
+    selectedAccount,
+    selectedApiKeyHash,
+    selectedModel,
+    selectedProvider,
+    selectedReasoningEffort,
+    timeRange,
+  ]);
   const [analytics, setAnalytics] = useState<UsageAnalyticsResponse | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState('');
@@ -2465,7 +2459,7 @@ export function MonitoringCenterPage() {
 
   const providerOptions = useMemo(() => {
     const values = analyticsMode
-      ? analytics?.filter_options?.providers || []
+      ? (analytics?.provider_stats || []).map((item) => item.key)
       : Array.from(new Set(filteredRows.map((row) => row.provider)));
     return [
       { value: 'all', label: t('monitoring.filter_all_providers') },
@@ -2480,7 +2474,7 @@ export function MonitoringCenterPage() {
 
   const accountOptions = useMemo(() => {
     if (analyticsMode) {
-      const values = analytics?.filter_options?.accounts || [];
+      const values = (analytics?.account_stats || []).map((item) => item.key);
       return [
         { value: 'all', label: t('monitoring.filter_all_accounts') },
         ...values
@@ -2503,7 +2497,7 @@ export function MonitoringCenterPage() {
 
   const modelOptions = useMemo(() => {
     const values = analyticsMode
-      ? analytics?.filter_options?.models || []
+      ? (analytics?.model_stats || []).map((item) => item.model)
       : Array.from(new Set(filteredRows.map((row) => row.model)));
     return [
       { value: 'all', label: t('monitoring.filter_all_models') },
@@ -2518,7 +2512,7 @@ export function MonitoringCenterPage() {
     const values: string[] = analyticsMode
       ? Array.from(
           new Set(
-            (analytics?.filter_options?.reasoning_efforts || []).map((value) => value || 'unknown')
+            (analytics?.reasoning_stats || []).map((item) => item.key || 'unknown')
           )
         )
       : Array.from(new Set(filteredRows.map((row) => row.reasoningEffort || 'unknown')));
@@ -2554,7 +2548,8 @@ export function MonitoringCenterPage() {
   const apiKeyOptions = useMemo(() => {
     const optionMap = new Map<string, string>();
     if (analyticsMode) {
-      (analytics?.filter_options?.api_key_hashes || []).forEach((hash) => {
+      (analytics?.api_key_stats || []).forEach((item) => {
+        const hash = item.key;
         if (!hash || optionMap.has(hash)) return;
         const alias = apiKeyAliases.find((item) => item.apiKeyHash.toLowerCase() === hash.toLowerCase())?.alias;
         optionMap.set(hash, alias ? `${alias}（${hash.slice(-6)}）` : `未命名（${hash.slice(-6)}）`);

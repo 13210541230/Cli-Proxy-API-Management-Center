@@ -68,6 +68,44 @@ func TestAnalyticsHTTPContractAuthIncludeAndNoDetailsTree(t *testing.T) {
 	}
 }
 
+func TestAnalyticsHTTPAllowsAggregateProviderStatsAndSkipsEventCount(t *testing.T) {
+	ctx := context.Background()
+	cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CORSOrigins: []string{"*"}}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+	if err := db.SaveSetup(ctx, store.Setup{CPAUpstreamURL: "http://example.test", ManagementKey: "management-key"}); err != nil {
+		t.Fatalf("save setup: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{{
+		EventHash: "provider-http-event", TimestampMS: 1_700_000_000_000, Timestamp: "now", Provider: "codex", Model: "model",
+	}}); err != nil {
+		t.Fatalf("insert event: %v", err)
+	}
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+	body := `{"from_ms":1699999999999,"to_ms":1700000000001,"include":["provider_stats","events"],"events_page":{"limit":1,"include_total_count":false}}`
+	req := httptest.NewRequest(http.MethodPost, "/v0/management/monitoring/analytics", strings.NewReader(body))
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("analytics status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode analytics: %v", err)
+	}
+	if _, ok := payload["provider_stats"]; !ok {
+		t.Fatalf("provider stats missing: %s", rr.Body.String())
+	}
+	events, ok := payload["events"].(map[string]any)
+	if !ok || events["total_count"] != float64(0) {
+		t.Fatalf("event count should be skipped: %#v", payload["events"])
+	}
+}
+
 func TestAnalyticsHTTPRejectsUnauthorizedInvalidIncludeAndOversizedPage(t *testing.T) {
 	handler := newTestHandler(t, "http://example.test", true)
 	cases := []struct {

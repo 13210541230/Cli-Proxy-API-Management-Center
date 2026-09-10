@@ -278,6 +278,7 @@ export interface UsageAnalyticsResponse {
   account_stats?: UsageAnalyticsDimensionStat[];
   api_key_stats?: UsageAnalyticsDimensionStat[];
   api_key_timeline?: UsageAnalyticsDimensionTimeline[];
+  provider_stats?: UsageAnalyticsDimensionStat[];
   reasoning_stats?: UsageAnalyticsDimensionStat[];
   security_signal_count?: number;
   events?: UsageAnalyticsEventsPage;
@@ -293,6 +294,7 @@ export interface UsageAnalyticsRequest {
     limit?: number;
     before_ms?: number;
     before_id?: number;
+    include_total_count?: boolean;
   };
 }
 

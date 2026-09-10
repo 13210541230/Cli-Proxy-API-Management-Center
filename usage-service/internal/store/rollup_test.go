@@ -8,6 +8,39 @@ import (
 	"github.com/seakee/cpa-manager/usage-service/internal/usage"
 )
 
+func TestRollupsStoreBillableTokenCounters(t *testing.T) {
+	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+	ctx := context.Background()
+	const day = int64(24 * 60 * 60 * 1000)
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		{EventHash: "pricing-a", TimestampMS: day + 100, Timestamp: "a", Model: "model", AccountSnapshot: "account", InputTokens: 100, CachedTokens: 70, CacheTokens: 60, OutputTokens: 20, CreatedAtMS: 1},
+		{EventHash: "pricing-b", TimestampMS: day + 200, Timestamp: "b", Model: "model", AccountSnapshot: "account", InputTokens: 50, CacheTokens: 10, OutputTokens: 5, CreatedAtMS: 2},
+	}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	if n, err := db.ApplyHourlyRollupBatch(ctx, 100); err != nil || n != 2 {
+		t.Fatalf("apply rollup = %d, %v", n, err)
+	}
+	hourly, err := db.LoadHourlyRollups(ctx, day, 2*day)
+	if err != nil || len(hourly) != 1 {
+		t.Fatalf("hourly rollups = %#v, %v", hourly, err)
+	}
+	if hourly[0].BillablePromptTokens != 70 || hourly[0].BillableCacheTokens != 80 || hourly[0].BillableCompletionTokens != 25 {
+		t.Fatalf("hourly billable counters = %#v", hourly[0])
+	}
+	daily, err := db.LoadDailyDimensionRollups(ctx, day, 2*day, "account")
+	if err != nil || len(daily) != 1 {
+		t.Fatalf("daily rollups = %#v, %v", daily, err)
+	}
+	if daily[0].Metric.BillablePromptTokens != 70 || daily[0].Metric.BillableCacheTokens != 80 || daily[0].Metric.BillableCompletionTokens != 25 {
+		t.Fatalf("daily billable counters = %#v", daily[0].Metric)
+	}
+}
+
 func TestHourlyRollupFailedBatchRollsBackCheckpointAndRows(t *testing.T) {
 	db, err := Open(filepath.Join(t.TempDir(), "usage.sqlite"))
 	if err != nil {

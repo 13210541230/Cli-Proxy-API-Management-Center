@@ -414,6 +414,7 @@ func (s *Store) init() error {
 			created_at_ms integer not null
 		)`,
 		`create index if not exists idx_usage_events_timestamp on usage_events(timestamp_ms)`,
+		`create index if not exists idx_usage_events_timestamp_id on usage_events(timestamp_ms, id)`,
 		`create index if not exists idx_usage_events_request_id on usage_events(request_id)`,
 		`create index if not exists idx_usage_events_model on usage_events(model)`,
 		`create index if not exists idx_usage_events_auth_index on usage_events(auth_index)`,
@@ -435,6 +436,9 @@ func (s *Store) init() error {
 			latency_sum_ms integer not null default 0,
 			latency_samples integer not null default 0,
 			zero_token_calls integer not null default 0,
+			billable_prompt_tokens integer not null default 0,
+			billable_cache_tokens integer not null default 0,
+			billable_completion_tokens integer not null default 0,
 			primary key(bucket_ms, model)
 		)`,
 		`create table if not exists usage_daily_dimension_rollups (
@@ -454,6 +458,9 @@ func (s *Store) init() error {
 			latency_sum_ms integer not null default 0,
 			latency_samples integer not null default 0,
 			zero_token_calls integer not null default 0,
+			billable_prompt_tokens integer not null default 0,
+			billable_cache_tokens integer not null default 0,
+			billable_completion_tokens integer not null default 0,
 			primary key(bucket_ms, dimension, dimension_key, model)
 		)`,
 		`create index if not exists idx_usage_daily_dimension_lookup
@@ -559,6 +566,9 @@ func (s *Store) init() error {
 	if err := s.ensureUsageEventSnapshotColumns(); err != nil {
 		return err
 	}
+	if _, err := s.db.Exec(`create index if not exists idx_usage_events_security_timestamp on usage_events(security_signal, timestamp_ms)`); err != nil {
+		return err
+	}
 	if err := s.ensureEnterpriseSchema(); err != nil {
 		return err
 	}
@@ -632,6 +642,14 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 type tableColumn struct {
 	name       string
 	definition string
+}
+
+func (s *Store) tableHasColumn(table, column string) (bool, error) {
+	var count int
+	if err := s.db.QueryRow(`select count(*) from pragma_table_info(?) where name = ?`, table, column).Scan(&count); err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }
 
 // ensureTableColumns checks the schema once before issuing ALTER TABLE. The old

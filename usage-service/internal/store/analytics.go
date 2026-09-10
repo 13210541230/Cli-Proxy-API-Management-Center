@@ -29,19 +29,22 @@ type UsageAggregateFilter struct {
 // UsageMetric is an aggregate over usage_events. It intentionally contains no
 // raw payload or secret material.
 type UsageMetric struct {
-	Requests        int64
-	Successes       int64
-	Failures        int64
-	InputTokens     int64
-	OutputTokens    int64
-	ReasoningTokens int64
-	CachedTokens    int64
-	CacheTokens     int64
-	TotalTokens     int64
-	LatencySumMS    int64
-	LatencySamples  int64
-	ZeroTokenCalls  int64
-	CostUSD         float64
+	Requests                 int64
+	Successes                int64
+	Failures                 int64
+	InputTokens              int64
+	OutputTokens             int64
+	ReasoningTokens          int64
+	CachedTokens             int64
+	CacheTokens              int64
+	TotalTokens              int64
+	LatencySumMS             int64
+	LatencySamples           int64
+	ZeroTokenCalls           int64
+	BillablePromptTokens     int64
+	BillableCacheTokens      int64
+	BillableCompletionTokens int64
+	CostUSD                  float64
 }
 
 type UsageAggregateRow struct {
@@ -74,6 +77,9 @@ func (s *Store) AggregateUsageEvents(ctx context.Context, filter UsageAggregateF
 		sum(case when ue.failed <> 0 then 1 else 0 end),
 		sum(ue.input_tokens), sum(ue.output_tokens), sum(ue.reasoning_tokens),
 		sum(ue.cached_tokens), sum(ue.cache_tokens), sum(ue.total_tokens),
+		sum(max(0, ue.input_tokens - max(ue.cached_tokens, ue.cache_tokens))),
+		sum(max(0, max(ue.cached_tokens, ue.cache_tokens))),
+		sum(max(0, ue.output_tokens)),
 		sum(case when ue.latency_ms is not null then ue.latency_ms else 0 end),
 		sum(case when ue.latency_ms is not null then 1 else 0 end),
 		sum(case when ue.input_tokens = 0 and ue.output_tokens = 0 and ue.reasoning_tokens = 0
@@ -121,6 +127,9 @@ func (s *Store) AggregateUsageDimension(ctx context.Context, filter UsageAggrega
 		sum(case when ue.failed <> 0 then 1 else 0 end),
 		sum(ue.input_tokens), sum(ue.output_tokens), sum(ue.reasoning_tokens),
 		sum(ue.cached_tokens), sum(ue.cache_tokens), sum(ue.total_tokens),
+		sum(max(0, ue.input_tokens - max(ue.cached_tokens, ue.cache_tokens))),
+		sum(max(0, max(ue.cached_tokens, ue.cache_tokens))),
+		sum(max(0, ue.output_tokens)),
 		sum(case when ue.latency_ms is not null then ue.latency_ms else 0 end),
 		sum(case when ue.latency_ms is not null then 1 else 0 end),
 		sum(case when ue.input_tokens = 0 and ue.output_tokens = 0 and ue.reasoning_tokens = 0
@@ -169,6 +178,9 @@ func (s *Store) AggregateUsageDimensionTimeline(ctx context.Context, filter Usag
 		sum(case when ue.failed <> 0 then 1 else 0 end),
 		sum(ue.input_tokens), sum(ue.output_tokens), sum(ue.reasoning_tokens),
 		sum(ue.cached_tokens), sum(ue.cache_tokens), sum(ue.total_tokens),
+		sum(max(0, ue.input_tokens - max(ue.cached_tokens, ue.cache_tokens))),
+		sum(max(0, max(ue.cached_tokens, ue.cache_tokens))),
+		sum(max(0, ue.output_tokens)),
 		sum(case when ue.latency_ms is not null then ue.latency_ms else 0 end),
 		sum(case when ue.latency_ms is not null then 1 else 0 end),
 		sum(case when ue.input_tokens = 0 and ue.output_tokens = 0 and ue.reasoning_tokens = 0
@@ -274,16 +286,19 @@ func scanUsageMetricRow(rows *sql.Rows, bucket *int64, dimension *string, metric
 		&metric.CachedTokens,
 		&metric.CacheTokens,
 		&metric.TotalTokens,
+		&metric.BillablePromptTokens,
+		&metric.BillableCacheTokens,
+		&metric.BillableCompletionTokens,
 		&metric.LatencySumMS,
 		&metric.LatencySamples,
 		&metric.ZeroTokenCalls,
 		&metric.CostUSD,
 	}
 	if bucket != nil && dimension != nil {
-		return rows.Scan(bucket, dimension, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12])
+		return rows.Scan(bucket, dimension, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
 	}
 	if dimension != nil {
-		return rows.Scan(dimension, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12])
+		return rows.Scan(dimension, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
 	}
 	return rows.Scan(values...)
 }
@@ -295,6 +310,7 @@ type UsageEventPageQuery struct {
 	CursorTimestampMS *int64
 	CursorID          *int64
 	Limit             int
+	IncludeTotalCount bool
 }
 
 type UsageEventPageItem struct {
@@ -359,8 +375,10 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	}
 	countWhere, countArgs := usageWhere(query.UsageAggregateFilter, false)
 	var total int64
-	if err := s.db.QueryRowContext(ctx, "select count(*) from usage_events ue where "+countWhere, countArgs...).Scan(&total); err != nil {
-		return UsageEventPage{}, err
+	if query.IncludeTotalCount {
+		if err := s.db.QueryRowContext(ctx, "select count(*) from usage_events ue where "+countWhere, countArgs...).Scan(&total); err != nil {
+			return UsageEventPage{}, err
+		}
 	}
 	args = append(args, limit+1)
 	rows, err := s.db.QueryContext(ctx, `select

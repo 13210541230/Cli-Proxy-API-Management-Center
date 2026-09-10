@@ -192,6 +192,65 @@ func TestAnalyticsSecuritySignalCountCoversFullRangeBeyondEventPage(t *testing.T
 	}
 }
 
+func TestAnalyticsProviderStatsUseTheBoundedAggregatePath(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		{EventHash: "provider-a-1", TimestampMS: 1_700_000_000_000, Timestamp: "a", Provider: "codex", Model: "model", CreatedAtMS: 1},
+		{EventHash: "provider-a-2", TimestampMS: 1_700_000_000_001, Timestamp: "b", Provider: "codex", Model: "model", CreatedAtMS: 2},
+		{EventHash: "provider-b-1", TimestampMS: 1_700_000_000_002, Timestamp: "c", Provider: "claude", Model: "model", CreatedAtMS: 3},
+	}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	response, err := Query(ctx, db, Request{
+		FromMS:  1_699_999_999_999,
+		ToMS:    1_700_000_000_010,
+		Include: IncludeList{"provider_stats"},
+	})
+	if err != nil {
+		t.Fatalf("analytics query: %v", err)
+	}
+	if len(response.ProviderStats) != 2 || response.ProviderStats[0].Key != "codex" || response.ProviderStats[0].Requests != 2 {
+		t.Fatalf("provider stats = %#v", response.ProviderStats)
+	}
+}
+
+func TestAnalyticsEventsCanSkipExactTotalCount(t *testing.T) {
+	ctx := context.Background()
+	db, err := store.Open(filepath.Join(t.TempDir(), "usage.sqlite"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+	const timestamp = int64(1_700_000_000_000)
+	if _, err := db.InsertEvents(ctx, []usage.Event{
+		{EventHash: "count-a", TimestampMS: timestamp, Timestamp: "a", Model: "model", CreatedAtMS: 1},
+		{EventHash: "count-b", TimestampMS: timestamp + 1, Timestamp: "b", Model: "model", CreatedAtMS: 2},
+	}); err != nil {
+		t.Fatalf("insert events: %v", err)
+	}
+	includeTotalCount := false
+	response, err := Query(ctx, db, Request{
+		FromMS:  timestamp - 1,
+		ToMS:    timestamp + 10,
+		Include: IncludeList{"events"},
+		EventsPage: &EventsPageRequest{
+			Limit:             1,
+			IncludeTotalCount: &includeTotalCount,
+		},
+	})
+	if err != nil {
+		t.Fatalf("analytics query: %v", err)
+	}
+	if response.Events == nil || len(response.Events.Items) != 1 || !response.Events.HasMore || response.Events.TotalCount != 0 {
+		t.Fatalf("events page without total count = %#v", response.Events)
+	}
+}
+
 func TestAnalyticsRequestRejectsUnknownIncludeAndInvalidCursor(t *testing.T) {
 	if err := ValidateRequest(Request{FromMS: 1, ToMS: 2, Include: IncludeList{"unknown"}}); err == nil {
 		t.Fatal("unknown include accepted")
