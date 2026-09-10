@@ -41,6 +41,7 @@ export type UseAuthFilesDataResult = {
   deleting: string | null;
   deletingAll: boolean;
   statusUpdating: Record<string, boolean>;
+  websocketUpdating: Record<string, boolean>;
   batchStatusUpdating: boolean;
   fileInputRef: RefObject<HTMLInputElement | null>;
   loadFiles: (options?: { throwOnError?: boolean }) => Promise<void>;
@@ -55,6 +56,7 @@ export type UseAuthFilesDataResult = {
   handleDeleteAll: (options: DeleteAllOptions) => void;
   handleDownload: (name: string) => Promise<void>;
   handleStatusToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
+  handleWebsocketsToggle: (item: AuthFileItem, enabled: boolean) => Promise<void>;
   toggleSelect: (name: string) => void;
   selectAllVisible: (visibleFiles: AuthFileItem[]) => void;
   invertVisibleSelection: (visibleFiles: AuthFileItem[]) => void;
@@ -98,6 +100,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [deletingAll, setDeletingAll] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState<Record<string, boolean>>({});
+  const [websocketUpdating, setWebsocketUpdating] = useState<Record<string, boolean>>({});
   const [batchStatusUpdating, setBatchStatusUpdating] = useState(false);
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
 
@@ -541,6 +544,44 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     [showNotification, t]
   );
 
+  const handleWebsocketsToggle = useCallback(
+    async (item: AuthFileItem, enabled: boolean) => {
+      const name = item.name;
+      const previousWebsockets = item.websockets === true;
+
+      setWebsocketUpdating((prev) => ({ ...prev, [name]: true }));
+      setFiles((prev) =>
+        prev.map((file) => (file.name === name ? { ...file, websockets: enabled } : file))
+      );
+
+      try {
+        await authFilesApi.patchFields(name, { websockets: enabled });
+        showNotification(
+          enabled
+            ? t('auth_files.codex_websockets_enabled_success', { name })
+            : t('auth_files.codex_websockets_disabled_success', { name }),
+          'success'
+        );
+      } catch (err: unknown) {
+        const errorMessage = err instanceof Error ? err.message : '';
+        setFiles((prev) =>
+          prev.map((file) =>
+            file.name === name ? { ...file, websockets: previousWebsockets } : file
+          )
+        );
+        showNotification(`${t('notification.update_failed')}: ${errorMessage}`, 'error');
+      } finally {
+        setWebsocketUpdating((prev) => {
+          if (!prev[name]) return prev;
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    },
+    [showNotification, t]
+  );
+
   const batchSetStatus = useCallback(
     async (names: string[], enabled: boolean) => {
       if (batchStatusPendingRef.current) return;
@@ -721,6 +762,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     deleting,
     deletingAll,
     statusUpdating,
+    websocketUpdating,
     batchStatusUpdating,
     fileInputRef,
     loadFiles,
@@ -731,6 +773,7 @@ export function useAuthFilesData(): UseAuthFilesDataResult {
     handleDeleteAll,
     handleDownload,
     handleStatusToggle,
+    handleWebsocketsToggle,
     toggleSelect,
     selectAllVisible,
     invertVisibleSelection,

@@ -250,6 +250,7 @@ export function AuthFilesPage() {
     deleting,
     deletingAll,
     statusUpdating,
+    websocketUpdating,
     batchStatusUpdating,
     fileInputRef,
     loadFiles,
@@ -260,6 +261,7 @@ export function AuthFilesPage() {
     handleDeleteAll,
     handleDownload,
     handleStatusToggle,
+    handleWebsocketsToggle,
     toggleSelect,
     selectAllVisible,
     invertVisibleSelection,
@@ -1073,6 +1075,7 @@ export function AuthFilesPage() {
                     disableControls={disableControls}
                     deleting={deleting}
                     statusUpdating={statusUpdating}
+                    websocketUpdating={websocketUpdating}
                     quotaFilterType={quotaFilterType}
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}
@@ -1080,6 +1083,7 @@ export function AuthFilesPage() {
                     onOpenPrefixProxyEditor={openPrefixProxyEditor}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
+                    onToggleWebsockets={handleWebsocketsToggle}
                     onToggleSelect={toggleSelect}
                   />
                 ))}

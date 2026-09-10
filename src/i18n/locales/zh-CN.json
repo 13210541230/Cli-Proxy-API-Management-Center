@@ -812,7 +812,11 @@
     "models_excluded_badge": "已禁用",
     "models_excluded_hint": "此 OAuth 模型已被禁用",
     "status_toggle_label": "启用",
+    "codex_websockets_label": "上游 WebSocket",
+    "codex_websockets_enabled_success": "已为 \"{{name}}\" 启用上游 WebSocket",
+    "codex_websockets_disabled_success": "已为 \"{{name}}\" 关闭上游 WebSocket",
     "status_enabled_success": "已启用 \"{{name}}\"",
+
     "status_disabled_success": "已停用 \"{{name}}\"",
     "batch_status_success": "已成功更新 {{count}} 个文件",
     "batch_status_partial": "成功 {{success}} 个，失败 {{failed}} 个",

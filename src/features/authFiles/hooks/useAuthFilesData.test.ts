@@ -6,6 +6,7 @@ const { mocks } = vi.hoisted(() => {
   return {
     mocks: {
       list: vi.fn(),
+      patchFields: vi.fn(),
       saveJsonObject: vi.fn(),
       showNotification: vi.fn(),
       showConfirmation: vi.fn(),
@@ -34,6 +35,7 @@ vi.mock('@/stores', () => ({
 vi.mock('@/services/api', () => ({
   authFilesApi: {
     list: mocks.list,
+    patchFields: mocks.patchFields,
     saveJsonObject: mocks.saveJsonObject,
   },
 }));
@@ -88,11 +90,13 @@ const mountUseAuthFilesData = (): UseAuthFilesDataHarness => {
 
 beforeEach(() => {
   mocks.list.mockReset();
+  mocks.patchFields.mockReset();
   mocks.saveJsonObject.mockReset();
   mocks.showNotification.mockReset();
   mocks.showConfirmation.mockReset();
 
   mocks.list.mockResolvedValue({ files: [] });
+  mocks.patchFields.mockResolvedValue(undefined);
   mocks.saveJsonObject.mockResolvedValue(undefined);
 });
 
@@ -142,6 +146,50 @@ describe('buildPastedAuthJsonPayload', () => {
       account_id: 'session-account',
       access_token: 'plain-access-token',
     });
+  });
+});
+
+describe('useAuthFilesData auth file fields', () => {
+  it('updates the Codex upstream WebSocket setting through the fields endpoint', async () => {
+    const hook = mountUseAuthFilesData();
+    const file = { name: 'codex.json', type: 'codex', websockets: false };
+    mocks.list.mockResolvedValueOnce({ files: [file] });
+    await act(async () => {
+      await hook.getCurrent().loadFiles();
+    });
+
+    await act(async () => {
+      await hook.getCurrent().handleWebsocketsToggle(file, true);
+    });
+
+    expect(mocks.patchFields).toHaveBeenCalledWith('codex.json', { websockets: true });
+    expect(hook.getCurrent().files).toEqual([{ ...file, websockets: true }]);
+    expect(mocks.showNotification).toHaveBeenCalledWith(
+      'auth_files.codex_websockets_enabled_success:codex.json',
+      'success'
+    );
+    hook.unmount();
+  });
+
+  it('rolls back the WebSocket setting when the fields update fails', async () => {
+    const hook = mountUseAuthFilesData();
+    const file = { name: 'codex.json', type: 'codex', websockets: true };
+    mocks.list.mockResolvedValueOnce({ files: [file] });
+    await act(async () => {
+      await hook.getCurrent().loadFiles();
+    });
+    mocks.patchFields.mockRejectedValueOnce(new Error('update failed'));
+
+    await act(async () => {
+      await hook.getCurrent().handleWebsocketsToggle(file, false);
+    });
+
+    expect(hook.getCurrent().files).toEqual([file]);
+    expect(mocks.showNotification).toHaveBeenCalledWith(
+      'notification.update_failed: update failed',
+      'error'
+    );
+    hook.unmount();
   });
 });
 

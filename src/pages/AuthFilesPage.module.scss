@@ -1566,12 +1566,20 @@
   background: transparent;
 }
 
+.cardToggleGroup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
 .statusToggle {
   display: inline-flex;
   align-items: center;
   gap: 6px;
   flex-shrink: 0;
-  margin-left: auto;
 }
 
 .statusToggleLabel {
@@ -1615,8 +1623,12 @@
     min-width: 32px;
   }
 
-  .statusToggle {
+  .cardToggleGroup {
     width: 100%;
+    justify-content: space-between;
+  }
+
+  .statusToggle {
     justify-content: space-between;
   }
 }
