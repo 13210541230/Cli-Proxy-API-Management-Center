@@ -231,8 +231,11 @@ func maybeRecoverInterruptedUpdate(dbPath string, startCPA bool) (bool, error) {
 	if active {
 		// The detached updater holds the transaction lock while it restarts this
 		// manager. Keep the new manager available for the updater's health check;
-		// recovery is deferred until the helper records a terminal status.
+		// recovery is deferred until the helper records a terminal status. If the
+		// helper dies without recording a result, a background watcher resolves
+		// the dangling applying transaction so the UI observes a terminal state.
 		log.Printf("an update helper is still active; manager startup continues")
+		go update.WatchAndResolvePendingStatus(statusPath, nil)
 		return false, nil
 	}
 	if len(status.Backups) == 0 {

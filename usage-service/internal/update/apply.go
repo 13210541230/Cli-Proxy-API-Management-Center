@@ -105,17 +105,69 @@ func StartHelper(helperPath string, options ApplyOptions) (*exec.Cmd, error) {
 	return cmd, nil
 }
 
-func Apply(options ApplyOptions) error {
-	if strings.TrimSpace(options.StagingPath) == "" {
-		return errors.New("update staging path is empty")
-	}
-	if strings.TrimSpace(options.ManagerExecutablePath) == "" || strings.TrimSpace(options.CPAExecutablePath) == "" {
-		return errors.New("manager and CPA executable paths are required")
-	}
+func Apply(options ApplyOptions) (applyErr error) {
 	backups := make([]backupFile, 0, 3)
 	startedAt := time.Now().UnixMilli()
 	resultRecorded := false
 	preserveApplyingOnExit := false
+	// recordResult is captured by the terminal-status fallback defer below, so
+	// it must be assigned before any validation return can fire the defer.
+	recordResult := func(state string, resultErr error) error {
+		status := PersistedStatus{
+			State:          state,
+			OS:             options.OS,
+			Arch:           options.Arch,
+			TransactionID:  options.TransactionID,
+			CPAVersion:     options.CPAVersion,
+			ManagerVersion: options.ManagerVersion,
+			StagingPath:    options.StagingPath,
+			Backups:        persistedBackups(backups),
+			Error:          errorString(resultErr),
+			StartedAtMS:    startedAt,
+			CompletedAtMS:  time.Now().UnixMilli(),
+		}
+		err := WritePersistedStatusOwned(options.ResultPath, status)
+		if err == nil {
+			resultRecorded = true
+			return nil
+		}
+		log.Printf("update status persist failed (owned): %v", err)
+		// The owning transaction may already be gone (helper terminated or
+		// identity check failed). Fall back to an unowned write so the
+		// terminal state and the real failure reason are never lost.
+		if fallbackErr := WritePersistedStatus(options.ResultPath, status); fallbackErr == nil {
+			resultRecorded = true
+			return nil
+		}
+		return err
+	}
+	// Register the terminal-status fallback before any validation return so
+	// every failure path, including early validation, leaves a real failure
+	// reason in the sidecar.
+	defer func() {
+		if !resultRecorded && !preserveApplyingOnExit {
+			if applyErr == nil {
+				applyErr = errors.New("update helper exited before recording a result")
+			}
+			if recordResult == nil {
+				return
+			}
+			if err := recordResult(StageFailed, applyErr); err != nil {
+				log.Printf("update status persist failed: %v", err)
+			}
+		}
+		if err := removeStagingPath(options.StagingPath); err != nil {
+			log.Printf("update staging cleanup failed: %v", err)
+		}
+	}()
+	if strings.TrimSpace(options.StagingPath) == "" {
+		applyErr = errors.New("update staging path is empty")
+		return
+	}
+	if strings.TrimSpace(options.ManagerExecutablePath) == "" || strings.TrimSpace(options.CPAExecutablePath) == "" {
+		applyErr = errors.New("manager and CPA executable paths are required")
+		return
+	}
 	persistApplying := func() error {
 		return WritePersistedStatusOwned(options.ResultPath, PersistedStatus{
 			State:          StageApplying,
@@ -129,35 +181,6 @@ func Apply(options ApplyOptions) error {
 			StartedAtMS:    startedAt,
 		})
 	}
-	recordResult := func(state string, resultErr error) error {
-		if err := WritePersistedStatusOwned(options.ResultPath, PersistedStatus{
-			State:          state,
-			OS:             options.OS,
-			Arch:           options.Arch,
-			TransactionID:  options.TransactionID,
-			CPAVersion:     options.CPAVersion,
-			ManagerVersion: options.ManagerVersion,
-			StagingPath:    options.StagingPath,
-			Backups:        persistedBackups(backups),
-			Error:          errorString(resultErr),
-			StartedAtMS:    startedAt,
-			CompletedAtMS:  time.Now().UnixMilli(),
-		}); err == nil {
-			resultRecorded = true
-			return nil
-		} else {
-			log.Printf("update status persist failed: %v", err)
-			return err
-		}
-	}
-	defer func() {
-		if !resultRecorded && !preserveApplyingOnExit {
-			_ = recordResult(StageFailed, errors.New("update helper exited before recording a result"))
-		}
-		if err := removeStagingPath(options.StagingPath); err != nil {
-			log.Printf("update staging cleanup failed: %v", err)
-		}
-	}()
 	var applyLock *transactionLock
 	var err error
 	if options.OwnsTransactionLock {
@@ -166,7 +189,8 @@ func Apply(options ApplyOptions) error {
 		applyLock, err = acquireTransactionLock(options.ResultPath, options.TransactionID, transactionLockWait)
 	}
 	if err != nil {
-		return err
+		applyErr = err
+		return
 	}
 	defer func() {
 		if err := applyLock.Release(); err != nil {
@@ -176,13 +200,16 @@ func Apply(options ApplyOptions) error {
 	rollback := func() error {
 		return rollbackPersistedBackups(persistedBackups(backups))
 	}
+	log.Printf("update apply: transaction %s -> CPA %s / CPA-Manager %s", options.TransactionID, options.CPAVersion, options.ManagerVersion)
 	files, err := LocateBundle(options.StagingPath)
 	if err != nil {
-		return recoverApplyFailure(options, rollback, recordResult, err)
+		applyErr = recoverApplyFailure(options, rollback, recordResult, err)
+		return
 	}
 	if options.ManagerPID > 0 {
 		if err := waitForProcessExit(options.ManagerPID, options.ManagerExecutablePath, 30*time.Second); err != nil {
-			return recoverApplyFailure(options, rollback, recordResult, err)
+			applyErr = recoverApplyFailure(options, rollback, recordResult, err)
+			return
 		}
 	}
 	type replacement struct {
@@ -202,37 +229,47 @@ func Apply(options ApplyOptions) error {
 	for _, item := range replacements {
 		planned, planErr := planBackup(item.target)
 		if planErr != nil {
-			return recoverApplyFailure(options, rollback, recordResult, fmt.Errorf("plan %s replacement: %w", item.label, planErr))
+			applyErr = recoverApplyFailure(options, rollback, recordResult, fmt.Errorf("plan %s replacement: %w", item.label, planErr))
+			return
 		}
 		backups = append(backups, planned)
 	}
 	if err := persistApplying(); err != nil {
-		return recoverApplyFailure(options, rollback, recordResult, fmt.Errorf("persist replacement plan: %w", err))
+		applyErr = recoverApplyFailure(options, rollback, recordResult, fmt.Errorf("persist replacement plan: %w", err))
+		return
 	}
 	for index, item := range replacements {
 		if err := replaceFileWithBackup(item.source, &backups[index]); err != nil {
-			return restartAfterRollback(options, rollback, recordResult, fmt.Errorf("replace %s: %w", item.label, err))
+			applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("replace %s: %w", item.label, err))
+			return
 		}
 		if err := persistApplying(); err != nil {
-			return restartAfterRollback(options, rollback, recordResult, fmt.Errorf("persist %s replacement metadata: %w", item.label, err))
+			applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("persist %s replacement metadata: %w", item.label, err))
+			return
 		}
 	}
+	log.Printf("update apply: replaced %d executables", len(replacements))
 
 	cpaCmd, managerCmd, err := startProcesses(options)
 	if err != nil {
-		return restartAfterRollback(options, rollback, recordResult, fmt.Errorf("start updated processes: %w", err))
+		applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("start updated processes: %w", err))
+		return
 	}
+	log.Printf("update apply: started CPA-Manager pid %d (previous manager %d)", managerCmd.Process.Pid, options.ManagerPID)
 	if err := waitForProcessesHealthy(options, managerCmd, cpaCmd); err != nil {
 		terminateProcess(managerCmd)
 		terminateProcess(cpaCmd)
-		return restartAfterRollback(options, rollback, recordResult, fmt.Errorf("updated CPA-Manager health check failed: %w", err))
+		applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("updated CPA-Manager health check failed: %w", err))
+		return
 	}
+	log.Printf("update apply: health checks passed; committing update result")
 	// Commit the successful health-checked state before deleting backups. If the
 	// updater exits in the cleanup window, the next manager can safely retry the
 	// idempotent cleanup without treating the update as interrupted.
 	preserveApplyingOnExit = true
 	if err := recordResult(StageSucceeded, nil); err != nil {
-		return fmt.Errorf("persist successful update status: %w", err)
+		applyErr = fmt.Errorf("persist successful update status: %w", err)
+		return
 	}
 	preserveApplyingOnExit = false
 	cleanupErr := cleanupBackups(backups)
@@ -252,12 +289,15 @@ func Apply(options ApplyOptions) error {
 }
 
 func recoverApplyFailure(options ApplyOptions, rollback func() error, recordResult func(string, error) error, cause error) error {
+	log.Printf("update apply failure recovery started: %v", cause)
 	if rollbackErr := rollback(); rollbackErr != nil {
 		failure := fmt.Errorf("%w; rollback failed: %v", cause, rollbackErr)
+		log.Printf("update apply failure: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
 	if !options.RestoreOnFailure {
+		log.Printf("update apply failure (no restore): %v", cause)
 		recordResult(StageFailed, cause)
 		return cause
 	}
@@ -275,6 +315,7 @@ func recoverApplyFailure(options ApplyOptions, rollback func() error, recordResu
 	}
 	if !managerExited {
 		failure := fmt.Errorf("%w; CPA-Manager did not exit for rollback", cause)
+		log.Printf("update apply failure: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
@@ -282,16 +323,20 @@ func recoverApplyFailure(options ApplyOptions, rollback func() error, recordResu
 	cpaCmd, managerCmd, restartErr := startProcesses(options)
 	if restartErr != nil {
 		failure := fmt.Errorf("%w; rollback restart failed: %v", cause, restartErr)
+		log.Printf("update apply failure: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
+	log.Printf("update apply failure: rollback restart started CPA-Manager pid %d", managerCmd.Process.Pid)
 	if healthErr := waitForProcessesHealthy(options, managerCmd, cpaCmd); healthErr != nil {
 		terminateProcess(managerCmd)
 		terminateProcess(cpaCmd)
 		failure := fmt.Errorf("%w; rollback health check failed: %v", cause, healthErr)
+		log.Printf("update apply failure: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
+	log.Printf("update apply failure: rollback health checks passed")
 	_ = managerCmd.Process.Release()
 	if cpaCmd != nil {
 		_ = cpaCmd.Process.Release()
@@ -342,24 +387,30 @@ func startProcesses(options ApplyOptions) (*exec.Cmd, *exec.Cmd, error) {
 }
 
 func restartAfterRollback(options ApplyOptions, rollback func() error, recordResult func(string, error) error, cause error) error {
+	log.Printf("update apply rollback started: %v", cause)
 	if rollbackErr := rollback(); rollbackErr != nil {
 		failure := fmt.Errorf("%w; rollback failed: %v", cause, rollbackErr)
+		log.Printf("update apply rollback failed: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
 	cpaCmd, managerCmd, restartErr := startProcesses(options)
 	if restartErr != nil {
 		failure := fmt.Errorf("%w; rollback restart failed: %v", cause, restartErr)
+		log.Printf("update apply rollback restart failed: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
+	log.Printf("update apply rollback restarted CPA-Manager pid %d", managerCmd.Process.Pid)
 	if healthErr := waitForProcessesHealthy(options, managerCmd, cpaCmd); healthErr != nil {
 		terminateProcess(managerCmd)
 		terminateProcess(cpaCmd)
 		failure := fmt.Errorf("%w; rollback health check failed: %v", cause, healthErr)
+		log.Printf("update apply rollback health failed: %v", failure)
 		recordResult(StageFailed, failure)
 		return failure
 	}
+	log.Printf("update apply rollback health checks passed")
 	_ = managerCmd.Process.Release()
 	if cpaCmd != nil {
 		_ = cpaCmd.Process.Release()
@@ -519,7 +570,7 @@ func waitRename(source, target string) error {
 }
 
 func waitForProcessesHealthy(options ApplyOptions, commands ...*exec.Cmd) error {
-	if err := waitForHealthy(options.ManagerHealthURL, 30*time.Second); err != nil {
+	if err := waitForHealthy(options.ManagerHealthURL, 90*time.Second); err != nil {
 		return fmt.Errorf("CPA-Manager health check failed: %w", err)
 	}
 	if len(commands) > 0 && commands[0] != nil && strings.TrimSpace(options.ManagerExecutablePath) != "" {
@@ -530,7 +581,7 @@ func waitForProcessesHealthy(options ApplyOptions, commands ...*exec.Cmd) error 
 		}
 	}
 	if strings.TrimSpace(options.CPAHealthURL) != "" {
-		if err := waitForHealthy(options.CPAHealthURL, 30*time.Second); err != nil {
+		if err := waitForHealthy(options.CPAHealthURL, 90*time.Second); err != nil {
 			return fmt.Errorf("CLIProxyAPI health check failed: %w", err)
 		}
 		if len(commands) > 1 && commands[1] != nil && strings.TrimSpace(options.CPAExecutablePath) != "" {

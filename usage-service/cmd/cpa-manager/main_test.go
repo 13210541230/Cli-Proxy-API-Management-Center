@@ -25,7 +25,11 @@ func TestMaybeRecoverInterruptedUpdateKeepsManagerAvailableWhileHelperRuns(t *te
 	if err := os.WriteFile(lockPath, []byte(fmt.Sprintf(`{"pid":%d,"transactionId":"active-update"}`, os.Getpid())), 0o600); err != nil {
 		t.Fatalf("write active update lock: %v", err)
 	}
-	t.Cleanup(func() { _ = os.Remove(lockPath) })
+	path := statusPath
+	t.Cleanup(func() {
+		_ = os.Remove(path)
+		_ = os.Remove(lockPath)
+	})
 
 	handled, err := maybeRecoverInterruptedUpdate(dbPath, false)
 	if err != nil {
