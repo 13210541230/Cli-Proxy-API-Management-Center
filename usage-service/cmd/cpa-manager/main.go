@@ -122,7 +122,7 @@ func main() {
 	defer stop()
 
 	// Rollup catches up in event-id batches so historical rebuilds do not block the HTTP listener.
-	rollupWorker := rollup.NewWorker(db, rollup.Config{BatchSize: 1000})
+	rollupWorker := rollup.NewWorker(db, rollup.Config{BatchSize: 10000})
 	rollupWorker.Start(ctx)
 
 	if cfg.CPAUpstreamURL != "" && cfg.ManagementKey != "" {
@@ -184,12 +184,27 @@ func main() {
 		go func() {
 			ticker := time.NewTicker(cleanupInterval)
 			defer ticker.Stop()
+			// VACUUM rewrites the whole database file and blocks writes, so it
+			// must stay a low-frequency operation (at most once per week) even
+			// though retention purging runs daily.
+			lastVacuum := time.Time{}
 			for {
 				cleanupCutoff := time.Now().AddDate(0, 0, -cfg.RetentionDays).UnixMilli()
 				if n, err := db.PurgeEventsBefore(ctx, cleanupCutoff); err != nil {
 					log.Printf("cleanup: purge error: %v", err)
 				} else if n > 0 {
 					log.Printf("cleanup: purged %d old events", n)
+					if time.Since(lastVacuum) >= 7*24*time.Hour {
+						// DELETE alone leaves the SQLite file at its old size.
+						// Vacuum occasionally so the file actually shrinks.
+						log.Printf("cleanup: vacuuming database file (may take a while on large databases)")
+						if err := db.Vacuum(ctx); err != nil {
+							log.Printf("cleanup: vacuum error: %v", err)
+						} else {
+							lastVacuum = time.Now()
+							log.Printf("cleanup: vacuum completed")
+						}
+					}
 				}
 				select {
 				case <-ctx.Done():

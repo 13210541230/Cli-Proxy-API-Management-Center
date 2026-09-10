@@ -333,37 +333,67 @@ func (s *Store) Close() error {
 
 // PurgeEventsBefore atomically removes expired raw events and invalidates the
 // rebuildable hourly layer so deleted events cannot remain in rollup reads.
+// Deletion is performed in small batches so a very large table never holds a
+// single long-running write transaction that blocks readers and writers.
 func (s *Store) PurgeEventsBefore(ctx context.Context, cutoffMS int64) (int64, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return 0, err
+	const batchSize = 5000
+	var total int64
+	for {
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return total, err
+		}
+		res, err := tx.ExecContext(ctx, `delete from usage_events where id in (
+			select id from usage_events where timestamp_ms < ? order by id asc limit ?
+		)`, cutoffMS, batchSize)
+		if err != nil {
+			_ = tx.Rollback()
+			return total, err
+		}
+		n, _ := res.RowsAffected()
+		if err := tx.Commit(); err != nil {
+			return total, err
+		}
+		total += n
+		if n < batchSize {
+			break
+		}
+		if err := ctx.Err(); err != nil {
+			return total, err
+		}
 	}
-	defer func() { _ = tx.Rollback() }()
-	res, err := tx.ExecContext(ctx, `delete from usage_events where timestamp_ms < ?`, cutoffMS)
-	if err != nil {
-		return 0, err
-	}
-	n, _ := res.RowsAffected()
-	if n > 0 {
+	if total > 0 {
+		tx, err := s.db.BeginTx(ctx, nil)
+		if err != nil {
+			return total, err
+		}
+		defer func() { _ = tx.Rollback() }()
 		if _, err := tx.ExecContext(ctx, `delete from usage_hourly_rollups`); err != nil {
-			return 0, err
+			return total, err
 		}
 		if _, err := tx.ExecContext(ctx, `delete from usage_daily_dimension_rollups`); err != nil {
-			return 0, err
+			return total, err
 		}
 		if _, err := tx.ExecContext(ctx, `update usage_rollup_state set checkpoint_id = 0, coverage_event_id = 0, target_event_id = 0, status = ?, last_error = null, updated_at_ms = ? where id = 1`, RollupStatusPending, time.Now().UnixMilli()); err != nil {
-			return 0, err
+			return total, err
 		}
-	}
-	if err := tx.Commit(); err != nil {
-		return 0, err
-	}
-	if n > 0 {
+		if err := tx.Commit(); err != nil {
+			return total, err
+		}
 		if err := s.clearPendingRollupFailure(); err != nil {
-			return n, fmt.Errorf("clear rollup failure marker after purge: %w", err)
+			return total, fmt.Errorf("clear rollup failure marker after purge: %w", err)
 		}
 	}
-	return n, nil
+	return total, nil
+}
+
+// Vacuum rewrites the database file so space released by previous DELETE
+// statements (for example a retention purge) is actually returned to the
+// filesystem. SQLite DELETE statements mark pages free inside the file but do
+// not shrink it; without VACUUM a large purge leaves the file at its old size.
+func (s *Store) Vacuum(ctx context.Context) error {
+	_, err := s.db.ExecContext(ctx, `VACUUM`)
+	return err
 }
 
 func (s *Store) init() error {
