@@ -17,7 +17,7 @@ func (s *Store) LoadDailyDimensionRollups(ctx context.Context, fromMS, toMS int6
 	query := `select bucket_ms, dimension, dimension_key, model, requests, successes, failures,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 		billable_prompt_tokens, billable_cache_tokens, billable_completion_tokens,
-		latency_sum_ms, latency_samples, zero_token_calls
+		latency_sum_ms, latency_samples, zero_token_calls, last_seen_ms
 		from usage_daily_dimension_rollups where dimension = ?`
 	args := []any{dimension}
 	if fromMS != 0 {
@@ -43,7 +43,7 @@ func (s *Store) LoadDailyDimensionRollups(ctx context.Context, fromMS, toMS int6
 			&row.Metric.InputTokens, &row.Metric.OutputTokens, &row.Metric.ReasoningTokens,
 			&row.Metric.CachedTokens, &row.Metric.CacheTokens, &row.Metric.TotalTokens,
 			&row.Metric.BillablePromptTokens, &row.Metric.BillableCacheTokens, &row.Metric.BillableCompletionTokens,
-			&row.Metric.LatencySumMS, &row.Metric.LatencySamples, &row.Metric.ZeroTokenCalls,
+			&row.Metric.LatencySumMS, &row.Metric.LatencySamples, &row.Metric.ZeroTokenCalls, &row.Metric.LastSeenMS,
 		); err != nil {
 			return nil, err
 		}

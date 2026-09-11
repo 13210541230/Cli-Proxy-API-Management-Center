@@ -45,6 +45,7 @@ type UsageMetric struct {
 	BillableCacheTokens      int64
 	BillableCompletionTokens int64
 	CostUSD                  float64
+	LastSeenMS               int64
 }
 
 type UsageAggregateRow struct {
@@ -84,6 +85,7 @@ func (s *Store) AggregateUsageEvents(ctx context.Context, filter UsageAggregateF
 		sum(case when ue.latency_ms is not null then 1 else 0 end),
 		sum(case when ue.input_tokens = 0 and ue.output_tokens = 0 and ue.reasoning_tokens = 0
 			and ue.cached_tokens = 0 and ue.cache_tokens = 0 and ue.total_tokens = 0 then 1 else 0 end),
+		max(ue.timestamp_ms),
 		sum((
 			max(0, ue.input_tokens - max(ue.cached_tokens, ue.cache_tokens)) * coalesce(mp.prompt_per_1m, 0)
 			+ max(0, max(ue.cached_tokens, ue.cache_tokens)) * coalesce(mp.cache_per_1m, 0)
@@ -134,6 +136,7 @@ func (s *Store) AggregateUsageDimension(ctx context.Context, filter UsageAggrega
 		sum(case when ue.latency_ms is not null then 1 else 0 end),
 		sum(case when ue.input_tokens = 0 and ue.output_tokens = 0 and ue.reasoning_tokens = 0
 			and ue.cached_tokens = 0 and ue.cache_tokens = 0 and ue.total_tokens = 0 then 1 else 0 end),
+		max(ue.timestamp_ms),
 		sum((
 			max(0, ue.input_tokens - max(ue.cached_tokens, ue.cache_tokens)) * coalesce(mp.prompt_per_1m, 0)
 			+ max(0, max(ue.cached_tokens, ue.cache_tokens)) * coalesce(mp.cache_per_1m, 0)
@@ -185,6 +188,7 @@ func (s *Store) AggregateUsageDimensionTimeline(ctx context.Context, filter Usag
 		sum(case when ue.latency_ms is not null then 1 else 0 end),
 		sum(case when ue.input_tokens = 0 and ue.output_tokens = 0 and ue.reasoning_tokens = 0
 			and ue.cached_tokens = 0 and ue.cache_tokens = 0 and ue.total_tokens = 0 then 1 else 0 end),
+		max(ue.timestamp_ms),
 		sum((
 			max(0, ue.input_tokens - max(ue.cached_tokens, ue.cache_tokens)) * coalesce(mp.prompt_per_1m, 0)
 			+ max(0, max(ue.cached_tokens, ue.cache_tokens)) * coalesce(mp.cache_per_1m, 0)
@@ -292,13 +296,14 @@ func scanUsageMetricRow(rows *sql.Rows, bucket *int64, dimension *string, metric
 		&metric.LatencySumMS,
 		&metric.LatencySamples,
 		&metric.ZeroTokenCalls,
+		&metric.LastSeenMS,
 		&metric.CostUSD,
 	}
 	if bucket != nil && dimension != nil {
-		return rows.Scan(bucket, dimension, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
+		return rows.Scan(append([]any{bucket, dimension}, values...)...)
 	}
 	if dimension != nil {
-		return rows.Scan(dimension, values[0], values[1], values[2], values[3], values[4], values[5], values[6], values[7], values[8], values[9], values[10], values[11], values[12], values[13], values[14], values[15])
+		return rows.Scan(append([]any{dimension}, values...)...)
 	}
 	return rows.Scan(values...)
 }

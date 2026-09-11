@@ -1,7 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import type { TFunction } from 'i18next';
-import { AccountExpandedDetails, AccountOverviewCard } from './MonitoringCenterPage';
+import {
+  AccountExpandedDetails,
+  AccountOverviewCard,
+  buildAnalyticsAccountRows,
+  buildAnalyticsApiKeyRows,
+} from './MonitoringCenterPage';
 import { buildMonitoringAnalyticsRequest } from '@/features/monitoring/analyticsRequest';
 import { buildEmptyMonitoringStatusData } from '@/features/monitoring/accountOverviewState';
 
@@ -87,6 +92,41 @@ describe('MonitoringCenterPage analytics request', () => {
     }, true);
     expect(filtered.filters).toEqual({ api_key_hash: 'hash-a', model: 'model-a' });
     expect(filtered.include).toContain('api_key_timeline');
+  });
+});
+
+describe('MonitoringCenterPage analytics rows', () => {
+  it('uses analytics last_seen_ms for account and API-key latest request times', () => {
+    const lastSeenMs = Date.UTC(2026, 4, 10, 12, 34, 56);
+    const metric = {
+      key: 'account@example.com',
+      requests: 3,
+      successes: 2,
+      failures: 1,
+      input_tokens: 100,
+      output_tokens: 50,
+      reasoning_tokens: 12,
+      cached_tokens: 20,
+      cache_tokens: 20,
+      total_tokens: 162,
+      latency_sum_ms: 900,
+      latency_samples: 3,
+      zero_token_calls: 0,
+      last_seen_ms: lastSeenMs,
+      cost_usd: 0.42,
+    };
+
+    const accountRows = buildAnalyticsAccountRows([metric], []);
+    expect(accountRows[0].lastSeenAt).toBe(lastSeenMs);
+    expect(accountRows[0].averageLatencyMs).toBe(300);
+
+    const apiKeyRows = buildAnalyticsApiKeyRows(
+      [{ ...metric, key: 'hash-a' }],
+      [{ apiKeyHash: 'hash-a', alias: 'Key A' }],
+      'tokens'
+    );
+    expect(apiKeyRows[0].lastSeenAt).toBe(lastSeenMs);
+    expect(apiKeyRows[0].apiKeyLabel).toBe('Key A（hash-a）');
   });
 });
 

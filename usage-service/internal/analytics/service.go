@@ -179,6 +179,7 @@ type Metric struct {
 	LatencySumMS    int64   `json:"latency_sum_ms"`
 	LatencySamples  int64   `json:"latency_samples"`
 	ZeroTokenCalls  int64   `json:"zero_token_calls"`
+	LastSeenMS      int64   `json:"last_seen_ms"`
 	CostUSD         float64 `json:"cost_usd"`
 }
 
@@ -783,6 +784,7 @@ func rollupToMetric(row store.HourlyRollup) store.UsageMetric {
 		BillablePromptTokens: row.BillablePromptTokens, BillableCacheTokens: row.BillableCacheTokens,
 		BillableCompletionTokens: row.BillableCompletionTokens,
 		LatencySumMS:             row.LatencySumMS, LatencySamples: row.LatencySamples, ZeroTokenCalls: row.ZeroTokenCalls,
+		LastSeenMS: row.LastSeenMS,
 	}
 }
 
@@ -799,6 +801,9 @@ func addMetric(left, right store.UsageMetric) store.UsageMetric {
 	left.LatencySumMS += right.LatencySumMS
 	left.LatencySamples += right.LatencySamples
 	left.ZeroTokenCalls += right.ZeroTokenCalls
+	if right.LastSeenMS > left.LastSeenMS {
+		left.LastSeenMS = right.LastSeenMS
+	}
 	left.BillablePromptTokens += right.BillablePromptTokens
 	left.BillableCacheTokens += right.BillableCacheTokens
 	left.BillableCompletionTokens += right.BillableCompletionTokens
@@ -820,7 +825,8 @@ func metricFromAggregate(metric store.UsageMetric) Metric {
 		InputTokens: metric.InputTokens, OutputTokens: metric.OutputTokens, ReasoningTokens: metric.ReasoningTokens,
 		CachedTokens: metric.CachedTokens, CacheTokens: metric.CacheTokens, TotalTokens: metric.TotalTokens,
 		LatencySumMS: metric.LatencySumMS, LatencySamples: metric.LatencySamples, ZeroTokenCalls: metric.ZeroTokenCalls,
-		CostUSD: metric.CostUSD,
+		LastSeenMS: metric.LastSeenMS,
+		CostUSD:    metric.CostUSD,
 	}
 }
 

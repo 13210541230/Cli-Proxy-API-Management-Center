@@ -295,7 +295,7 @@ type EnterpriseImportHistory struct {
 type Store struct {
 	db *sql.DB
 
-	// rollupFailureMu 保护无法在 SQLite 锁持有期间落盘的失败信息，避免错误被丢弃。
+	// rollupFailureMu protects failure details that cannot be persisted while SQLite is locked.
 	rollupFailureMu      sync.Mutex
 	pendingRollupFailure *rollupFailureMarker
 	rollupFailurePath    string
@@ -466,6 +466,7 @@ func (s *Store) init() error {
 			latency_sum_ms integer not null default 0,
 			latency_samples integer not null default 0,
 			zero_token_calls integer not null default 0,
+			last_seen_ms integer not null default 0,
 			billable_prompt_tokens integer not null default 0,
 			billable_cache_tokens integer not null default 0,
 			billable_completion_tokens integer not null default 0,
@@ -488,6 +489,7 @@ func (s *Store) init() error {
 			latency_sum_ms integer not null default 0,
 			latency_samples integer not null default 0,
 			zero_token_calls integer not null default 0,
+			last_seen_ms integer not null default 0,
 			billable_prompt_tokens integer not null default 0,
 			billable_cache_tokens integer not null default 0,
 			billable_completion_tokens integer not null default 0,
@@ -767,7 +769,7 @@ func (s *Store) ensureEnterpriseSchema() error {
 	); err != nil {
 		return err
 	}
-	// 启动迁移只补齐结构，不归一化既有绑定数据；业务修复必须由显式保存/删除操作触发。
+	// Startup migrations only complete schema shape; existing bindings are normalized only by explicit save/delete operations.
 	return nil
 }
 

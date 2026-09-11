@@ -234,6 +234,7 @@ export interface UsageAnalyticsMetric {
   latency_sum_ms: number;
   latency_samples: number;
   zero_token_calls: number;
+  last_seen_ms: number;
   cost_usd: number;
 }
 

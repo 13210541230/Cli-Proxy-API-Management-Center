@@ -74,6 +74,7 @@ const EMPTY_ANALYTICS_METRIC: UsageAnalyticsMetric = {
   latency_sum_ms: 0,
   latency_samples: 0,
   zero_token_calls: 0,
+  last_seen_ms: 0,
   cost_usd: 0
 };
 

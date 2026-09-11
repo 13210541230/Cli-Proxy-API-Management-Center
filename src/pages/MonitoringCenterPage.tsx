@@ -231,6 +231,7 @@ const buildAnalyticsSummary = (
     latency_sum_ms: 0,
     latency_samples: 0,
     zero_token_calls: 0,
+    last_seen_ms: 0,
     cost_usd: 0,
   };
   const totalCalls = analyticsNumber(source.requests);
@@ -267,7 +268,8 @@ const buildAnalyticsSummary = (
   };
 };
 
-const buildAnalyticsApiKeyRows = (
+// eslint-disable-next-line react-refresh/only-export-components -- exported for regression coverage of analytics data mapping.
+export const buildAnalyticsApiKeyRows = (
   stats: UsageAnalyticsDimensionStat[] = [],
   aliases: Array<{ apiKeyHash: string; alias: string }> = [],
   sortKey: ApiKeySummarySortKey
@@ -287,7 +289,7 @@ const buildAnalyticsApiKeyRows = (
       totalTokens: analyticsNumber(item.total_tokens),
       reasoningTokens: analyticsNumber(item.reasoning_tokens),
       totalCost: analyticsNumber(item.cost_usd),
-      lastSeenAt: 0,
+      lastSeenAt: analyticsNumber(item.last_seen_ms),
     };
   });
   rows.sort((left, right) => {
@@ -345,7 +347,8 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
   return { apis };
 };
 
-const buildAnalyticsAccountRows = (
+// eslint-disable-next-line react-refresh/only-export-components -- exported for regression coverage of analytics data mapping.
+export const buildAnalyticsAccountRows = (
   stats: UsageAnalyticsDimensionStat[] = [],
   authFiles: AuthFileItem[] = []
 ): MonitoringAccountRow[] =>
@@ -386,7 +389,7 @@ const buildAnalyticsAccountRows = (
           analyticsNumber(item.latency_samples) > 0
             ? analyticsNumber(item.latency_sum_ms) / analyticsNumber(item.latency_samples)
             : null,
-        lastSeenAt: 0,
+        lastSeenAt: analyticsNumber(item.last_seen_ms),
         recentPattern: [],
         models: [],
       };

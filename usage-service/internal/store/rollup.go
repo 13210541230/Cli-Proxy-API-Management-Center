@@ -31,8 +31,9 @@ type rollupFailureMarker struct {
 	CoverageEventID int64  `json:"coverageEventId"`
 }
 
-// rollupFailureMarkerPath 仅为普通文件数据库启用 sidecar；内存库和 URI
-// 无法可靠映射到单一文件，因此安全降级为当前进程内的 pending 状态。
+// rollupFailureMarkerPath enables the sidecar only for ordinary file-backed
+// databases. In-memory databases and URIs do not reliably map to a single file,
+// so they safely fall back to in-process pending state.
 func rollupFailureMarkerPath(path string) string {
 	trimmed := strings.TrimSpace(path)
 	if trimmed == "" || trimmed == ":memory:" || strings.HasPrefix(trimmed, "file:") || strings.ContainsAny(trimmed, "?#") {
@@ -41,7 +42,8 @@ func rollupFailureMarkerPath(path string) string {
 	return trimmed + ".rollup-failure"
 }
 
-// HourlyRollup 是 usage_events 的可重建小时派生统计，不保存原始请求或明文密钥。
+// HourlyRollup is a rebuildable hourly derived aggregate of usage_events; it
+// never stores raw requests or plaintext credentials.
 type HourlyRollup struct {
 	BucketMS                 int64  `json:"bucketMs"`
 	Model                    string `json:"model"`
@@ -57,13 +59,14 @@ type HourlyRollup struct {
 	LatencySumMS             int64  `json:"latencySumMs"`
 	LatencySamples           int64  `json:"latencySamples"`
 	ZeroTokenCalls           int64  `json:"zeroTokenCalls"`
+	LastSeenMS               int64  `json:"lastSeenMs"`
 	BillablePromptTokens     int64  `json:"billablePromptTokens"`
 	BillableCacheTokens      int64  `json:"billableCacheTokens"`
 	BillableCompletionTokens int64  `json:"billableCompletionTokens"`
 }
 
 // DailyDimensionRollup stores the same additive metrics as the hourly layer,
-// faned out by a safe identity dimension and model. The dimension key is a
+// fanned out by a safe identity dimension and model. The dimension key is a
 // hash or snapshot, never a plaintext API credential.
 type DailyDimensionRollup struct {
 	BucketMS     int64
@@ -80,8 +83,11 @@ func maxInt64(left, right int64) int64 {
 	return right
 }
 
-func updateUsageMetric(metric *UsageMetric, failed bool, input, output, reasoning, cached, cache, total, latency int64, latencyValid bool) {
+func updateUsageMetric(metric *UsageMetric, timestampMS int64, failed bool, input, output, reasoning, cached, cache, total, latency int64, latencyValid bool) {
 	metric.Requests++
+	if timestampMS > metric.LastSeenMS {
+		metric.LastSeenMS = timestampMS
+	}
 	if failed {
 		metric.Failures++
 	} else {
@@ -109,27 +115,30 @@ func updateUsageMetric(metric *UsageMetric, failed bool, input, output, reasonin
 	metric.BillableCompletionTokens += maxInt64(0, output)
 }
 
-func updateHourlyRollupMetric(rollup *HourlyRollup, failed bool, input, output, reasoning, cached, cache, total, latency int64, latencyValid bool) {
+func updateHourlyRollupMetric(rollup *HourlyRollup, timestampMS int64, failed bool, input, output, reasoning, cached, cache, total, latency int64, latencyValid bool) {
 	metric := UsageMetric{
 		Requests: rollup.Requests, Successes: rollup.Successes, Failures: rollup.Failures,
 		InputTokens: rollup.InputTokens, OutputTokens: rollup.OutputTokens, ReasoningTokens: rollup.ReasoningTokens,
 		CachedTokens: rollup.CachedTokens, CacheTokens: rollup.CacheTokens, TotalTokens: rollup.TotalTokens,
 		LatencySumMS: rollup.LatencySumMS, LatencySamples: rollup.LatencySamples, ZeroTokenCalls: rollup.ZeroTokenCalls,
+		LastSeenMS:           rollup.LastSeenMS,
 		BillablePromptTokens: rollup.BillablePromptTokens, BillableCacheTokens: rollup.BillableCacheTokens,
 		BillableCompletionTokens: rollup.BillableCompletionTokens,
 	}
-	updateUsageMetric(&metric, failed, input, output, reasoning, cached, cache, total, latency, latencyValid)
+	updateUsageMetric(&metric, timestampMS, failed, input, output, reasoning, cached, cache, total, latency, latencyValid)
 	rollup.Requests, rollup.Successes, rollup.Failures = metric.Requests, metric.Successes, metric.Failures
 	rollup.InputTokens, rollup.OutputTokens, rollup.ReasoningTokens = metric.InputTokens, metric.OutputTokens, metric.ReasoningTokens
 	rollup.CachedTokens, rollup.CacheTokens, rollup.TotalTokens = metric.CachedTokens, metric.CacheTokens, metric.TotalTokens
 	rollup.LatencySumMS, rollup.LatencySamples, rollup.ZeroTokenCalls = metric.LatencySumMS, metric.LatencySamples, metric.ZeroTokenCalls
+	rollup.LastSeenMS = metric.LastSeenMS
 	rollup.BillablePromptTokens = metric.BillablePromptTokens
 	rollup.BillableCacheTokens = metric.BillableCacheTokens
 	rollup.BillableCompletionTokens = metric.BillableCompletionTokens
 }
 
-// RollupState 描述小时派生层的消费进度和可用性。
-// CheckpointID 与 CoverageEventID 始终相等，保留前者用于兼容早期状态读取方。
+// RollupState describes derived rollup consumption progress and availability.
+// CheckpointID and CoverageEventID are always equal; CheckpointID remains for
+// compatibility with earlier state readers.
 type RollupState struct {
 	CheckpointID    int64  `json:"checkpointId"`
 	CoverageEventID int64  `json:"coverageEventId"`
@@ -139,7 +148,8 @@ type RollupState struct {
 	UpdatedAtMS     int64  `json:"updatedAtMs"`
 }
 
-// ensureRollupStateSchema 为已有实验版本的状态表补齐水位字段。
+// ensureRollupStateSchema adds missing high-water fields for existing state
+// tables created by earlier experimental builds.
 func (s *Store) ensureRollupStateSchema() error {
 	if err := s.ensureTableColumns("usage_rollup_state", []tableColumn{
 		{name: "coverage_event_id", definition: "coverage_event_id integer not null default 0"},
@@ -147,7 +157,7 @@ func (s *Store) ensureRollupStateSchema() error {
 	}); err != nil {
 		return err
 	}
-	metricColumns := []string{"zero_token_calls", "billable_prompt_tokens", "billable_cache_tokens", "billable_completion_tokens"}
+	metricColumns := []string{"zero_token_calls", "last_seen_ms", "billable_prompt_tokens", "billable_cache_tokens", "billable_completion_tokens"}
 	needsRebuild := false
 	for _, column := range metricColumns {
 		exists, err := s.tableHasColumn("usage_hourly_rollups", column)
@@ -158,13 +168,14 @@ func (s *Store) ensureRollupStateSchema() error {
 	}
 	if err := s.ensureTableColumns("usage_hourly_rollups", []tableColumn{
 		{name: "zero_token_calls", definition: "zero_token_calls integer not null default 0"},
+		{name: "last_seen_ms", definition: "last_seen_ms integer not null default 0"},
 		{name: "billable_prompt_tokens", definition: "billable_prompt_tokens integer not null default 0"},
 		{name: "billable_cache_tokens", definition: "billable_cache_tokens integer not null default 0"},
 		{name: "billable_completion_tokens", definition: "billable_completion_tokens integer not null default 0"},
 	}); err != nil {
 		return err
 	}
-	for _, column := range []string{"billable_prompt_tokens", "billable_cache_tokens", "billable_completion_tokens"} {
+	for _, column := range []string{"last_seen_ms", "billable_prompt_tokens", "billable_cache_tokens", "billable_completion_tokens"} {
 		exists, err := s.tableHasColumn("usage_daily_dimension_rollups", column)
 		if err != nil {
 			return err
@@ -172,6 +183,7 @@ func (s *Store) ensureRollupStateSchema() error {
 		needsRebuild = needsRebuild || !exists
 	}
 	if err := s.ensureTableColumns("usage_daily_dimension_rollups", []tableColumn{
+		{name: "last_seen_ms", definition: "last_seen_ms integer not null default 0"},
 		{name: "billable_prompt_tokens", definition: "billable_prompt_tokens integer not null default 0"},
 		{name: "billable_cache_tokens", definition: "billable_cache_tokens integer not null default 0"},
 		{name: "billable_completion_tokens", definition: "billable_completion_tokens integer not null default 0"},
@@ -224,9 +236,11 @@ func (s *Store) ensureDimensionRollupSchema() error {
 	return tx.Commit()
 }
 
-// ApplyHourlyRollupBatch 在一个事务内锁定 target、读取 id 水位内的事件、聚合并推进 checkpoint。
-// 因此 rollup 永远只代表 id <= coverage_event_id，迟到 timestamp 事件仍按其 event id 消费。
-// 任何一步失败都会回滚聚合和水位，并单独记录 failed 状态。
+// ApplyHourlyRollupBatch locks the target, reads events up to the id high-water mark,
+// aggregates them, and advances the checkpoint in one transaction.
+// Rollups therefore represent only id <= coverage_event_id; late timestamped events
+// are still consumed according to their event ids. Any failure rolls back both the
+// aggregates and checkpoint, then records the failed state separately.
 func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int, error) {
 	if batchSize <= 0 {
 		batchSize = defaultRollupBatchSize
@@ -239,7 +253,8 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 		_ = tx.Rollback()
 		s.restoreSQLiteBusyTimeout()
 	}()
-	// Rollup 遇到外部写锁时只等待一个有界窗口，避免占住单连接阻塞 collector/HTTP。
+	// Rollup waits only a bounded window for external write locks so it does not hold
+	// the single connection and block the collector or HTTP paths.
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf(`pragma busy_timeout = %d`, rollupBusyTimeoutMS)); err != nil {
 		return s.rollupBatchError(tx, err)
 	}
@@ -252,7 +267,8 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 	if state.CoverageEventID < state.CheckpointID {
 		state.CoverageEventID = state.CheckpointID
 	}
-	// 先写状态获取 SQLite 写锁，再读取 target；本事务内的 target 不会被新插入事件改变。
+	// Write state first to acquire the SQLite write lock before reading the target;
+	// newly inserted events cannot change the in-transaction target.
 	if _, err := tx.ExecContext(ctx, `update usage_rollup_state set status = ?, updated_at_ms = ? where id = 1`, RollupStatusCatchingUp, time.Now().UnixMilli()); err != nil {
 		return s.rollupBatchError(tx, err)
 	}
@@ -274,7 +290,7 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 	}
 	type eventRow struct {
 		id                                                               int64
-		bucket, input, output, reasoning, cached, cache                  int64
+		timestampMS, bucket, input, output, reasoning, cached, cache     int64
 		total, latency                                                   int64
 		model, provider, authIndex, apiKeyHash, account, reasoningEffort string
 		latencyValid                                                     bool
@@ -286,12 +302,12 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 		var provider, authIndex, apiKeyHash, account, reasoningEffort sql.NullString
 		var latency sql.NullInt64
 		var failed int
-		if err := rows.Scan(&event.id, &event.bucket, &event.model, &provider, &authIndex, &apiKeyHash, &account, &reasoningEffort,
+		if err := rows.Scan(&event.id, &event.timestampMS, &event.model, &provider, &authIndex, &apiKeyHash, &account, &reasoningEffort,
 			&event.input, &event.output, &event.reasoning, &event.cached, &event.cache, &event.total, &latency, &failed); err != nil {
 			_ = rows.Close()
 			return s.rollupBatchError(tx, err)
 		}
-		event.bucket = event.bucket - event.bucket%hourMilliseconds
+		event.bucket = event.timestampMS - event.timestampMS%hourMilliseconds
 		event.provider = provider.String
 		event.authIndex = authIndex.String
 		event.apiKeyHash = apiKeyHash.String
@@ -332,7 +348,7 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 		aggregate := aggregates[key]
 		aggregate.BucketMS = event.bucket
 		aggregate.Model = event.model
-		updateHourlyRollupMetric(&aggregate, event.failed, event.input, event.output, event.reasoning, event.cached, event.cache, event.total, event.latency, event.latencyValid)
+		updateHourlyRollupMetric(&aggregate, event.timestampMS, event.failed, event.input, event.output, event.reasoning, event.cached, event.cache, event.total, event.latency, event.latencyValid)
 		aggregates[key] = aggregate
 
 		dimensionBucket := event.bucket - event.bucket%dayMilliseconds
@@ -349,7 +365,7 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			dimensionAggregate.Dimension = dimension.name
 			dimensionAggregate.DimensionKey = dimension.key
 			dimensionAggregate.Model = event.model
-			updateUsageMetric(&dimensionAggregate.Metric, event.failed, event.input, event.output, event.reasoning, event.cached, event.cache, event.total, event.latency, event.latencyValid)
+			updateUsageMetric(&dimensionAggregate.Metric, event.timestampMS, event.failed, event.input, event.output, event.reasoning, event.cached, event.cache, event.total, event.latency, event.latencyValid)
 			dimensionAggregates[dimensionKey] = dimensionAggregate
 		}
 	}
@@ -359,8 +375,8 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			bucket_ms, model, requests, successes, failures, input_tokens, output_tokens,
 			reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 			billable_prompt_tokens, billable_cache_tokens, billable_completion_tokens,
-			latency_sum_ms, latency_samples, zero_token_calls
-		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			latency_sum_ms, latency_samples, zero_token_calls, last_seen_ms
+		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		 on conflict(bucket_ms, model) do update set
 			requests = usage_hourly_rollups.requests + excluded.requests,
 			successes = usage_hourly_rollups.successes + excluded.successes,
@@ -374,13 +390,15 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			latency_sum_ms = usage_hourly_rollups.latency_sum_ms + excluded.latency_sum_ms,
 			latency_samples = usage_hourly_rollups.latency_samples + excluded.latency_samples,
 			zero_token_calls = usage_hourly_rollups.zero_token_calls + excluded.zero_token_calls,
+			last_seen_ms = max(usage_hourly_rollups.last_seen_ms, excluded.last_seen_ms),
 			billable_prompt_tokens = usage_hourly_rollups.billable_prompt_tokens + excluded.billable_prompt_tokens,
 			billable_cache_tokens = usage_hourly_rollups.billable_cache_tokens + excluded.billable_cache_tokens,
 			billable_completion_tokens = usage_hourly_rollups.billable_completion_tokens + excluded.billable_completion_tokens`,
 			aggregate.BucketMS, aggregate.Model, aggregate.Requests, aggregate.Successes, aggregate.Failures,
 			aggregate.InputTokens, aggregate.OutputTokens, aggregate.ReasoningTokens, aggregate.CachedTokens,
 			aggregate.CacheTokens, aggregate.TotalTokens, aggregate.BillablePromptTokens, aggregate.BillableCacheTokens,
-			aggregate.BillableCompletionTokens, aggregate.LatencySumMS, aggregate.LatencySamples, aggregate.ZeroTokenCalls); err != nil {
+			aggregate.BillableCompletionTokens, aggregate.LatencySumMS, aggregate.LatencySamples, aggregate.ZeroTokenCalls,
+			aggregate.LastSeenMS); err != nil {
 			return s.rollupBatchError(tx, err)
 		}
 	}
@@ -390,8 +408,8 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			bucket_ms, dimension, dimension_key, model, requests, successes, failures,
 			input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 			billable_prompt_tokens, billable_cache_tokens, billable_completion_tokens,
-			latency_sum_ms, latency_samples, zero_token_calls
-		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			latency_sum_ms, latency_samples, zero_token_calls, last_seen_ms
+		) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			on conflict(bucket_ms, dimension, dimension_key, model) do update set
 			requests = usage_daily_dimension_rollups.requests + excluded.requests,
 			successes = usage_daily_dimension_rollups.successes + excluded.successes,
@@ -405,6 +423,7 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			latency_sum_ms = usage_daily_dimension_rollups.latency_sum_ms + excluded.latency_sum_ms,
 			latency_samples = usage_daily_dimension_rollups.latency_samples + excluded.latency_samples,
 			zero_token_calls = usage_daily_dimension_rollups.zero_token_calls + excluded.zero_token_calls,
+			last_seen_ms = max(usage_daily_dimension_rollups.last_seen_ms, excluded.last_seen_ms),
 			billable_prompt_tokens = usage_daily_dimension_rollups.billable_prompt_tokens + excluded.billable_prompt_tokens,
 			billable_cache_tokens = usage_daily_dimension_rollups.billable_cache_tokens + excluded.billable_cache_tokens,
 			billable_completion_tokens = usage_daily_dimension_rollups.billable_completion_tokens + excluded.billable_completion_tokens`,
@@ -412,7 +431,8 @@ func (s *Store) ApplyHourlyRollupBatch(ctx context.Context, batchSize int) (int,
 			aggregate.Metric.Requests, aggregate.Metric.Successes, aggregate.Metric.Failures, aggregate.Metric.InputTokens,
 			aggregate.Metric.OutputTokens, aggregate.Metric.ReasoningTokens, aggregate.Metric.CachedTokens, aggregate.Metric.CacheTokens,
 			aggregate.Metric.TotalTokens, aggregate.Metric.BillablePromptTokens, aggregate.Metric.BillableCacheTokens,
-			aggregate.Metric.BillableCompletionTokens, aggregate.Metric.LatencySumMS, aggregate.Metric.LatencySamples, aggregate.Metric.ZeroTokenCalls); err != nil {
+			aggregate.Metric.BillableCompletionTokens, aggregate.Metric.LatencySumMS, aggregate.Metric.LatencySamples,
+			aggregate.Metric.ZeroTokenCalls, aggregate.Metric.LastSeenMS); err != nil {
 			return s.rollupBatchError(tx, err)
 		}
 	}
@@ -439,7 +459,7 @@ func (s *Store) rollupBatchError(tx *sql.Tx, err error) (int, error) {
 	return 0, s.recordRollupFailure(err)
 }
 
-// loadRollupFailureMarker 在启动时恢复 sidecar 中尚未写入数据库的失败。
+// loadRollupFailureMarker restores sidecar failures that were not persisted before startup.
 func (s *Store) loadRollupFailureMarker() error {
 	marker, err := s.readRollupFailureMarker()
 	if err != nil {
@@ -475,7 +495,7 @@ func (s *Store) readRollupFailureMarker() (*rollupFailureMarker, error) {
 	return &marker, nil
 }
 
-// writeRollupFailureMarker 使用同目录临时文件和 rename，保证重启时不会读到半个 JSON。
+// writeRollupFailureMarker writes through a same-directory temp file and rename so startup never reads partial JSON.
 func (s *Store) writeRollupFailureMarker(marker *rollupFailureMarker) error {
 	if s.rollupFailurePath == "" {
 		return nil
@@ -510,7 +530,7 @@ func (s *Store) writeRollupFailureMarker(marker *rollupFailureMarker) error {
 	return os.Rename(tmpName, s.rollupFailurePath)
 }
 
-// recordRollupFailure 先写 sidecar/内存 pending，再尝试有界落盘；锁冲突时由 worker 重试。
+// recordRollupFailure records the sidecar/in-memory pending state before a bounded persistence attempt; the worker retries lock conflicts.
 func (s *Store) recordRollupFailure(err error) error {
 	if err == nil {
 		return nil
@@ -538,8 +558,8 @@ func (s *Store) recordRollupFailure(err error) error {
 	return err
 }
 
-// RetryPendingRollupFailure 将之前因 SQLite 锁冲突未能落盘的失败状态重新写入。
-// 它使用短超时，不会无限等待，也不会清除待写错误直到数据库确认成功。
+// RetryPendingRollupFailure persists a previous failure state that could not be written because SQLite was locked.
+// It uses a short timeout and keeps the pending error until the database confirms success.
 func (s *Store) RetryPendingRollupFailure(ctx context.Context) (bool, error) {
 	marker, err := s.pendingRollupMarker()
 	if err != nil {
@@ -634,7 +654,8 @@ func (s *Store) LoadRollupState(ctx context.Context) (RollupState, error) {
 	if marker == nil {
 		return state, nil
 	}
-	// 成功事务提交后若进程在删除 marker 前崩溃，coverage 已前进，旧 marker 可安全丢弃。
+	// If the process crashed after a successful commit but before deleting the marker,
+	// coverage has already advanced and the stale marker can be discarded safely.
 	if state.CoverageEventID > marker.CoverageEventID {
 		if err := s.clearPendingRollupFailure(); err != nil {
 			return state, err
@@ -650,7 +671,7 @@ func (s *Store) LoadRollupState(ctx context.Context) (RollupState, error) {
 func (s *Store) LoadHourlyRollups(ctx context.Context, fromMS, toMS int64) ([]HourlyRollup, error) {
 	query := `select bucket_ms, model, requests, successes, failures, input_tokens, output_tokens,
 		reasoning_tokens, cached_tokens, cache_tokens, total_tokens, billable_prompt_tokens,
-		billable_cache_tokens, billable_completion_tokens, latency_sum_ms, latency_samples, zero_token_calls
+		billable_cache_tokens, billable_completion_tokens, latency_sum_ms, latency_samples, zero_token_calls, last_seen_ms
 		from usage_hourly_rollups`
 	args := make([]any, 0, 2)
 	conditions := make([]string, 0, 2)
@@ -677,7 +698,7 @@ func (s *Store) LoadHourlyRollups(ctx context.Context, fromMS, toMS int64) ([]Ho
 		if err := rows.Scan(&row.BucketMS, &row.Model, &row.Requests, &row.Successes, &row.Failures,
 			&row.InputTokens, &row.OutputTokens, &row.ReasoningTokens, &row.CachedTokens, &row.CacheTokens,
 			&row.TotalTokens, &row.BillablePromptTokens, &row.BillableCacheTokens, &row.BillableCompletionTokens,
-			&row.LatencySumMS, &row.LatencySamples, &row.ZeroTokenCalls); err != nil {
+			&row.LatencySumMS, &row.LatencySamples, &row.ZeroTokenCalls, &row.LastSeenMS); err != nil {
 			return nil, err
 		}
 		result = append(result, row)
