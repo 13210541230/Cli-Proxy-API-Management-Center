@@ -45,7 +45,7 @@ export type AuthFileCardProps = {
   disableControls: boolean;
   deleting: string | null;
   statusUpdating: Record<string, boolean>;
-  websocketUpdating: Record<string, boolean>;
+  websocketUpdating?: Record<string, boolean>;
   quotaFilterType: QuotaProviderType | null;
   statusBarCache: Map<string, AuthFileStatusBarData>;
   onShowModels: (file: AuthFileItem) => void;
@@ -53,7 +53,7 @@ export type AuthFileCardProps = {
   onOpenPrefixProxyEditor: (file: AuthFileItem) => void;
   onDelete: (name: string) => void;
   onToggleStatus: (file: AuthFileItem, enabled: boolean) => void;
-  onToggleWebsockets: (file: AuthFileItem, enabled: boolean) => void;
+  onToggleWebsockets?: (file: AuthFileItem, enabled: boolean) => void;
   onToggleSelect: (name: string) => void;
 };
 
@@ -73,7 +73,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
     disableControls,
     deleting,
     statusUpdating,
-    websocketUpdating,
     quotaFilterType,
     statusBarCache,
     onShowModels,
@@ -81,7 +80,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
     onOpenPrefixProxyEditor,
     onDelete,
     onToggleStatus,
-    onToggleWebsockets,
     onToggleSelect,
   } = props;
 
@@ -92,7 +90,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
   };
   const isRuntimeOnly = isRuntimeOnlyAuthFile(file);
   const isAistudio = (file.type || '').toLowerCase() === 'aistudio';
-  const isCodex = resolveAuthProvider(file) === 'codex';
   const showModelsButton = !isRuntimeOnly || isAistudio;
   const typeColor = getTypeColor(file.type || 'unknown', resolvedTheme);
   const typeLabel = getTypeLabel(t, file.type || 'unknown');
@@ -305,19 +302,6 @@ export function AuthFileCard(props: AuthFileCardProps) {
             </div>
             {!isRuntimeOnly && (
               <div className={styles.cardToggleGroup}>
-                {isCodex && (
-                  <div className={styles.statusToggle}>
-                    <span className={styles.statusToggleLabel}>
-                      {t('auth_files.codex_websockets_label')}
-                    </span>
-                    <ToggleSwitch
-                      ariaLabel={t('auth_files.codex_websockets_label')}
-                      checked={file.websockets === true}
-                      disabled={disableControls || websocketUpdating[file.name] === true}
-                      onChange={(value) => onToggleWebsockets(file, value)}
-                    />
-                  </div>
-                )}
                 <div className={styles.statusToggle}>
                   <span className={styles.statusToggleLabel}>
                     {t('auth_files.status_toggle_label')}

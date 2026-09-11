@@ -314,6 +314,19 @@ export function AuthFilesPage() {
     loadFiles,
   });
 
+  const [editingFile, setEditingFile] = useState<AuthFileItem | null>(null);
+  const openSettings = useCallback(
+    async (file: AuthFileItem) => {
+      setEditingFile(file);
+      await openPrefixProxyEditor(file);
+    },
+    [openPrefixProxyEditor],
+  );
+  const closeSettings = useCallback(() => {
+    setEditingFile(null);
+    closePrefixProxyEditor();
+  }, [closePrefixProxyEditor]);
+
   const disableControls = connectionStatus !== 'connected';
   const normalizedFilter = normalizeProviderKey(String(filter));
   const quotaFilterType: QuotaProviderType | null = QUOTA_PROVIDER_TYPES.has(
@@ -1080,7 +1093,7 @@ export function AuthFilesPage() {
                     statusBarCache={statusBarCache}
                     onShowModels={showModels}
                     onDownload={handleDownload}
-                    onOpenPrefixProxyEditor={openPrefixProxyEditor}
+                    onOpenPrefixProxyEditor={openSettings}
                     onDelete={handleDelete}
                     onToggleStatus={handleStatusToggle}
                     onToggleWebsockets={handleWebsocketsToggle}
@@ -1164,10 +1177,17 @@ export function AuthFilesPage() {
         editor={prefixProxyEditor}
         updatedText={prefixProxyUpdatedText}
         dirty={prefixProxyDirty}
-        onClose={closePrefixProxyEditor}
+        onClose={closeSettings}
         onCopyText={copyTextWithNotification}
         onSave={handlePrefixProxySave}
         onChange={handlePrefixProxyChange}
+        websockets={editingFile?.websockets === true}
+        onToggleWebsockets={(val) => {
+          if (!editingFile) return;
+          handleWebsocketsToggle(editingFile, val);
+          setEditingFile((prev) => (prev ? { ...prev, websockets: val } : null));
+        }}
+        websocketUpdating={editingFile ? websocketUpdating[editingFile.name] === true : false}
       />
 
       <AuthJsonPasteModal

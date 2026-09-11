@@ -8,6 +8,7 @@ import type {
   PrefixProxyEditorFieldValue,
   PrefixProxyEditorState,
 } from '@/features/authFiles/hooks/useAuthFilesPrefixProxyEditor';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import styles from '@/pages/AuthFilesPage.module.scss';
 
 export type AuthFilesPrefixProxyEditorModalProps = {
@@ -19,12 +20,27 @@ export type AuthFilesPrefixProxyEditorModalProps = {
   onCopyText: (text: string) => void | Promise<void>;
   onSave: () => void;
   onChange: (field: PrefixProxyEditorField, value: PrefixProxyEditorFieldValue) => void;
+  /** Codex upstream WebSocket toggle – optional; only shown when provided. */
+  websockets?: boolean;
+  onToggleWebsockets?: (enabled: boolean) => void;
+  websocketUpdating?: boolean;
 };
 
 export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEditorModalProps) {
   const { t } = useTranslation();
-  const { disableControls, editor, updatedText, dirty, onClose, onCopyText, onSave, onChange } =
-    props;
+  const {
+    disableControls,
+    editor,
+    updatedText,
+    dirty,
+    onClose,
+    onCopyText,
+    onSave,
+    onChange,
+    websockets,
+    onToggleWebsockets,
+    websocketUpdating,
+  } = props;
   const formatJsonText = (text: string) => {
     if (!text) return '';
     try {
@@ -154,6 +170,27 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   onChange={(e) => onChange('note', e.target.value)}
                 />
               </div>
+              {websockets !== undefined && onToggleWebsockets && (
+                <div className={styles.prefixProxyFields}>
+                  <div className="form-group">
+                    <label className={styles.prefixProxyLabel}>
+                      {t('auth_files.codex_websockets_label')}
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ToggleSwitch
+                        checked={websockets === true}
+                        disabled={disableControls || editor.saving || websocketUpdating === true}
+                        onChange={onToggleWebsockets}
+                        ariaLabel={t('auth_files.codex_websockets_label')}
+                      />
+                      <span style={{ fontSize: 13 }}>
+                        {websockets ? t('common.enabled') : t('common.disabled')}
+                      </span>
+                    </div>
+                    <div className="hint">{t('auth_files.codex_websockets_hint')}</div>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>
