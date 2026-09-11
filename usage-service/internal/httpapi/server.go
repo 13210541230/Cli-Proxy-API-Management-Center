@@ -393,9 +393,6 @@ func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if !accepted {
 			s.endUpdateApply()
-			if err := s.stager.ReleaseApplyLock(); err != nil {
-				log.Printf("release update apply lock: %v", err)
-			}
 		}
 	}()
 	runtimeBeforeUpdate := s.supervisor.Status()
@@ -408,6 +405,10 @@ func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusConflict, err)
 		return
 	}
+	// Once BeginApply succeeds the transaction lock is owned by the helper
+	// process (transferred later). The handler must not release it on any
+	// subsequent failure; only release the in-process apply gate.
+	accepted = true
 	cpaConfig := s.supervisor.Config()
 	cpaPath, workingDirectory, err := supervisor.ResolveConfig(cpaConfig)
 	if err != nil {
@@ -539,7 +540,6 @@ func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
-	accepted = true
 	go func() {
 		time.Sleep(100 * time.Millisecond)
 		s.shutdown()
