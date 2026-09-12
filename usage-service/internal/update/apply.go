@@ -20,6 +20,13 @@ import (
 	"time"
 )
 
+// managerExitGrantTimeout is how long the updater waits for the old manager
+// process to exit before treating it as stuck. The manager's shutdown path
+// (stop CPA + graceful HTTP shutdown) can take tens of seconds under load,
+// so the previous 30s budget was too tight and caused false rollbacks that
+// left the deployment stopped.
+const managerExitGrantTimeout = 90 * time.Second
+
 type ApplyOptions struct {
 	StagingPath             string
 	ResultPath              string
@@ -96,6 +103,21 @@ func StartHelper(helperPath string, options ApplyOptions) (*exec.Cmd, error) {
 		"--owns-transaction-lock", strconv.FormatBool(options.OwnsTransactionLock),
 	)
 	cmd.Dir = filepath.Dir(launchPath)
+	// Capture the detached updater's own output so the real failure reason is
+	// never lost when the manager stops: write to <result dir>/update-logs/
+	// so the sidecar and the helper log live side by side on disk.
+	logDir := filepath.Join(filepath.Dir(options.ResultPath), "update-logs")
+	if logDirErr := os.MkdirAll(logDir, 0o755); logDirErr == nil && options.TransactionID != "" {
+		shortID := options.TransactionID
+		if len(shortID) > 16 {
+			shortID = shortID[:16]
+		}
+		logFile, logFileErr := os.OpenFile(filepath.Join(logDir, "update-helper-"+shortID+".log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
+		if logFileErr == nil {
+			cmd.Stdout = logFile
+			cmd.Stderr = logFile
+		}
+	}
 	if err := cmd.Start(); err != nil {
 		return nil, fmt.Errorf("start update helper: %w", err)
 	}
@@ -207,7 +229,7 @@ func Apply(options ApplyOptions) (applyErr error) {
 		return
 	}
 	if options.ManagerPID > 0 {
-		if err := waitForProcessExit(options.ManagerPID, options.ManagerExecutablePath, 30*time.Second); err != nil {
+		if err := waitForProcessExit(options.ManagerPID, options.ManagerExecutablePath, managerExitGrantTimeout); err != nil {
 			applyErr = recoverApplyFailure(options, rollback, recordResult, err)
 			return
 		}
@@ -304,7 +326,7 @@ func recoverApplyFailure(options ApplyOptions, rollback func() error, recordResu
 
 	managerExited := options.ManagerPID == 0
 	if !managerExited {
-		managerExited = waitForProcessExit(options.ManagerPID, options.ManagerExecutablePath, 30*time.Second) == nil
+		managerExited = waitForProcessExit(options.ManagerPID, options.ManagerExecutablePath, managerExitGrantTimeout) == nil
 	}
 	if !managerExited {
 		if terminateErr := terminateProcessByPID(options.ManagerPID, options.ManagerExecutablePath); terminateErr == nil {
