@@ -156,6 +156,15 @@ export interface ManagerUpdateStageStatus {
   error?: string;
 }
 
+export interface ManagerUpdateDownloadResult {
+  state: string;
+  manifest?: ManagerUpdateManifest;
+  asset?: ManagerUpdateAsset;
+  filePath?: string;
+  startedAtMs?: number;
+  completedAtMs?: number;
+}
+
 export interface ManagerConfig {
   cpaConnection: ManagerCPAConnectionConfig;
   collector: ManagerCollectorConfig;
@@ -491,6 +500,23 @@ export const usageServiceApi = {
         undefined,
         {
           timeout: USAGE_SERVICE_TIMEOUT_MS,
+          headers: authHeaders(managementKey),
+        }
+      );
+      return response.data;
+    });
+  },
+
+  downloadUpdate: async (
+    base: string,
+    managementKey?: string
+  ): Promise<ManagerUpdateDownloadResult> => {
+    return withUsageServiceError(async () => {
+      const response = await axios.post<ManagerUpdateDownloadResult>(
+        buildUrl(base, '/updates/download'),
+        undefined,
+        {
+          timeout: USAGE_SERVICE_TRANSFER_TIMEOUT_MS,
           headers: authHeaders(managementKey),
         }
       );

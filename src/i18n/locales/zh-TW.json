@@ -2065,9 +2065,9 @@
     "suite_update_failed": "聯合更新失敗",
     "suite_latest_release": "最新聯合版本",
     "suite_check_update": "檢查聯合更新",
-    "suite_update_now": "立即更新",
+    "suite_update_now": "下載更新包",
     "suite_update_confirm_title": "確認更新聯合程式",
-    "suite_update_confirm_message": "CLIProxyAPI 與 CPA-Manager 將停止並重新啟動。確認更新至 CPA {{cpaVersion}} / CPA-Manager {{managerVersion}}？",
+    "suite_update_confirm_message": "將下載 CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} 更新包到目前程式目錄。下載完成後請自行停止服務，解壓覆蓋檔案後重新啟動。是否繼續？",
     "version_unknown": "未知",
     "quick_links_title": "快速連結",
     "quick_links_desc": "存取專案儲存庫和文件，取得協助和更新。",
@@ -2080,7 +2080,9 @@
     "clear_login_title": "本地登入資訊",
     "clear_login_desc": "清理本地儲存的登入資訊並登出。",
     "clear_login_button": "清理登入資訊",
-    "clear_login_confirm": "確認清理本地登入資訊並登出？"
+    "clear_login_confirm": "確認清理本地登入資訊並登出？",
+    "suite_update_download_success": "更新包已下載完成: ",
+    "suite_update_manual_hint": "SHA-256 已驗證。請停止 CPA 與 CPA-Manager 服務，將壓縮包解壓到程式目錄覆蓋檔案後重新啟動。"
   },
   "notification": {
     "debug_updated": "除錯設定已更新",

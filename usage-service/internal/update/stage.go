@@ -329,6 +329,61 @@ func (s *Stager) StatusPath() string {
 	return s.statusPath
 }
 
+// DownloadResult describes a manually-applied suite download that the
+// operator replaces themselves after stopping the running services.
+type DownloadResult struct {
+	State         string  `json:"state"`
+	Manifest      Manifest `json:"manifest"`
+	Asset         Asset   `json:"asset"`
+	FilePath      string  `json:"filePath"`
+	StartedAtMS   int64   `json:"startedAtMs"`
+	CompletedAtMS int64   `json:"completedAtMs"`
+}
+
+// DownloadOnly fetches the suite archive for the current platform into
+// destDir, verifies its SHA-256, and stops: no extraction, no replacement,
+// and no helper process. The operator stops the services and replaces the
+// executables manually. Existing files in destDir are never touched.
+func (s *Stager) DownloadOnly(ctx context.Context, goos, goarch, destDir string) (DownloadResult, error) {
+	if s == nil || s.client == nil {
+		return DownloadResult{}, errors.New("update download is unavailable")
+	}
+	destDir = strings.TrimSpace(destDir)
+	if destDir == "" {
+		var err error
+		destDir, err = os.Getwd()
+		if err != nil {
+			return DownloadResult{}, fmt.Errorf("resolve update download directory: %w", err)
+		}
+	}
+	manifest, err := s.client.CheckLatest(ctx)
+	if err != nil {
+		return DownloadResult{}, err
+	}
+	asset, err := manifest.AssetFor(goos, goarch)
+	if err != nil {
+		return DownloadResult{}, err
+	}
+	fileName := filepath.Base(asset.Name)
+	if fileName == "." || fileName == string(filepath.Separator) || fileName == "" {
+		return DownloadResult{}, fmt.Errorf("update asset %s has an invalid file name", asset.Name)
+	}
+	startedAt := time.Now().UnixMilli()
+	destination := filepath.Join(destDir, fileName)
+	log.Printf("update download: %s -> %s", asset.Name, destination)
+	if err := s.client.DownloadAsset(ctx, asset, destination); err != nil {
+		return DownloadResult{}, err
+	}
+	return DownloadResult{
+		State:         "downloaded",
+		Manifest:      manifest,
+		Asset:         asset,
+		FilePath:      destination,
+		StartedAtMS:   startedAt,
+		CompletedAtMS: time.Now().UnixMilli(),
+	}, nil
+}
+
 func (s *Stager) loadPersisted() {
 	status, ok, err := ReadPersistedStatus(s.statusPath)
 	if err != nil || !ok {

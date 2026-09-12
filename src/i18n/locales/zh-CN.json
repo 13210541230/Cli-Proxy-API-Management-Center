@@ -816,7 +816,6 @@
     "codex_websockets_enabled_success": "已为 \"{{name}}\" 启用上游 WebSocket",
     "codex_websockets_disabled_success": "已为 \"{{name}}\" 关闭上游 WebSocket",
     "status_enabled_success": "已启用 \"{{name}}\"",
-
     "status_disabled_success": "已停用 \"{{name}}\"",
     "batch_status_success": "已成功更新 {{count}} 个文件",
     "batch_status_partial": "成功 {{success}} 个，失败 {{failed}} 个",
@@ -2206,9 +2205,9 @@
     "suite_update_failed": "联合更新失败",
     "suite_latest_release": "最新联合版本",
     "suite_check_update": "检查联合更新",
-    "suite_update_now": "立即更新",
+    "suite_update_now": "下载更新包",
     "suite_update_confirm_title": "确认更新联合程序",
-    "suite_update_confirm_message": "CLIProxyAPI 和 CPA-Manager 将停止并重启。确认更新到 CPA {{cpaVersion}} / CPA-Manager {{managerVersion}}？",
+    "suite_update_confirm_message": "将下载 CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} 更新包到当前程序目录。下载完成后请自行停止服务，解压覆盖文件后重新启动。是否继续？",
     "version_unknown": "未知",
     "quick_links_title": "快捷链接",
     "quick_links_desc": "访问项目仓库和文档，获取帮助和更新。",
@@ -2221,7 +2220,9 @@
     "clear_login_title": "本地登录信息",
     "clear_login_desc": "清理本地保存的登录信息并退出登录。",
     "clear_login_button": "清理登录信息",
-    "clear_login_confirm": "确认清理本地登录信息并退出登录？"
+    "clear_login_confirm": "确认清理本地登录信息并退出登录？",
+    "suite_update_download_success": "更新包已下载完成: ",
+    "suite_update_manual_hint": "SHA-256 已校验。请停止 CPA 与 CPA-Manager 服务，将压缩包解压到程序目录覆盖文件后重新启动。"
   },
   "notification": {
     "debug_updated": "调试设置已更新",

@@ -2036,9 +2036,9 @@
     "suite_update_failed": "Не удалось обновить комплект",
     "suite_latest_release": "Последний выпуск комплекта",
     "suite_check_update": "Проверить обновление комплекта",
-    "suite_update_now": "Обновить сейчас",
+    "suite_update_now": "Скачать обновление",
     "suite_update_confirm_title": "Подтвердите обновление комплекта",
-    "suite_update_confirm_message": "CLIProxyAPI и CPA-Manager будут остановлены и перезапущены. Обновить до CPA {{cpaVersion}} / CPA-Manager {{managerVersion}}?",
+    "suite_update_confirm_message": "Пакет CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} будет скачан в текущий каталог программы. После загрузки остановите службы и замените файлы вручную.",
     "version_unknown": "Неизвестно",
     "quick_links_title": "Быстрые ссылки",
     "quick_links_desc": "Доступ к репозиториям проекта и документации для помощи и обновлений.",
@@ -2051,7 +2051,9 @@
     "clear_login_title": "Локальные данные входа",
     "clear_login_desc": "Очистите локально сохранённые данные входа и выполните выход.",
     "clear_login_button": "Очистить данные входа",
-    "clear_login_confirm": "Очистить локальные данные входа и выйти?"
+    "clear_login_confirm": "Очистить локальные данные входа и выйти?",
+    "suite_update_download_success": "Пакет обновления скачан: ",
+    "suite_update_manual_hint": "SHA-256 проверен. Остановите CPA и CPA-Manager, распакуйте архив в каталог программы, заменив файлы, и запустите заново."
   },
   "notification": {
     "debug_updated": "Настройки отладки обновлены",

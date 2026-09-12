@@ -105,7 +105,7 @@ export function SystemPage() {
   const [latestUpdate, setLatestUpdate] = useState<ManagerUpdateManifest | null>(null);
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateChecking, setUpdateChecking] = useState(false);
-  const [updateAction, setUpdateAction] = useState<'stage' | 'apply' | null>(null);
+  const [updateAction, setUpdateAction] = useState<'download' | null>(null);
 
   const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
   const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
@@ -390,63 +390,24 @@ export function SystemPage() {
     }
   }, [auth.managementKey, auth.serverVersion, runtimeBase, showNotification, t]);
 
-  const waitForManagerRecovery = useCallback(
-    async (expectedManagerVersion?: string): Promise<'updated' | 'rolled_back' | 'failed' | 'timeout'> => {
-      let managerWasUnavailable = false;
-      for (let attempt = 0; attempt < 70; attempt += 1) {
-        await new Promise((resolve) => window.setTimeout(resolve, 1000));
-        if (!runtimeBase) return 'timeout';
-        try {
-          const status = await usageServiceApi.getRuntimeStatus(runtimeBase, auth.managementKey);
-          const updateStatus = await usageServiceApi.getUpdateStatus(runtimeBase, auth.managementKey);
-          const info = await usageServiceApi.getInfo(runtimeBase);
-          const versionComparison = expectedManagerVersion && info.version
-            ? compareVersions(info.version, expectedManagerVersion)
-            : null;
-          setRuntimeStatus(status);
-          if (updateStatus.state === 'succeeded') return 'updated';
-          if (updateStatus.state === 'rolled_back') return 'rolled_back';
-          if (updateStatus.state === 'failed') return 'failed';
-          if (!managerWasUnavailable && (attempt < 5 || (expectedManagerVersion && versionComparison !== 0))) {
-            continue;
-          }
-        } catch {
-          managerWasUnavailable = true;
-          // The manager is expected to be unavailable while the new process starts.
-        }
-      }
-      return 'timeout';
-    },
-    [auth.managementKey, runtimeBase]
-  );
-
-  const handleUpdateNow = useCallback(async () => {
+    const handleUpdateNow = useCallback(async () => {
     if (!runtimeBase || !updateAvailable) return;
-    setUpdateAction('stage');
+    setUpdateAction('download');
     try {
-      const staged = await usageServiceApi.stageUpdate(runtimeBase, auth.managementKey);
-      if (staged.state !== 'ready') {
-        throw new Error(staged.error || t('system_info.suite_update_stage_failed'));
+      const result = await usageServiceApi.downloadUpdate(runtimeBase, auth.managementKey);
+      if (result.manifest) {
+        setLatestUpdate(result.manifest);
       }
-      if (staged.manifest) {
-        setLatestUpdate(staged.manifest);
-      }
-      setUpdateAction('apply');
-      await usageServiceApi.applyUpdate(runtimeBase, auth.managementKey);
-      showNotification(t('system_info.suite_update_restarting'), 'warning');
-      const recovery = await waitForManagerRecovery(
-        staged.manifest?.managerVersion || latestUpdate?.managerVersion
+      setUpdateAvailable(false);
+      const filePath = result.filePath || '';
+      showNotification(
+        filePath
+          ? `${t('system_info.suite_update_download_success')} ${filePath}`
+          : t('system_info.suite_update_download_success'),
+        'success',
+        8000
       );
-      if (recovery === 'updated') {
-        setUpdateAvailable(false);
-        showNotification(t('system_info.suite_update_success'), 'success');
-      } else if (recovery === 'rolled_back') {
-        showNotification(t('system_info.suite_update_rolled_back'), 'error');
-      } else if (recovery === 'failed') {
-        showNotification(t('system_info.suite_update_failed'), 'error');
-      } else {
-        showNotification(t('system_info.suite_update_recovery_timeout'), 'warning');
-      }
+      showNotification(t('system_info.suite_update_manual_hint'), 'info', 15000);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : typeof error === 'string' ? error : '';
       showNotification(
@@ -456,15 +417,7 @@ export function SystemPage() {
     } finally {
       setUpdateAction(null);
     }
-  }, [
-    auth.managementKey,
-    latestUpdate,
-    runtimeBase,
-    showNotification,
-    t,
-    updateAvailable,
-    waitForManagerRecovery,
-  ]);
+  }, [auth.managementKey, latestUpdate, runtimeBase, showNotification, t, updateAvailable]);
 
   const confirmSuiteUpdate = useCallback(() => {
     if (!latestUpdate || !updateAvailable) return;
@@ -472,7 +425,7 @@ export function SystemPage() {
       title: t('system_info.suite_update_confirm_title', { defaultValue: 'Update CPA suite' }),
       message: t('system_info.suite_update_confirm_message', {
         defaultValue:
-          'CPA-Manager and CLIProxyAPI will restart. Continue with CPA {{cpaVersion}} / CPA-Manager {{managerVersion}}?',
+          'The CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} package will be downloaded to the current program directory. After the download finishes, stop the services and replace the files manually.',
         cpaVersion: latestUpdate.cpaVersion,
         managerVersion: latestUpdate.managerVersion,
       }),

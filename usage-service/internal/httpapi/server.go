@@ -197,6 +197,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("/updates/status", s.withCORS(s.handleUpdateStatus))
 	mux.HandleFunc("/updates/stage", s.withCORS(s.handleUpdateStage))
 	mux.HandleFunc("/updates/apply", s.withCORS(s.handleUpdateApply))
+	mux.HandleFunc("/updates/download", s.withCORS(s.handleUpdateDownload))
 	mux.HandleFunc("/setup", s.withCORS(s.handleSetup))
 	mux.HandleFunc("/management.html", s.handlePanel)
 	mux.HandleFunc("/", s.handleRoot)
@@ -365,6 +366,52 @@ func (s *Server) handleUpdateStage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, status)
+}
+
+// handleUpdateDownload downloads the suite archive into the manager working
+// directory (no extraction, no replacement, no helper). The operator stops the
+// services and replaces the executables manually.
+func (s *Server) handleUpdateDownload(w http.ResponseWriter, r *http.Request) {
+	if !s.requireManagementKey(w, r) {
+		return
+	}
+	if r.Method != http.MethodPost {
+		methodNotAllowed(w)
+		return
+	}
+	if s.stager == nil {
+		writeError(w, http.StatusNotImplemented, errors.New("update download is unavailable"))
+		return
+	}
+	workDir := ""
+	if s.managerExecutable != "" {
+		workDir = filepath.Dir(s.managerExecutable)
+	}
+	if strings.TrimSpace(workDir) == "" {
+		var err error
+		workDir, err = os.Getwd()
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, fmt.Errorf("resolve manager working directory: %w", err))
+			return
+		}
+	}
+	var request struct {
+		OS   string `json:"os"`
+		Arch string `json:"arch"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil && !errors.Is(err, io.EOF) {
+		writeError(w, http.StatusBadRequest, err)
+		return
+	}
+	if request.OS == "" || request.Arch == "" {
+		request.OS, request.Arch = update.CurrentTarget()
+	}
+	result, err := s.stager.DownloadOnly(r.Context(), request.OS, request.Arch, workDir)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
