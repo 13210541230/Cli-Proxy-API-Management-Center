@@ -45,11 +45,20 @@ export function AccountPoolsPage() {
         enterpriseKeysApi.listDepartments(),
         enterpriseKeysApi.listKeyBindings(),
       ]);
-      setSnapshot(nextSnapshot);
-      setAuthFiles(authResponse.files);
-      setDepartments(departmentResponse.items);
-      setKeyBindings(bindingResponse.items);
-      setSelectedPoolId((current) => current || nextSnapshot.policy.pools[0]?.id || '');
+      const normalizedSnapshot: AccountPoolSnapshot = {
+        ...nextSnapshot,
+        policy: {
+          ...nextSnapshot.policy,
+          pools: nextSnapshot.policy?.pools ?? [],
+          members: nextSnapshot.policy?.members ?? [],
+          bindings: nextSnapshot.policy?.bindings ?? [],
+        },
+      };
+      setSnapshot(normalizedSnapshot);
+      setAuthFiles(Array.isArray(authResponse.files) ? authResponse.files : []);
+      setDepartments(Array.isArray(departmentResponse.items) ? departmentResponse.items : []);
+      setKeyBindings(Array.isArray(bindingResponse.items) ? bindingResponse.items : []);
+      setSelectedPoolId((current) => current || normalizedSnapshot.policy.pools[0]?.id || '');
     } catch (error) {
       showNotification(error instanceof Error ? error.message : '账号池加载失败', 'error');
     } finally {

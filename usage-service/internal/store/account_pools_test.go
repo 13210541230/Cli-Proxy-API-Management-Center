@@ -2,8 +2,32 @@ package store
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 )
+
+func TestEmptyAccountPoolSnapshotUsesJSONArrays(t *testing.T) {
+	db, err := Open(t.TempDir() + "/usage.sqlite")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	snapshot, err := db.LoadAccountPoolSnapshot(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	encoded, err := json.Marshal(snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, field := range []string{`"pools":[]`, `"members":[]`, `"bindings":[]`} {
+		if !strings.Contains(string(encoded), field) {
+			t.Fatalf("snapshot JSON = %s, missing %s", encoded, field)
+		}
+	}
+}
 
 func TestAccountPoolSnapshotIsAtomicAndHashOnly(t *testing.T) {
 	db, err := Open(t.TempDir() + "/usage.sqlite")

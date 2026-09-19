@@ -91,7 +91,7 @@ func (s *Store) LoadAccountPools(ctx context.Context) ([]AccountPool, error) {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountPool
+	items := make([]AccountPool, 0)
 	for rows.Next() {
 		var item AccountPool
 		var enabled int
@@ -211,7 +211,7 @@ func (s *Store) LoadAccountPoolBindings(ctx context.Context) ([]AccountPoolBindi
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountPoolBinding
+	items := make([]AccountPoolBinding, 0)
 	for rows.Next() {
 		var item AccountPoolBinding
 		if err := rows.Scan(&item.APIKeyHash, &item.PoolID, &item.UpdatedAtMS); err != nil {
@@ -228,7 +228,7 @@ func (s *Store) loadAccountPoolMembers(ctx context.Context) ([]AccountPoolMember
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountPoolMember
+	items := make([]AccountPoolMember, 0)
 	for rows.Next() {
 		var item AccountPoolMember
 		var enabled int
@@ -314,7 +314,7 @@ func loadAccountPoolsTx(ctx context.Context, tx *sql.Tx) ([]AccountPool, error) 
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountPool
+	items := make([]AccountPool, 0)
 	for rows.Next() {
 		var item AccountPool
 		var enabled int
@@ -332,7 +332,7 @@ func loadAccountPoolMembersTx(ctx context.Context, tx *sql.Tx) ([]AccountPoolMem
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountPoolMember
+	items := make([]AccountPoolMember, 0)
 	for rows.Next() {
 		var item AccountPoolMember
 		var enabled int
@@ -350,7 +350,7 @@ func loadAccountPoolBindingsTx(ctx context.Context, tx *sql.Tx) ([]AccountPoolBi
 		return nil, err
 	}
 	defer rows.Close()
-	var items []AccountPoolBinding
+	items := make([]AccountPoolBinding, 0)
 	for rows.Next() {
 		var item AccountPoolBinding
 		if err := rows.Scan(&item.APIKeyHash, &item.PoolID, &item.UpdatedAtMS); err != nil {
