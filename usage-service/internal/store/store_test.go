@@ -57,6 +57,11 @@ func TestStorePersistsAccountSnapshot(t *testing.T) {
 			TimestampMS:          1_778_000_000_000,
 			Timestamp:            "2026-05-06T00:00:00Z",
 			Model:                "gpt-test",
+			RequestedModel:       "client-gpt",
+			ResolvedModel:        "gpt-test",
+			UpstreamModel:        "gpt-test-mini",
+			ModelMatch:           "upstream_mismatch",
+			ModelEvidence:        "response_body",
 			Endpoint:             "POST /v1/chat/completions",
 			AuthIndex:            "auth-1",
 			APIKeyHash:           "api-key-hash-1",
@@ -98,6 +103,9 @@ func TestStorePersistsAccountSnapshot(t *testing.T) {
 	if event.APIKeyHash != "api-key-hash-1" {
 		t.Fatalf("APIKeyHash = %q", event.APIKeyHash)
 	}
+	if event.RequestedModel != "client-gpt" || event.ResolvedModel != "gpt-test" || event.UpstreamModel != "gpt-test-mini" || event.ModelMatch != "upstream_mismatch" || event.ModelEvidence != "response_body" {
+		t.Fatalf("model telemetry = %#v", event)
+	}
 
 	payload := usage.BuildPayload(events)
 	detail := payload.APIs["POST /v1/chat/completions"].Models["gpt-test"].Details[0]
@@ -109,6 +117,9 @@ func TestStorePersistsAccountSnapshot(t *testing.T) {
 	}
 	if detail.AuthProviderSnapshot != "codex" {
 		t.Fatalf("payload AuthProviderSnapshot = %q", detail.AuthProviderSnapshot)
+	}
+	if detail.RequestedModel != "client-gpt" || detail.ResolvedModel != "gpt-test" || detail.UpstreamModel != "gpt-test-mini" || detail.ModelMatch != "upstream_mismatch" || detail.ModelEvidence != "response_body" {
+		t.Fatalf("payload model telemetry = %#v", detail)
 	}
 }
 

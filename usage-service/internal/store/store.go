@@ -1307,7 +1307,9 @@ func (s *Store) RecentEventsFiltered(
 		limit = 50000
 	}
 	query := `select
-		request_id, event_hash, timestamp_ms, timestamp, provider, model, reasoning_effort,
+		request_id, event_hash, timestamp_ms, timestamp, provider, model,
+		requested_model, resolved_model, upstream_model, model_match, model_evidence,
+		reasoning_effort,
 		ttft_ms, service_tier, request_service_tier, response_service_tier, executor_type,
 		fail_status_code, fail_summary, security_signal, endpoint, method, path,
 		auth_type, auth_index, source, source_hash, api_key_hash,
@@ -1344,7 +1346,7 @@ func (s *Store) RecentEventsFiltered(
 	events := make([]usage.Event, 0)
 	for rows.Next() {
 		var event usage.Event
-		var requestID, provider, reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash, apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot, rawJSON sql.NullString
+		var requestID, provider, requestedModel, resolvedModel, upstreamModel, modelMatch, modelEvidence, reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash, apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot, rawJSON sql.NullString
 		var ttft, failStatusCode, authSnapshotAt, latency sql.NullInt64
 		var failed int
 		if err := rows.Scan(
@@ -1354,6 +1356,11 @@ func (s *Store) RecentEventsFiltered(
 			&event.Timestamp,
 			&provider,
 			&event.Model,
+			&requestedModel,
+			&resolvedModel,
+			&upstreamModel,
+			&modelMatch,
+			&modelEvidence,
 			&reasoningEffort,
 			&ttft,
 			&serviceTier,
@@ -1391,6 +1398,11 @@ func (s *Store) RecentEventsFiltered(
 		}
 		event.RequestID = requestID.String
 		event.Provider = provider.String
+		event.RequestedModel = requestedModel.String
+		event.ResolvedModel = resolvedModel.String
+		event.UpstreamModel = upstreamModel.String
+		event.ModelMatch = modelMatch.String
+		event.ModelEvidence = modelEvidence.String
 		event.ReasoningEffort = reasoningEffort.String
 		event.ServiceTier = serviceTier.String
 		event.RequestServiceTier = requestServiceTier.String
