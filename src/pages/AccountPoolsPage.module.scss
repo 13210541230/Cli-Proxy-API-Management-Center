@@ -1,0 +1,39 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.header, .cardHeader, .formRow, .statusGrid {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.header, .cardHeader {
+  justify-content: space-between;
+}
+
+.header h1, .cardHeader h2 { margin: 0; }
+.header p { margin: 6px 0 0; color: var(--text-secondary); }
+.cardHeader { margin-bottom: 16px; }
+.cardHeader span, .hint, .empty, .authList small, .pool small { color: var(--text-secondary); font-size: 12px; }
+.formRow > * { flex: 1; }
+.formRow > button { flex: 0 0 auto; }
+.actionRow { display: flex; gap: 8px; }
+.grid { display: grid; grid-template-columns: minmax(220px, 0.8fr) minmax(360px, 1.2fr); gap: 16px; }
+.poolList, .authList { display: flex; flex-direction: column; gap: 8px; max-height: 360px; overflow: auto; margin-bottom: 16px; }
+.pool, .poolActive { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.poolActive { border-color: var(--primary-color); background: var(--primary-color-alpha, rgba(59, 130, 246, 0.12)); }
+.checkbox { display: grid; grid-template-columns: 20px 1fr auto; align-items: center; gap: 8px; padding: 8px; border-bottom: 1px solid var(--border-color); }
+.keySelection { display: flex; flex-direction: column; max-height: 260px; overflow: auto; margin-top: 16px; border: 1px solid var(--border-color); border-radius: 8px; }
+.statusGrid { display: grid; grid-template-columns: repeat(4, 1fr); align-items: stretch; }
+.statusGrid > div { display: flex; flex-direction: column; gap: 6px; padding: 12px; background: var(--surface-secondary); border-radius: 8px; }
+.statusGrid strong { font-size: 13px; word-break: break-all; }
+.error { margin-top: 12px; color: var(--danger-color); }
+
+@media (max-width: 900px) {
+  .grid, .statusGrid { grid-template-columns: 1fr; }
+  .formRow { flex-direction: column; align-items: stretch; }
+}

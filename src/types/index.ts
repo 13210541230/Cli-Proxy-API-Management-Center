@@ -13,5 +13,6 @@ export * from './oauth';
 export * from './log';
 export * from './quota';
 export * from './enterpriseKey';
+export * from './accountPool';
 export * from './enterpriseAccessAudit';
 export * from './plugin';

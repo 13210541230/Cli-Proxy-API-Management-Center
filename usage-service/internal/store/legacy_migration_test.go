@@ -89,7 +89,7 @@ func TestOpenMigratesLegacyDatabaseWithoutChangingProtectedData(t *testing.T) {
 		}
 	}
 	for name := range afterSchema {
-		if _, existed := beforeSchema[name]; !existed && name != "table:usage_hourly_rollups" && name != "table:usage_daily_dimension_rollups" && name != "table:usage_rollup_state" && name != "table:collector_pending_items" && name != "index:idx_usage_daily_dimension_lookup" && name != "index:idx_collector_pending_items_status_id" && name != "index:idx_usage_events_timestamp_id" && name != "index:idx_usage_events_security_timestamp" {
+		if _, existed := beforeSchema[name]; !existed && name != "table:usage_hourly_rollups" && name != "table:usage_daily_dimension_rollups" && name != "table:usage_rollup_state" && name != "table:collector_pending_items" && name != "index:idx_usage_daily_dimension_lookup" && name != "index:idx_collector_pending_items_status_id" && name != "index:idx_usage_events_timestamp_id" && name != "index:idx_usage_events_security_timestamp" && name != "table:account_pools" && name != "table:account_pool_members" && name != "index:idx_account_pool_members_auth_id" && name != "table:account_pool_bindings" && name != "index:idx_account_pool_bindings_pool_id" && name != "table:account_pool_policy_state" {
 			t.Fatalf("unexpected schema object added: %q", name)
 		}
 	}

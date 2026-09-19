@@ -64,6 +64,33 @@ func TestNormalizeRawPreservesRequestTelemetry(t *testing.T) {
 	}
 }
 
+func TestNormalizeRawTracksModelRoutingAndErrorTelemetry(t *testing.T) {
+	event, err := NormalizeRaw([]byte(`{
+		"request_id": "req-route",
+		"timestamp": "2026-01-02T03:04:05Z",
+		"alias": "gpt-5",
+		"model": "gpt-5",
+		"upstream_model": "gpt-5-mini",
+		"upstream_model_evidence": "response_header",
+		"status_code": 503,
+		"error_code": "server_is_overloaded",
+		"error_type": "service_unavailable_error",
+		"fail_summary": "server_is_overloaded: overloaded"
+	}`))
+	if err != nil {
+		t.Fatalf("normalize routing telemetry: %v", err)
+	}
+	if event.RequestedModel != "gpt-5" || event.ResolvedModel != "gpt-5" || event.UpstreamModel != "gpt-5-mini" {
+		t.Fatalf("model telemetry = %#v", event)
+	}
+	if event.ModelMatch != "upstream_mismatch" || event.ModelEvidence != "response_header" {
+		t.Fatalf("model comparison = %#v", event)
+	}
+	if event.ErrorCode != "server_is_overloaded" || event.ErrorClass != "capacity" {
+		t.Fatalf("error telemetry = %#v", event)
+	}
+}
+
 func TestNormalizeRawStoresSignalWithoutFailureBody(t *testing.T) {
 	event, err := NormalizeRaw([]byte(`{
 		"request_id": "req-security",

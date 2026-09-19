@@ -326,6 +326,11 @@ type UsageEventPageItem struct {
 	Timestamp            string
 	Provider             string
 	Model                string
+	RequestedModel       string
+	ResolvedModel        string
+	UpstreamModel        string
+	ModelMatch           string
+	ModelEvidence        string
 	Endpoint             string
 	Method               string
 	Path                 string
@@ -347,6 +352,9 @@ type UsageEventPageItem struct {
 	ExecutorType         string
 	FailStatusCode       *int64
 	FailSummary          string
+	ErrorCode            string
+	ErrorType            string
+	ErrorClass           string
 	SecuritySignal       string
 	InputTokens          int64
 	OutputTokens         int64
@@ -388,8 +396,10 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	args = append(args, limit+1)
 	rows, err := s.db.QueryContext(ctx, `select
 		ue.id, ue.request_id, ue.event_hash, ue.timestamp_ms, ue.timestamp, ue.provider, ue.model,
+		ue.requested_model, ue.resolved_model, ue.upstream_model, ue.model_match, ue.model_evidence,
 		ue.reasoning_effort, ue.ttft_ms, ue.service_tier, ue.request_service_tier, ue.response_service_tier,
-		ue.executor_type, ue.fail_status_code, ue.fail_summary, ue.security_signal, ue.endpoint, ue.method, ue.path,
+		ue.executor_type, ue.fail_status_code, ue.fail_summary, ue.error_code, ue.error_type, ue.error_class,
+		ue.security_signal, ue.endpoint, ue.method, ue.path,
 		ue.auth_type, ue.auth_index, ue.source, ue.source_hash,
 		ue.api_key_hash, ue.account_snapshot, ue.auth_label_snapshot, ue.auth_file_snapshot,
 		ue.auth_provider_snapshot, ue.auth_snapshot_at_ms, ue.input_tokens, ue.output_tokens,
@@ -403,14 +413,16 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	items := make([]UsageEventPageItem, 0, limit)
 	for rows.Next() {
 		var item UsageEventPageItem
-		var requestID, provider, reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
+		var requestID, provider, requestedModel, resolvedModel, upstreamModel, modelMatch, modelEvidence sql.NullString
+		var reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, errorCode, errorType, errorClass, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
 		var apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot sql.NullString
 		var ttft, failStatusCode, authSnapshotAt, latency sql.NullInt64
 		var failed int
 		if err := rows.Scan(
 			&item.ID, &requestID, &item.EventHash, &item.TimestampMS, &item.Timestamp, &provider, &item.Model,
+			&requestedModel, &resolvedModel, &upstreamModel, &modelMatch, &modelEvidence,
 			&reasoningEffort, &ttft, &serviceTier, &requestServiceTier, &responseServiceTier, &executorType,
-			&failStatusCode, &failSummary, &securitySignal, &endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
+			&failStatusCode, &failSummary, &errorCode, &errorType, &errorClass, &securitySignal, &endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
 			&accountSnapshot, &authLabelSnapshot, &authFileSnapshot, &authProviderSnapshot,
 			&authSnapshotAt, &item.InputTokens, &item.OutputTokens, &item.ReasoningTokens,
 			&item.CachedTokens, &item.CacheTokens, &item.TotalTokens, &latency, &failed, &item.CreatedAtMS,
@@ -431,12 +443,20 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 		item.AuthLabelSnapshot = authLabelSnapshot.String
 		item.AuthFileSnapshot = authFileSnapshot.String
 		item.AuthProviderSnapshot = authProviderSnapshot.String
+		item.RequestedModel = requestedModel.String
+		item.ResolvedModel = resolvedModel.String
+		item.UpstreamModel = upstreamModel.String
+		item.ModelMatch = modelMatch.String
+		item.ModelEvidence = modelEvidence.String
 		item.ReasoningEffort = reasoningEffort.String
 		item.ServiceTier = serviceTier.String
 		item.RequestServiceTier = requestServiceTier.String
 		item.ResponseServiceTier = responseServiceTier.String
 		item.ExecutorType = executorType.String
 		item.FailSummary = failSummary.String
+		item.ErrorCode = errorCode.String
+		item.ErrorType = errorType.String
+		item.ErrorClass = errorClass.String
 		item.SecuritySignal = securitySignal.String
 		if ttft.Valid {
 			value := ttft.Int64

@@ -23,6 +23,16 @@ export interface UsageTokens {
 export interface UsageDetail {
   timestamp: string;
   source: string;
+  requested_model?: string;
+  requestedModel?: string;
+  resolved_model?: string;
+  resolvedModel?: string;
+  upstream_model?: string;
+  upstreamModel?: string;
+  model_match?: string;
+  modelMatch?: string;
+  model_evidence?: string;
+  modelEvidence?: string;
   auth_index: string | number | null;
   api_key_hash?: string;
   apiKeyHash?: string;
@@ -54,6 +64,12 @@ export interface UsageDetail {
   statusCode?: number;
   fail_summary?: string;
   failSummary?: string;
+  error_code?: string;
+  errorCode?: string;
+  error_type?: string;
+  errorType?: string;
+  error_class?: string;
+  errorClass?: string;
   security_signal?: string;
   securitySignal?: string;
   error_message?: string;
@@ -284,6 +300,11 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
         details.push({
           timestamp,
           source: normalizeSourceWithCache(sourceCache, detailRaw.source),
+          requested_model: readDetailString(detailRaw.requested_model ?? detailRaw.requestedModel),
+          resolved_model: readDetailString(detailRaw.resolved_model ?? detailRaw.resolvedModel),
+          upstream_model: readDetailString(detailRaw.upstream_model ?? detailRaw.upstreamModel),
+          model_match: readDetailString(detailRaw.model_match ?? detailRaw.modelMatch),
+          model_evidence: readDetailString(detailRaw.model_evidence ?? detailRaw.modelEvidence),
           auth_index: (detailRaw.auth_index ??
             detailRaw.authIndex ??
             detailRaw.AuthIndex ??
@@ -320,6 +341,9 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           fail_summary: readDetailString(
             detailRaw.fail_summary ?? detailRaw.failSummary ?? detailRaw.error_message
           ),
+          error_code: readDetailString(detailRaw.error_code ?? detailRaw.errorCode),
+          error_type: readDetailString(detailRaw.error_type ?? detailRaw.errorType),
+          error_class: readDetailString(detailRaw.error_class ?? detailRaw.errorClass),
           security_signal: readDetailString(
             detailRaw.security_signal ?? detailRaw.securitySignal
           ),
@@ -371,6 +395,11 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
         details.push({
           timestamp,
           source: normalizeSourceWithCache(sourceCache, detailRaw.source),
+          requested_model: readDetailString(detailRaw.requested_model ?? detailRaw.requestedModel),
+          resolved_model: readDetailString(detailRaw.resolved_model ?? detailRaw.resolvedModel),
+          upstream_model: readDetailString(detailRaw.upstream_model ?? detailRaw.upstreamModel),
+          model_match: readDetailString(detailRaw.model_match ?? detailRaw.modelMatch),
+          model_evidence: readDetailString(detailRaw.model_evidence ?? detailRaw.modelEvidence),
           auth_index: (detailRaw.auth_index ??
             detailRaw.authIndex ??
             detailRaw.AuthIndex ??
@@ -407,6 +436,9 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           fail_summary: readDetailString(
             detailRaw.fail_summary ?? detailRaw.failSummary ?? detailRaw.error_message
           ),
+          error_code: readDetailString(detailRaw.error_code ?? detailRaw.errorCode),
+          error_type: readDetailString(detailRaw.error_type ?? detailRaw.errorType),
+          error_class: readDetailString(detailRaw.error_class ?? detailRaw.errorClass),
           security_signal: readDetailString(
             detailRaw.security_signal ?? detailRaw.securitySignal
           ),

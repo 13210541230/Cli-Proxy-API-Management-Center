@@ -316,6 +316,11 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
     modelEntry.details.push({
       timestamp,
       source: item.source,
+      requested_model: item.requested_model,
+      resolved_model: item.resolved_model,
+      upstream_model: item.upstream_model,
+      model_match: item.model_match,
+      model_evidence: item.model_evidence,
       auth_index: item.auth_index,
       api_key_hash: item.api_key_hash,
       account_snapshot: item.account_snapshot,
@@ -331,6 +336,9 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
       executor_type: item.executor_type,
       fail_status_code: item.fail_status_code,
       fail_summary: item.fail_summary,
+      error_code: item.error_code,
+      error_type: item.error_type,
+      error_class: item.error_class,
       security_signal: item.security_signal,
       latency_ms: item.latency_ms,
       failed: item.failed === true,
@@ -516,6 +524,24 @@ const formatPriceUnit = (value: number) => `$${value.toFixed(4)}/1M`;
 const buildRealtimeMetaText = (row: MonitoringEventRow) => {
   const text = `${row.endpointMethod} ${row.endpointPath}`.trim();
   return maskSensitiveText(text || '-');
+};
+
+const buildModelRouteMetaText = (row: MonitoringEventRow, t: TFunction) => {
+  const requested = row.requestedModel || '-';
+  const resolved = row.resolvedModel || row.model || '-';
+  const upstream = row.upstreamModel || t('monitoring.upstream_model_unknown', { defaultValue: '未声明' });
+  const route = row.modelMatch || 'unknown';
+  const routeLabel =
+    route === 'upstream_mismatch'
+      ? t('monitoring.model_route_mismatch', { defaultValue: '上游模型不一致' })
+      : route === 'expected_mapping'
+        ? t('monitoring.model_route_expected_mapping', { defaultValue: '配置映射' })
+        : route === 'response_alias'
+          ? t('monitoring.model_route_response_alias', { defaultValue: '响应别名' })
+          : route === 'match'
+            ? t('monitoring.model_route_match', { defaultValue: '一致' })
+            : t('monitoring.model_route_unknown', { defaultValue: '未确认' });
+  return `${routeLabel} · ${requested} → ${resolved} → ${upstream}`;
 };
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
@@ -4363,6 +4389,12 @@ export function MonitoringCenterPage() {
                     <div className={styles.primaryCell}>
                       <span className={styles.monoCell}>{row.model}</span>
                       <small className={styles.monoCell}>{buildRealtimeMetaText(row)}</small>
+                      <small
+                        className={row.modelMatch === 'upstream_mismatch' ? styles.badText : undefined}
+                        title={buildModelRouteMetaText(row, t)}
+                      >
+                        {buildModelRouteMetaText(row, t)}
+                      </small>
                     </div>
                   </td>
                   <td>
@@ -4393,10 +4425,12 @@ export function MonitoringCenterPage() {
                           {t('monitoring.security_signal_cyber_policy', { defaultValue: 'cyber_policy' })}
                         </span>
                       ) : null}
-                      {row.failed && (row.failStatusCode != null || row.failSummary) ? (
+                      {row.failed && (row.failStatusCode != null || row.errorCode || row.failSummary) ? (
                         <small title={row.failSummary || undefined}>
                           {[
                             row.failStatusCode == null ? '' : String(row.failStatusCode),
+                            row.errorClass,
+                            row.errorCode,
                             row.failSummary,
                           ]
                             .filter(Boolean)

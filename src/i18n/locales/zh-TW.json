@@ -145,6 +145,7 @@
     "config_management": "設定面板",
     "logs": "記錄檢視",
     "system_info": "中心資訊",
+    "account_pools": "帳號池管理",
     "plugins": "外掛中心"
   },
   "dashboard": {

@@ -352,6 +352,11 @@ export type MonitoringEventRow = {
   dayKey: string;
   hourLabel: string;
   model: string;
+  requestedModel?: string;
+  resolvedModel?: string;
+  upstreamModel?: string;
+  modelMatch?: string;
+  modelEvidence?: string;
   reasoningEffort?: string;
   ttftMs?: number | null;
   tokensPerSecond?: number | null;
@@ -361,6 +366,9 @@ export type MonitoringEventRow = {
   executorType?: string;
   failStatusCode?: number | null;
   failSummary?: string;
+  errorCode?: string;
+  errorType?: string;
+  errorClass?: string;
   securitySignal?: string;
   endpoint: string;
   endpointMethod: string;
@@ -1537,6 +1545,9 @@ const buildEventRows = (
       const failSummary = readString(
         detail.fail_summary ?? detail.failSummary ?? detail.error_message
       );
+      const errorCode = readString(detail.error_code ?? detail.errorCode);
+      const errorType = readString(detail.error_type ?? detail.errorType);
+      const errorClass = readString(detail.error_class ?? detail.errorClass);
       const securitySignal = readString(detail.security_signal ?? detail.securitySignal);
       const statsIncluded = detail.failed === true || inputTokens > 0 || outputTokens > 0;
       const dayKey = buildLocalDayKey(timestampMs);
@@ -1551,6 +1562,11 @@ const buildEventRows = (
         dayKey,
         hourLabel,
         model: readString(detail.__modelName) || '-',
+        requestedModel: readString(detail.requested_model ?? detail.requestedModel),
+        resolvedModel: readString(detail.resolved_model ?? detail.resolvedModel),
+        upstreamModel: readString(detail.upstream_model ?? detail.upstreamModel),
+        modelMatch: readString(detail.model_match ?? detail.modelMatch),
+        modelEvidence: readString(detail.model_evidence ?? detail.modelEvidence),
         reasoningEffort,
         endpoint,
         endpointMethod,
@@ -1582,6 +1598,9 @@ const buildEventRows = (
         executorType,
         failStatusCode,
         failSummary,
+        errorCode,
+        errorType,
+        errorClass,
         securitySignal,
         inputTokens,
         outputTokens,
@@ -1592,6 +1611,12 @@ const buildEventRows = (
         taskKey,
         searchText: buildSearchText(
           detail.__modelName,
+          detail.requested_model ?? detail.requestedModel,
+          detail.resolved_model ?? detail.resolvedModel,
+          detail.upstream_model ?? detail.upstreamModel,
+          detail.model_match ?? detail.modelMatch,
+          detail.error_code ?? detail.errorCode,
+          detail.error_class ?? detail.errorClass,
           sourceLabel,
           authMeta?.account,
           authMeta?.label,

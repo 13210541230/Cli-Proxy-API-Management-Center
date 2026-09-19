@@ -211,6 +211,11 @@ type EventItem struct {
 	Timestamp            string `json:"timestamp"`
 	Provider             string `json:"provider,omitempty"`
 	Model                string `json:"model"`
+	RequestedModel       string `json:"requested_model,omitempty"`
+	ResolvedModel        string `json:"resolved_model,omitempty"`
+	UpstreamModel        string `json:"upstream_model,omitempty"`
+	ModelMatch           string `json:"model_match,omitempty"`
+	ModelEvidence        string `json:"model_evidence,omitempty"`
 	Endpoint             string `json:"endpoint,omitempty"`
 	Method               string `json:"method,omitempty"`
 	Path                 string `json:"path,omitempty"`
@@ -232,6 +237,9 @@ type EventItem struct {
 	ExecutorType         string `json:"executor_type,omitempty"`
 	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
 	FailSummary          string `json:"fail_summary,omitempty"`
+	ErrorCode            string `json:"error_code,omitempty"`
+	ErrorType            string `json:"error_type,omitempty"`
+	ErrorClass           string `json:"error_class,omitempty"`
 	SecuritySignal       string `json:"security_signal,omitempty"`
 	InputTokens          int64  `json:"input_tokens"`
 	OutputTokens         int64  `json:"output_tokens"`
@@ -896,7 +904,9 @@ func eventItems(items []store.UsageEventPageItem) []EventItem {
 	for _, item := range items {
 		result = append(result, EventItem{
 			ID: item.ID, RequestID: item.RequestID, EventHash: item.EventHash, TimestampMS: item.TimestampMS, Timestamp: item.Timestamp,
-			Provider: item.Provider, Model: item.Model, Endpoint: item.Endpoint, Method: item.Method, Path: item.Path,
+			Provider: item.Provider, Model: item.Model, RequestedModel: item.RequestedModel,
+			ResolvedModel: item.ResolvedModel, UpstreamModel: item.UpstreamModel, ModelMatch: item.ModelMatch,
+			ModelEvidence: item.ModelEvidence, Endpoint: item.Endpoint, Method: item.Method, Path: item.Path,
 			AuthType: item.AuthType, AuthIndex: item.AuthIndex, Source: usage.MaskUsageSource(item.Source), SourceHash: item.SourceHash,
 			APIKeyHash: item.APIKeyHash, AccountSnapshot: item.AccountSnapshot, AuthLabelSnapshot: item.AuthLabelSnapshot,
 			AuthFileSnapshot: item.AuthFileSnapshot, AuthProviderSnapshot: item.AuthProviderSnapshot, AuthSnapshotAtMS: item.AuthSnapshotAtMS,
@@ -908,6 +918,9 @@ func eventItems(items []store.UsageEventPageItem) []EventItem {
 			ExecutorType:        item.ExecutorType,
 			FailStatusCode:      item.FailStatusCode,
 			FailSummary:         item.FailSummary,
+			ErrorCode:           item.ErrorCode,
+			ErrorType:           item.ErrorType,
+			ErrorClass:          item.ErrorClass,
 			SecuritySignal:      item.SecuritySignal,
 			InputTokens:         item.InputTokens, OutputTokens: item.OutputTokens, ReasoningTokens: item.ReasoningTokens,
 			CachedTokens: item.CachedTokens, CacheTokens: item.CacheTokens, TotalTokens: item.TotalTokens,

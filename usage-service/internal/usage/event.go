@@ -14,12 +14,17 @@ import (
 const SecuritySignalCyberPolicy = "cyber_policy"
 
 type Event struct {
-	RequestID   string `json:"request_id,omitempty"`
-	EventHash   string `json:"event_hash"`
-	TimestampMS int64  `json:"timestamp_ms"`
-	Timestamp   string `json:"timestamp"`
-	Provider    string `json:"provider,omitempty"`
-	Model       string `json:"model"`
+	RequestID      string `json:"request_id,omitempty"`
+	EventHash      string `json:"event_hash"`
+	TimestampMS    int64  `json:"timestamp_ms"`
+	Timestamp      string `json:"timestamp"`
+	Provider       string `json:"provider,omitempty"`
+	Model          string `json:"model"`
+	RequestedModel string `json:"requested_model,omitempty"`
+	ResolvedModel  string `json:"resolved_model,omitempty"`
+	UpstreamModel  string `json:"upstream_model,omitempty"`
+	ModelMatch     string `json:"model_match,omitempty"`
+	ModelEvidence  string `json:"model_evidence,omitempty"`
 	// ReasoningEffort is the request-side model reasoning setting. It is
 	// separate from response-side ReasoningTokens and may be absent in legacy events.
 	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
@@ -30,6 +35,9 @@ type Event struct {
 	ExecutorType         string `json:"executor_type,omitempty"`
 	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
 	FailSummary          string `json:"fail_summary,omitempty"`
+	ErrorCode            string `json:"error_code,omitempty"`
+	ErrorType            string `json:"error_type,omitempty"`
+	ErrorClass           string `json:"error_class,omitempty"`
 	SecuritySignal       string `json:"security_signal,omitempty"`
 	Endpoint             string `json:"endpoint,omitempty"`
 	Method               string `json:"method,omitempty"`
@@ -68,6 +76,11 @@ type Tokens struct {
 type Detail struct {
 	Timestamp            string `json:"timestamp"`
 	Source               string `json:"source"`
+	RequestedModel       string `json:"requested_model,omitempty"`
+	ResolvedModel        string `json:"resolved_model,omitempty"`
+	UpstreamModel        string `json:"upstream_model,omitempty"`
+	ModelMatch           string `json:"model_match,omitempty"`
+	ModelEvidence        string `json:"model_evidence,omitempty"`
 	AuthIndex            string `json:"auth_index,omitempty"`
 	APIKeyHash           string `json:"api_key_hash,omitempty"`
 	AccountSnapshot      string `json:"account_snapshot,omitempty"`
@@ -83,6 +96,9 @@ type Detail struct {
 	ExecutorType         string `json:"executor_type,omitempty"`
 	FailStatusCode       *int64 `json:"fail_status_code,omitempty"`
 	FailSummary          string `json:"fail_summary,omitempty"`
+	ErrorCode            string `json:"error_code,omitempty"`
+	ErrorType            string `json:"error_type,omitempty"`
+	ErrorClass           string `json:"error_class,omitempty"`
 	SecuritySignal       string `json:"security_signal,omitempty"`
 	LatencyMS            *int64 `json:"latency_ms,omitempty"`
 	Tokens               Tokens `json:"tokens"`
@@ -150,6 +166,17 @@ func NormalizeRaw(raw []byte) (Event, error) {
 	latencyMS := readOptionalInt(record, "latency_ms", "latencyMs", "duration_ms", "durationMs", "elapsed_ms", "elapsedMs")
 	ttftMS := readOptionalInt(record, "ttft_ms", "ttftMs", "time_to_first_token_ms", "timeToFirstTokenMs")
 	failStatusCode := readOptionalPositiveInt(record, "fail_status_code", "failStatusCode", "status_code", "statusCode", "http_status", "httpStatus")
+	requestedModel := readString(record, "requested_model", "requestedModel", "alias")
+	resolvedModel := readString(record, "resolved_model", "resolvedModel", "model")
+	upstreamModel := readString(record, "upstream_model", "upstreamModel")
+	modelEvidence := readString(record, "model_evidence", "modelEvidence", "upstream_model_evidence", "upstreamModelEvidence")
+	if upstreamModel == "" {
+		upstreamModel, modelEvidence = readResponseModel(record)
+	}
+	modelMatch := classifyModelMatch(requestedModel, resolvedModel, upstreamModel)
+	errorCode := readString(record, "error_code", "errorCode")
+	errorType := readString(record, "error_type", "errorType")
+	errorClass := classifyError(failStatusCode, errorCode, errorType)
 	requestServiceTier := readString(record, "request_service_tier", "requestServiceTier")
 	responseServiceTier := readString(record, "response_service_tier", "responseServiceTier")
 	serviceTier := readString(record, "service_tier", "serviceTier")
@@ -171,6 +198,11 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		Timestamp:            timestamp,
 		Provider:             readString(record, "provider", "type", "auth_type", "authType"),
 		Model:                readString(record, "model", "model_name", "modelName"),
+		RequestedModel:       requestedModel,
+		ResolvedModel:        resolvedModel,
+		UpstreamModel:        upstreamModel,
+		ModelMatch:           modelMatch,
+		ModelEvidence:        modelEvidence,
 		ReasoningEffort:      readString(record, "reasoning_effort", "reasoningEffort", "thinking_level", "thinkingLevel"),
 		TTFTMS:               ttftMS,
 		ServiceTier:          serviceTier,
@@ -179,6 +211,9 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		ExecutorType:         readString(record, "executor_type", "executorType"),
 		FailStatusCode:       failStatusCode,
 		FailSummary:          readString(record, "fail_summary", "failSummary", "error_message", "errorMessage"),
+		ErrorCode:            errorCode,
+		ErrorType:            errorType,
+		ErrorClass:           errorClass,
 		SecuritySignal:       readSecuritySignal(record),
 		Endpoint:             endpoint,
 		Method:               method,
@@ -246,6 +281,11 @@ func BuildPayload(events []Event) Payload {
 		modelEntry.Details = append(modelEntry.Details, Detail{
 			Timestamp:            event.Timestamp,
 			Source:               event.Source,
+			RequestedModel:       event.RequestedModel,
+			ResolvedModel:        event.ResolvedModel,
+			UpstreamModel:        event.UpstreamModel,
+			ModelMatch:           event.ModelMatch,
+			ModelEvidence:        event.ModelEvidence,
 			AuthIndex:            event.AuthIndex,
 			APIKeyHash:           event.APIKeyHash,
 			AccountSnapshot:      event.AccountSnapshot,
@@ -261,6 +301,9 @@ func BuildPayload(events []Event) Payload {
 			ExecutorType:         event.ExecutorType,
 			FailStatusCode:       event.FailStatusCode,
 			FailSummary:          event.FailSummary,
+			ErrorCode:            event.ErrorCode,
+			ErrorType:            event.ErrorType,
+			ErrorClass:           event.ErrorClass,
 			SecuritySignal:       event.SecuritySignal,
 			LatencyMS:            event.LatencyMS,
 			Failed:               event.Failed,
@@ -275,6 +318,86 @@ func BuildPayload(events []Event) Payload {
 		})
 	}
 	return payload
+}
+
+func readResponseModel(record map[string]any) (string, string) {
+	rawHeaders := first(record, "response_headers", "responseHeaders")
+	headers, ok := rawHeaders.(map[string]any)
+	if !ok {
+		return "", ""
+	}
+	for key, raw := range headers {
+		normalized := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(key), "_", "-"))
+		if normalized != "openai-model" && normalized != "x-openai-model" && normalized != "x-upstream-model" {
+			continue
+		}
+		if value := readHeaderValue(raw); value != "" {
+			return value, "response_header"
+		}
+	}
+	return "", ""
+}
+
+func readHeaderValue(raw any) string {
+	if values, ok := raw.([]any); ok && len(values) > 0 {
+		return readString(map[string]any{"value": values[0]}, "value")
+	}
+	return strings.TrimSpace(fmt.Sprint(raw))
+}
+
+func classifyModelMatch(requested, resolved, upstream string) string {
+	requested = strings.TrimSpace(requested)
+	resolved = strings.TrimSpace(resolved)
+	upstream = strings.TrimSpace(upstream)
+	if upstream != "" {
+		if strings.EqualFold(upstream, resolved) {
+			return "match"
+		}
+		if requested != "" && strings.EqualFold(upstream, requested) {
+			return "response_alias"
+		}
+		return "upstream_mismatch"
+	}
+	if requested != "" && resolved != "" && !strings.EqualFold(requested, resolved) {
+		return "expected_mapping"
+	}
+	if resolved != "" {
+		return "unknown"
+	}
+	return ""
+}
+
+func classifyError(status *int64, code, errorType string) string {
+	code = strings.ToLower(strings.TrimSpace(code))
+	errorType = strings.ToLower(strings.TrimSpace(errorType))
+	statusCode := int64(0)
+	if status != nil {
+		statusCode = *status
+	}
+	switch {
+	case code == SecuritySignalCyberPolicy:
+		return "security_policy"
+	case code == "server_is_overloaded" || code == "slow_down" || errorType == "service_unavailable_error":
+		return "capacity"
+	case statusCode == 429 || strings.Contains(code, "rate_limit") || strings.Contains(errorType, "rate_limit"):
+		return "rate_limit"
+	case strings.Contains(code, "quota") || strings.Contains(code, "insufficient"):
+		return "quota"
+	case statusCode == 401 || statusCode == 403 || strings.Contains(code, "auth") || strings.Contains(errorType, "auth"):
+		return "authentication"
+	case strings.Contains(code, "model_not_found") || strings.Contains(code, "model_not_supported"):
+		return "model"
+	case strings.Contains(code, "invalid") || strings.Contains(errorType, "invalid_request"):
+		return "request_parameter"
+	case statusCode >= 500:
+		return "upstream_server"
+	case statusCode == 499:
+		return "client_canceled"
+	case statusCode >= 400:
+		return "upstream_error"
+	default:
+		return ""
+	}
 }
 
 func readSecuritySignal(record map[string]any) string {
@@ -451,6 +574,10 @@ func buildEventHash(event Event) string {
 		event.Timestamp,
 		event.Endpoint,
 		event.Model,
+		event.RequestedModel,
+		event.ResolvedModel,
+		event.UpstreamModel,
+		event.ErrorCode,
 		event.AuthIndex,
 		event.SourceHash,
 		strconv.FormatInt(event.InputTokens, 10),

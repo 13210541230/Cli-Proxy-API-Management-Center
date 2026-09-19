@@ -68,6 +68,48 @@ func TestAnalyticsHTTPContractAuthIncludeAndNoDetailsTree(t *testing.T) {
 	}
 }
 
+func TestAnalyticsHTTPReturnsModelAndErrorTelemetry(t *testing.T) {
+	ctx := context.Background()
+	cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CORSOrigins: []string{"*"}}
+	db, err := store.Open(cfg.DBPath)
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	defer db.Close()
+	if err := db.SaveSetup(ctx, store.Setup{CPAUpstreamURL: "http://example.test", ManagementKey: "management-key"}); err != nil {
+		t.Fatalf("save setup: %v", err)
+	}
+	if _, err := db.InsertEvents(ctx, []usage.Event{{
+		EventHash: "route-error-event", TimestampMS: 1_700_000_000_000, Timestamp: "now", Model: "gpt-5",
+		RequestedModel: "gpt-5", ResolvedModel: "gpt-5", UpstreamModel: "gpt-5-mini",
+		ModelMatch: "upstream_mismatch", ModelEvidence: "response_header", ErrorCode: "server_is_overloaded",
+		ErrorClass: "capacity", FailSummary: "server_is_overloaded: overloaded", Failed: true,
+	}}); err != nil {
+		t.Fatalf("insert event: %v", err)
+	}
+	handler := New(cfg, db, collector.NewManager(cfg, db, nil, collector.AlertConfig{})).Handler()
+	req := httptest.NewRequest(http.MethodPost, "/v0/management/monitoring/analytics", strings.NewReader(`{"from_ms":1699999999999,"to_ms":1700000000001,"include":["events"],"events_page":{"limit":1}}`))
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+	if rr.Code != http.StatusOK {
+		t.Fatalf("analytics status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(rr.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode analytics: %v", err)
+	}
+	events := payload["events"].(map[string]any)
+	items := events["items"].([]any)
+	item := items[0].(map[string]any)
+	if item["upstream_model"] != "gpt-5-mini" || item["model_match"] != "upstream_mismatch" {
+		t.Fatalf("model telemetry = %#v", item)
+	}
+	if item["error_code"] != "server_is_overloaded" || item["error_class"] != "capacity" {
+		t.Fatalf("error telemetry = %#v", item)
+	}
+}
+
 func TestAnalyticsHTTPAllowsAggregateProviderStatsAndSkipsEventCount(t *testing.T) {
 	ctx := context.Background()
 	cfg := config.Config{DBPath: filepath.Join(t.TempDir(), "usage.sqlite"), CORSOrigins: []string{"*"}}

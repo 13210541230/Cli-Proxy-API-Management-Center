@@ -410,6 +410,11 @@ func (s *Store) init() error {
 			timestamp text not null,
 			provider text,
 			model text not null,
+			requested_model text,
+			resolved_model text,
+			upstream_model text,
+			model_match text,
+			model_evidence text,
 			reasoning_effort text,
 			ttft_ms integer,
 			service_tier text,
@@ -418,6 +423,9 @@ func (s *Store) init() error {
 			executor_type text,
 			fail_status_code integer,
 			fail_summary text,
+			error_code text,
+			error_type text,
+			error_class text,
 			security_signal text,
 			endpoint text,
 			method text,
@@ -604,6 +612,9 @@ func (s *Store) init() error {
 	if err := s.ensureEnterpriseSchema(); err != nil {
 		return err
 	}
+	if err := s.ensureAccountPoolSchema(); err != nil {
+		return err
+	}
 	if err := s.ensureRollupStateSchema(); err != nil {
 		return err
 	}
@@ -646,6 +657,11 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 		{name: "auth_file_snapshot", definition: "text"},
 		{name: "auth_provider_snapshot", definition: "text"},
 		{name: "auth_snapshot_at_ms", definition: "integer"},
+		{name: "requested_model", definition: "text"},
+		{name: "resolved_model", definition: "text"},
+		{name: "upstream_model", definition: "text"},
+		{name: "model_match", definition: "text"},
+		{name: "model_evidence", definition: "text"},
 		{name: "reasoning_effort", definition: "text"},
 		{name: "ttft_ms", definition: "integer"},
 		{name: "service_tier", definition: "text"},
@@ -654,6 +670,9 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 		{name: "executor_type", definition: "text"},
 		{name: "fail_status_code", definition: "integer"},
 		{name: "fail_summary", definition: "text"},
+		{name: "error_code", definition: "text"},
+		{name: "error_type", definition: "text"},
+		{name: "error_class", definition: "text"},
 		{name: "security_signal", definition: "text"},
 	}
 	for _, column := range columns {
@@ -1177,14 +1196,15 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 	}()
 
 	stmt, err := tx.PrepareContext(ctx, `insert or ignore into usage_events (
-		request_id, event_hash, timestamp_ms, timestamp, provider, model, reasoning_effort,
-		ttft_ms, service_tier, request_service_tier, response_service_tier, executor_type,
-		fail_status_code, fail_summary, security_signal, endpoint, method, path,
+		request_id, event_hash, timestamp_ms, timestamp, provider, model,
+		requested_model, resolved_model, upstream_model, model_match, model_evidence,
+		reasoning_effort, ttft_ms, service_tier, request_service_tier, response_service_tier, executor_type,
+		fail_status_code, fail_summary, error_code, error_type, error_class, security_signal, endpoint, method, path,
 		auth_type, auth_index, source, source_hash, api_key_hash,
 		account_snapshot, auth_label_snapshot, auth_file_snapshot, auth_provider_snapshot, auth_snapshot_at_ms,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 		latency_ms, failed, raw_json, created_at_ms
-	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return InsertResult{}, err
 	}
@@ -1204,6 +1224,11 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 			event.Timestamp,
 			nullString(event.Provider),
 			event.Model,
+			nullString(event.RequestedModel),
+			nullString(event.ResolvedModel),
+			nullString(event.UpstreamModel),
+			nullString(event.ModelMatch),
+			nullString(event.ModelEvidence),
 			nullString(event.ReasoningEffort),
 			nullInt(event.TTFTMS),
 			nullString(event.ServiceTier),
@@ -1212,6 +1237,9 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 			nullString(event.ExecutorType),
 			nullInt(event.FailStatusCode),
 			nullString(event.FailSummary),
+			nullString(event.ErrorCode),
+			nullString(event.ErrorType),
+			nullString(event.ErrorClass),
 			nullString(event.SecuritySignal),
 			nullString(event.Endpoint),
 			nullString(event.Method),
