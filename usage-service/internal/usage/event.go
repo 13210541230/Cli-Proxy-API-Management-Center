@@ -168,7 +168,7 @@ func NormalizeRaw(raw []byte) (Event, error) {
 	failStatusCode := readOptionalPositiveInt(record, "fail_status_code", "failStatusCode", "status_code", "statusCode", "http_status", "httpStatus")
 	requestedModel := readString(record, "requested_model", "requestedModel", "alias")
 	resolvedModel := readString(record, "resolved_model", "resolvedModel", "model")
-	upstreamModel := readString(record, "upstream_model", "upstreamModel")
+	upstreamModel := readString(record, "upstream_model", "upstreamModel", "response_model", "responseModel")
 	modelEvidence := readString(record, "model_evidence", "modelEvidence", "upstream_model_evidence", "upstreamModelEvidence")
 	if upstreamModel == "" {
 		upstreamModel, modelEvidence = readResponseModel(record)

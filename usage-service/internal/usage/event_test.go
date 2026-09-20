@@ -91,6 +91,23 @@ func TestNormalizeRawTracksModelRoutingAndErrorTelemetry(t *testing.T) {
 	}
 }
 
+func TestNormalizeRawAcceptsResponseModelFallback(t *testing.T) {
+	event, err := NormalizeRaw([]byte(`{
+		"request_id": "req-resp-model",
+		"timestamp": "2026-01-02T03:04:05Z",
+		"alias": "gpt-5",
+		"model": "gpt-5",
+		"response_model": "gpt-5.6-sol",
+		"status_code": 200
+	}`))
+	if err != nil {
+		t.Fatalf("normalize response_model fallback: %v", err)
+	}
+	if event.UpstreamModel != "gpt-5.6-sol" {
+		t.Fatalf("upstream model = %q, want response_model fallback gpt-5.6-sol", event.UpstreamModel)
+	}
+}
+
 func TestNormalizeRawStoresSignalWithoutFailureBody(t *testing.T) {
 	event, err := NormalizeRaw([]byte(`{
 		"request_id": "req-security",
