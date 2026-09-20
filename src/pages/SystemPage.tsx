@@ -652,9 +652,7 @@ export function SystemPage() {
                     loading={updateAction !== null}
                     disabled={
                       !updateAvailable ||
-                      !runtimeStatus.enabled ||
-                      runtimeStatus.external === true ||
-                      runtimeStatus.state === 'failed'
+                      !runtimeStatus.enabled
                     }
                   >
                     {t('system_info.suite_update_now')}
