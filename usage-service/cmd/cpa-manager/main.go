@@ -68,7 +68,13 @@ func main() {
 	if savedConfig, ok, err := db.LoadManagerConfig(context.Background()); err != nil {
 		log.Printf("load local runtime config: %v", err)
 	} else if ok {
-		runtimeCfg := savedConfig.LocalRuntime
+		runtimeCfg := normalizeLocalRuntimeConfig(savedConfig.LocalRuntime)
+		if localRuntimeConfigDiffers(runtimeCfg, savedConfig.LocalRuntime) {
+			savedConfig.LocalRuntime = runtimeCfg
+			if err := db.SaveManagerConfig(context.Background(), savedConfig); err != nil {
+				log.Printf("persist portable local runtime config: %v", err)
+			}
+		}
 		if !savedConfig.LocalRuntimeConfigured() {
 			if defaultCfg, defaultOK := supervisor.DefaultConfig(); defaultOK {
 				runtimeCfg = store.LocalRuntimeConfig{
@@ -343,6 +349,42 @@ func configureLocalCPA(controller *supervisor.Controller, cfg supervisor.Config,
 		return
 	}
 	log.Printf("CLIProxyAPI started with pid %d", status.PID)
+}
+
+func normalizeLocalRuntimeConfig(runtimeCfg store.LocalRuntimeConfig) store.LocalRuntimeConfig {
+	cfg := supervisor.NormalizeAdjacentConfig(supervisor.Config{
+		Enabled:           runtimeCfg.Enabled,
+		CPAExecutablePath: runtimeCfg.CPAExecutablePath,
+		WorkingDirectory:  runtimeCfg.WorkingDirectory,
+		Arguments:         runtimeCfg.Arguments,
+		AutoStart:         runtimeCfg.AutoStart,
+		HealthURL:         runtimeCfg.HealthURL,
+	})
+	return store.LocalRuntimeConfig{
+		Enabled:           cfg.Enabled,
+		CPAExecutablePath: cfg.CPAExecutablePath,
+		WorkingDirectory:  cfg.WorkingDirectory,
+		Arguments:         append([]string(nil), cfg.Arguments...),
+		AutoStart:         cfg.AutoStart,
+		HealthURL:         cfg.HealthURL,
+	}
+}
+
+func localRuntimeConfigDiffers(left, right store.LocalRuntimeConfig) bool {
+	if left.Enabled != right.Enabled ||
+		left.CPAExecutablePath != right.CPAExecutablePath ||
+		left.WorkingDirectory != right.WorkingDirectory ||
+		left.AutoStart != right.AutoStart ||
+		left.HealthURL != right.HealthURL ||
+		len(left.Arguments) != len(right.Arguments) {
+		return true
+	}
+	for index := range left.Arguments {
+		if left.Arguments[index] != right.Arguments[index] {
+			return true
+		}
+	}
+	return false
 }
 
 func persistentArguments(arguments []string) []string {

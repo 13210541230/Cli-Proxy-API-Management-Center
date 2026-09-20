@@ -143,6 +143,7 @@ func New() *Controller {
 func (c *Controller) Configure(cfg Config) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	cfg = NormalizeAdjacentConfig(cfg)
 	if err := c.canConfigureLocked(cfg); err != nil {
 		return err
 	}
@@ -157,6 +158,7 @@ func (c *Controller) CanConfigure(cfg Config) error {
 }
 
 func (c *Controller) canConfigureLocked(cfg Config) error {
+	cfg = NormalizeAdjacentConfig(cfg)
 	if c.cmd != nil && c.cmd.ProcessState == nil && !sameProcessConfig(c.config, cfg) {
 		return errors.New("stop CLIProxyAPI before changing its local runtime configuration")
 	}
@@ -455,6 +457,81 @@ func DefaultConfig() (Config, bool) {
 		WorkingDirectory:  baseDir,
 		AutoStart:         true,
 	}, true
+}
+
+// NormalizeAdjacentConfig keeps package-managed CPA portable when the unified
+// package directory is copied or replaced. Legacy Manager configs may contain
+// an absolute path into the previous package directory; when the current
+// package contains the adjacent default executable, rebase that path to the
+// current directory. Explicit custom executable names or custom working
+// directories remain unchanged.
+func NormalizeAdjacentConfig(cfg Config) Config {
+	baseDir, err := executableDirectory()
+	if err != nil {
+		return cfg
+	}
+	return normalizeAdjacentConfig(cfg, baseDir)
+}
+
+func normalizeAdjacentConfig(cfg Config, baseDir string) Config {
+	name := "cli-proxy-api"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
+	adjacentPath := filepath.Join(baseDir, name)
+	if info, err := os.Stat(adjacentPath); err != nil || info.IsDir() {
+		return cfg
+	}
+
+	configuredPath := strings.TrimSpace(cfg.CPAExecutablePath)
+	if configuredPath == "" {
+		cfg.CPAExecutablePath = name
+		cfg.WorkingDirectory = ""
+		return cfg
+	}
+	resolvedConfigured, err := resolveAgainstBase(configuredPath, baseDir)
+	if err != nil || filepath.Base(resolvedConfigured) != name {
+		return cfg
+	}
+	if sameFilePath(resolvedConfigured, adjacentPath) {
+		cfg.CPAExecutablePath = name
+		if workingDirectoryMatchesExecutable(cfg.WorkingDirectory, filepath.Dir(resolvedConfigured), baseDir) {
+			cfg.WorkingDirectory = ""
+		}
+		return cfg
+	}
+	if strings.TrimSpace(cfg.WorkingDirectory) != "" && !workingDirectoryMatchesExecutable(cfg.WorkingDirectory, filepath.Dir(resolvedConfigured), baseDir) {
+		return cfg
+	}
+	cfg.CPAExecutablePath = name
+	cfg.WorkingDirectory = ""
+	return cfg
+}
+
+func resolveAgainstBase(pathValue, baseDir string) (string, error) {
+	resolved := strings.TrimSpace(pathValue)
+	if !filepath.IsAbs(resolved) {
+		resolved = filepath.Join(baseDir, resolved)
+	}
+	return filepath.Abs(filepath.Clean(resolved))
+}
+
+func workingDirectoryMatchesExecutable(value, executableDir, baseDir string) bool {
+	if strings.TrimSpace(value) == "" {
+		return true
+	}
+	resolved, err := resolveAgainstBase(value, baseDir)
+	if err != nil {
+		return false
+	}
+	return sameFilePath(resolved, executableDir)
+}
+
+func sameFilePath(left, right string) bool {
+	if runtime.GOOS == "windows" {
+		return strings.EqualFold(filepath.Clean(left), filepath.Clean(right))
+	}
+	return filepath.Clean(left) == filepath.Clean(right)
 }
 
 func ResolveConfig(cfg Config) (string, string, error) {

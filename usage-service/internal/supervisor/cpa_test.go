@@ -11,6 +11,43 @@ import (
 	"time"
 )
 
+func TestNormalizeAdjacentConfigRebasesCopiedPackagePath(t *testing.T) {
+	baseDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(baseDir, "cli-proxy-api.exe"), []byte("test"), 0o755); err != nil {
+		t.Fatalf("create adjacent CPA: %v", err)
+	}
+	oldDir := filepath.Join(t.TempDir(), "old-suite")
+	cfg := Config{
+		Enabled:           true,
+		CPAExecutablePath: filepath.Join(oldDir, "cli-proxy-api.exe"),
+		WorkingDirectory:  oldDir,
+		AutoStart:         true,
+	}
+
+	got := normalizeAdjacentConfig(cfg, baseDir)
+	if got.CPAExecutablePath != "cli-proxy-api.exe" || got.WorkingDirectory != "" {
+		t.Fatalf("rebased config = %#v", got)
+	}
+}
+
+func TestNormalizeAdjacentConfigPreservesExplicitCustomRuntime(t *testing.T) {
+	baseDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(baseDir, "cli-proxy-api.exe"), []byte("test"), 0o755); err != nil {
+		t.Fatalf("create adjacent CPA: %v", err)
+	}
+	customDir := t.TempDir()
+	cfg := Config{
+		Enabled:           true,
+		CPAExecutablePath: filepath.Join(customDir, "cli-proxy-api.exe"),
+		WorkingDirectory:  filepath.Join(customDir, "work"),
+	}
+
+	got := normalizeAdjacentConfig(cfg, baseDir)
+	if got.CPAExecutablePath != cfg.CPAExecutablePath || got.WorkingDirectory != cfg.WorkingDirectory {
+		t.Fatalf("custom config changed: got %#v want %#v", got, cfg)
+	}
+}
+
 func TestHasHealthyLocalCPA(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/healthz" {
