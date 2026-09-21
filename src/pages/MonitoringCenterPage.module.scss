@@ -2846,6 +2846,63 @@
   font-size: 12px;
 }
 
+.quotaForecast {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--monitor-accent) 28%, var(--monitor-line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--monitor-accent) 7%, var(--monitor-surface));
+}
+
+.quotaForecastHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.quotaForecastHeader strong {
+  color: var(--monitor-ink);
+  font-size: 12px;
+}
+
+.quotaForecastHeader span {
+  color: var(--monitor-accent);
+  font-size: 11px;
+}
+
+.quotaForecastGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.quotaForecastGrid div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.quotaForecastGrid small,
+.quotaForecastHint {
+  color: var(--monitor-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.quotaForecastGrid strong {
+  color: var(--monitor-ink);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quotaForecastHint {
+  margin: 0;
+}
+
 .quotaProgressTrack {
   position: relative;
   overflow: hidden;

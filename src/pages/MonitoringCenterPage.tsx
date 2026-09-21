@@ -73,6 +73,7 @@ import {
   type MonitoringAccountOverviewMode,
 } from '@/features/monitoring/accountOverviewState';
 import { sortAccountOverviewCardMetrics } from '@/features/monitoring/accountOverviewCardMetrics';
+import { buildAccountQuotaForecast, type AccountQuotaForecast } from '@/features/monitoring/accountQuotaForecast';
 import { buildMonitoringAnalyticsRequest } from '@/features/monitoring/analyticsRequest';
 import {
   buildMonitoringAccountQuotaTargetsByAccount,
@@ -434,6 +435,7 @@ type AccountQuotaWindow = {
 
 type AccountQuotaEntry = {
   key: string;
+  authIndex: string;
   authLabel: string;
   fileName: string;
   planType: string | null;
@@ -705,6 +707,7 @@ const requestAccountQuota = async (
 
   return {
     key: target.key,
+    authIndex: target.authIndex,
     authLabel: target.authLabel,
     fileName: target.fileName,
     planType: normalizePlanType(payload.plan_type ?? payload.planType) ?? target.planType,
@@ -1448,16 +1451,58 @@ function AccountSummaryPrimary({
   );
 }
 
+function AccountQuotaValueForecast({
+  forecast,
+  t,
+}: {
+  forecast: AccountQuotaForecast;
+  t: TFunction;
+}) {
+  const confidenceLabel = t(`monitoring.account_quota_forecast_confidence_${forecast.confidence}`);
+  return (
+    <div className={styles.quotaForecast}>
+      <div className={styles.quotaForecastHeader}>
+        <strong>{t('monitoring.account_quota_forecast_title')}</strong>
+        <span>{confidenceLabel}</span>
+      </div>
+      <div className={styles.quotaForecastGrid}>
+        <div>
+          <small>{t('monitoring.account_quota_forecast_observed')}</small>
+          <strong>{formatUsd(forecast.observedSpendUsd)}</strong>
+        </div>
+        <div>
+          <small>{t('monitoring.account_quota_forecast_total')}</small>
+          <strong>{formatUsd(forecast.estimatedTotalValueUsd)}</strong>
+        </div>
+        <div>
+          <small>{t('monitoring.account_quota_forecast_remaining')}</small>
+          <strong>{formatUsd(forecast.estimatedRemainingValueUsd)}</strong>
+        </div>
+      </div>
+      <small className={styles.quotaForecastHint}>
+        {t('monitoring.account_quota_forecast_hint', {
+          used: Math.round(forecast.usedPercent),
+          remaining: Math.round(forecast.remainingPercent),
+        })}
+      </small>
+    </div>
+  );
+}
+
 function AccountQuotaPanel({
   quotaState,
   locale,
   t,
   onRefreshQuota,
+  hasPrices,
+  spendByAuthIndex,
 }: {
   quotaState?: AccountQuotaState;
   locale: string;
   t: TFunction;
   onRefreshQuota: () => void;
+  hasPrices: boolean;
+  spendByAuthIndex?: Map<string, number>;
 }) {
   const quotaEntries = quotaState?.entries ?? [];
   const quotaLoading = quotaState?.status === 'loading';
@@ -1502,6 +1547,15 @@ function AccountQuotaPanel({
       })}
     </div>
   );
+
+  const renderEntryForecast = (entry: AccountQuotaEntry) => {
+    if (!hasPrices) return null;
+    const forecast = buildAccountQuotaForecast(
+      spendByAuthIndex?.get(entry.authIndex),
+      entry.windows
+    );
+    return forecast ? <AccountQuotaValueForecast forecast={forecast} t={t} /> : null;
+  };
 
   const renderRefreshButton = () => (
     <button
@@ -1579,7 +1633,10 @@ function AccountQuotaPanel({
             true
           )
         ) : singleQuotaEntry.windows.length > 0 ? (
-          renderQuotaWindows(singleQuotaEntry.windows)
+          <>
+            {renderQuotaWindows(singleQuotaEntry.windows)}
+            {renderEntryForecast(singleQuotaEntry)}
+          </>
         ) : (
           renderStateMessage(t('codex_quota.empty_windows'), t('codex_quota.idle'))
         )
@@ -1605,7 +1662,10 @@ function AccountQuotaPanel({
                       true
                     )
                   : entry.windows.length > 0
-                    ? renderQuotaWindows(entry.windows)
+                    ? <>
+                        {renderQuotaWindows(entry.windows)}
+                        {renderEntryForecast(entry)}
+                      </>
                     : renderStateMessage(t('codex_quota.empty_windows'), t('codex_quota.idle'))}
               </div>
             );
@@ -1992,6 +2052,7 @@ export function AccountExpandedDetails({
   summaryMetrics,
   quotaState,
   onRefreshQuota,
+  spendByAuthIndex,
   variant,
 }: {
   row: MonitoringAccountRow;
@@ -2001,6 +2062,7 @@ export function AccountExpandedDetails({
   summaryMetrics: AccountSummaryMetric[];
   quotaState?: AccountQuotaState;
   onRefreshQuota: () => void;
+  spendByAuthIndex?: Map<string, number>;
   variant: 'card' | 'table';
 }) {
   const tokenMetrics = sortAccountOverviewCardMetrics(summaryMetrics);
@@ -2013,6 +2075,8 @@ export function AccountExpandedDetails({
           locale={locale}
           t={t}
           onRefreshQuota={onRefreshQuota}
+          hasPrices={hasPrices}
+          spendByAuthIndex={spendByAuthIndex}
         />
         <div className={styles.accountStructureModelPanel}>
           <AccountTokenMetricGrid metrics={tokenMetrics} t={t} variant="table" />
@@ -2029,6 +2093,8 @@ export function AccountExpandedDetails({
         locale={locale}
         t={t}
         onRefreshQuota={onRefreshQuota}
+        hasPrices={hasPrices}
+        spendByAuthIndex={spendByAuthIndex}
       />
       <AccountModelUsageList row={row} hasPrices={hasPrices} locale={locale} t={t} />
     </div>
@@ -2051,6 +2117,7 @@ export function AccountOverviewCard({
   onFocus,
   onToggleEnabled,
   onRefreshQuota,
+  spendByAuthIndex,
 }: {
   row: MonitoringAccountRow;
   authState: MonitoringAccountAuthState;
@@ -2067,6 +2134,7 @@ export function AccountOverviewCard({
   onFocus: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onRefreshQuota: () => void;
+  spendByAuthIndex?: Map<string, number>;
 }) {
   const summaryMetrics = buildAccountSummaryMetrics(row, hasPrices, locale, t);
   const cardMetrics = sortAccountOverviewCardMetrics(summaryMetrics);
@@ -2172,6 +2240,7 @@ export function AccountOverviewCard({
           summaryMetrics={summaryMetrics}
           quotaState={quotaState}
           onRefreshQuota={onRefreshQuota}
+          spendByAuthIndex={spendByAuthIndex}
           variant="card"
         />
       ) : null}
@@ -2855,6 +2924,23 @@ export function MonitoringCenterPage() {
         : buildMonitoringSummary(scopedStatsRows),
     [analytics, analyticsMode, scopedStatsRows, securitySignalCount]
   );
+  const spendByAuthIndex = useMemo(() => {
+    const result = new Map<string, number>();
+    if (analyticsMode && analytics) {
+      (analytics.auth_index_stats || []).forEach((item) => {
+        const authIndex = normalizeAuthIndex(item.key);
+        if (authIndex) result.set(authIndex, analyticsNumber(item.cost_usd));
+      });
+      return result;
+    }
+
+    filteredRows.forEach((row) => {
+      if (!row.statsIncluded || !row.authIndex) return;
+      result.set(row.authIndex, (result.get(row.authIndex) || 0) + row.totalCost);
+    });
+    return result;
+  }, [analytics, analyticsMode, filteredRows]);
+
   const accountRows = useMemo(
     () =>
       analyticsMode && analytics
@@ -3240,6 +3326,7 @@ export function MonitoringCenterPage() {
             : String(result.reason || t('common.unknown_error'));
         return {
           key: fallback.key,
+          authIndex: fallback.authIndex,
           authLabel: fallback.authLabel,
           fileName: fallback.fileName,
           planType: fallback.planType,
@@ -4309,6 +4396,7 @@ export function MonitoringCenterPage() {
                               summaryMetrics={summaryMetrics}
                               quotaState={accountQuotaStates[row.account]}
                               onRefreshQuota={() => void loadAccountQuota(row.account, true)}
+                              spendByAuthIndex={spendByAuthIndex}
                               variant="table"
                             />
                           </td>
@@ -4348,6 +4436,7 @@ export function MonitoringCenterPage() {
                   onFocus={() => focusAccount(row.account)}
                   onToggleEnabled={(enabled) => void handleAccountStatusToggle(row, enabled)}
                   onRefreshQuota={() => void loadAccountQuota(row.account, true)}
+                  spendByAuthIndex={spendByAuthIndex}
                 />
               );
             })}

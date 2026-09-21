@@ -286,6 +286,7 @@ export interface UsageAnalyticsResponse {
   timeline?: UsageAnalyticsTimelineItem[];
   model_stats?: UsageAnalyticsModelStat[];
   account_stats?: UsageAnalyticsDimensionStat[];
+  auth_index_stats?: UsageAnalyticsDimensionStat[];
   api_key_stats?: UsageAnalyticsDimensionStat[];
   api_key_timeline?: UsageAnalyticsDimensionTimeline[];
   provider_stats?: UsageAnalyticsDimensionStat[];

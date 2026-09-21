@@ -26,6 +26,7 @@ var allowedIncludes = map[string]struct{}{
 	"timeline":         {},
 	"model_stats":      {},
 	"account_stats":    {},
+	"auth_index_stats": {},
 	"api_key_stats":    {},
 	"api_key_timeline": {},
 	"provider_stats":   {},
@@ -267,6 +268,7 @@ type Response struct {
 	Timeline            []TimelineItem      `json:"timeline,omitempty"`
 	ModelStats          []ModelStat         `json:"model_stats,omitempty"`
 	AccountStats        []DimensionStat     `json:"account_stats,omitempty"`
+	AuthIndexStats      []DimensionStat     `json:"auth_index_stats,omitempty"`
 	APIKeyStats         []DimensionStat     `json:"api_key_stats,omitempty"`
 	APIKeyTimeline      []DimensionTimeline `json:"api_key_timeline,omitempty"`
 	ProviderStats       []DimensionStat     `json:"provider_stats,omitempty"`
@@ -403,6 +405,14 @@ func Query(ctx context.Context, st *store.Store, req Request) (Response, error) 
 			return Response{}, err
 		}
 		response.AccountStats = dimensionStats(rows)
+		response.Meta.Source = combineSource(response.Meta.Source, source)
+	}
+	if includes(req, "auth_index_stats") {
+		rows, source, err := queryDimension(ctx, st, filter, "auth_index", state.CoverageEventID, useRollup)
+		if err != nil {
+			return Response{}, err
+		}
+		response.AuthIndexStats = dimensionStats(rows)
 		response.Meta.Source = combineSource(response.Meta.Source, source)
 	}
 	if includes(req, "api_key_stats") {

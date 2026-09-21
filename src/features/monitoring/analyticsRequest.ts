@@ -12,6 +12,7 @@ export const buildMonitoringAnalyticsRequest = (
     'timeline',
     'model_stats',
     'account_stats',
+    'auth_index_stats',
     'api_key_stats',
     'provider_stats',
     'reasoning_stats',
