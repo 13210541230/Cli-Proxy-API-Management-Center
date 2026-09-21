@@ -41,7 +41,10 @@ export interface UseUsageDataReturn {
   importUsage: (file: File) => Promise<UsageImportResponse>;
   loadUsage: (params?: UsageQueryParams) => Promise<void>;
   clearUsage: () => void;
-  loadAnalytics: (payload: UsageAnalyticsRequest) => Promise<UsageAnalyticsResponse>;
+  loadAnalytics: (
+    payload: UsageAnalyticsRequest,
+    options?: { cancelPrevious?: boolean }
+  ) => Promise<UsageAnalyticsResponse>;
 }
 
 export function useUsageData(): UseUsageDataReturn {
@@ -209,15 +212,19 @@ export function useUsageData(): UseUsageDataReturn {
   }, []);
 
   const loadAnalytics = useCallback(
-    async (payload: UsageAnalyticsRequest): Promise<UsageAnalyticsResponse> => {
-      analyticsAbortControllerRef.current?.abort();
-      const controller = new AbortController();
-      analyticsAbortControllerRef.current = controller;
+    async (
+      payload: UsageAnalyticsRequest,
+      options?: { cancelPrevious?: boolean }
+    ): Promise<UsageAnalyticsResponse> => {
+      const cancelPrevious = options?.cancelPrevious !== false;
+      if (cancelPrevious) analyticsAbortControllerRef.current?.abort();
+      const controller = cancelPrevious ? new AbortController() : undefined;
+      if (controller) analyticsAbortControllerRef.current = controller;
       const serviceBase = await resolveUsageServiceBase();
       if (!serviceBase) {
         throw new Error('usage_service_not_configured');
       }
-      return usageServiceApi.getAnalytics(serviceBase, managementKey, payload, controller.signal);
+      return usageServiceApi.getAnalytics(serviceBase, managementKey, payload, controller?.signal);
     },
     [managementKey, resolveUsageServiceBase]
   );

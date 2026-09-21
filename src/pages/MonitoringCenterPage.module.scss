@@ -2899,8 +2899,15 @@
   white-space: nowrap;
 }
 
+.quotaForecastCycle,
 .quotaForecastHint {
   margin: 0;
+}
+
+.quotaForecastCycle {
+  color: var(--monitor-ink);
+  font-size: 10px;
+  line-height: 1.35;
 }
 
 .quotaProgressTrack {

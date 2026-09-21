@@ -6,7 +6,12 @@ describe('buildAccountQuotaForecast', () => {
     expect(
       buildAccountQuotaForecast(20, [
         { id: 'five-hour', remainingPercent: 40 },
-        { id: 'weekly', remainingPercent: 75 },
+        {
+          id: 'weekly',
+          remainingPercent: 75,
+          resetAtMs: 1_700_604_800_000,
+          limitWindowSeconds: 604_800,
+        },
       ])
     ).toEqual({
       observedSpendUsd: 20,
@@ -15,7 +20,22 @@ describe('buildAccountQuotaForecast', () => {
       estimatedTotalValueUsd: 80,
       estimatedRemainingValueUsd: 60,
       confidence: 'high',
+      cycleStartAtMs: 1_700_000_000_000,
+      cycleEndAtMs: 1_700_604_800_000,
     });
+  });
+
+  it('derives the current reset cycle from the provider reset timestamp', () => {
+    expect(
+      buildAccountQuotaForecast(10, [
+        {
+          id: 'weekly',
+          remainingPercent: 50,
+          resetAtMs: 1_700_604_800_000,
+          limitWindowSeconds: 604_800,
+        },
+      ])?.cycleStartAtMs
+    ).toBe(1_700_000_000_000);
   });
 
   it('does not estimate without weekly usage or with zero observed spend', () => {

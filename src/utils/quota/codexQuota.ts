@@ -34,6 +34,7 @@ export type CodexQuotaWindowInfo = {
   labelParams?: Record<string, string | number>;
   usedPercent: number | null;
   resetLabel: string;
+  resetAtMs: number | null;
   limitWindowSeconds: number | null;
 };
 
@@ -125,6 +126,13 @@ const addCodexWindowInfo = (
   if (!window) return;
 
   const resetLabel = formatCodexResetLabel(window);
+  const resetAtRaw = normalizeNumberValue(window.reset_at ?? window.resetAt);
+  const resetAtMs =
+    resetAtRaw === null || resetAtRaw <= 0
+      ? null
+      : resetAtRaw < 1_000_000_000_000
+        ? resetAtRaw * 1000
+        : resetAtRaw;
   const usedPercentRaw = getCodexQuotaWindowUsedPercent(window);
   const isLimitReached = Boolean(limitReached) || allowed === false;
   const usedPercent = usedPercentRaw ?? (isLimitReached && resetLabel !== '-' ? 100 : null);
@@ -135,6 +143,7 @@ const addCodexWindowInfo = (
     labelParams,
     usedPercent,
     resetLabel,
+    resetAtMs,
     limitWindowSeconds: getWindowSeconds(window),
   });
 };

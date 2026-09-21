@@ -73,7 +73,11 @@ import {
   type MonitoringAccountOverviewMode,
 } from '@/features/monitoring/accountOverviewState';
 import { sortAccountOverviewCardMetrics } from '@/features/monitoring/accountOverviewCardMetrics';
-import { buildAccountQuotaForecast, type AccountQuotaForecast } from '@/features/monitoring/accountQuotaForecast';
+import {
+  buildAccountQuotaForecast,
+  getAccountQuotaCycleBounds,
+  type AccountQuotaForecast,
+} from '@/features/monitoring/accountQuotaForecast';
 import { buildMonitoringAnalyticsRequest } from '@/features/monitoring/analyticsRequest';
 import {
   buildMonitoringAccountQuotaTargetsByAccount,
@@ -430,6 +434,8 @@ type AccountQuotaWindow = {
   label: string;
   remainingPercent: number | null;
   resetLabel: string;
+  resetAtMs: number | null;
+  limitWindowSeconds: number | null;
   usageLabel: string | null;
 };
 
@@ -440,6 +446,7 @@ type AccountQuotaEntry = {
   fileName: string;
   planType: string | null;
   windows: AccountQuotaWindow[];
+  observedSpendUsd?: number;
   error?: string;
 };
 
@@ -689,6 +696,8 @@ const buildAccountQuotaWindows = (payload: CodexUsagePayload, t: TFunction): Acc
       label: t(window.labelKey, window.labelParams),
       remainingPercent,
       resetLabel: window.resetLabel,
+      resetAtMs: window.resetAtMs,
+      limitWindowSeconds: window.limitWindowSeconds,
       usageLabel,
     };
   });
@@ -713,6 +722,34 @@ const requestAccountQuota = async (
     planType: normalizePlanType(payload.plan_type ?? payload.planType) ?? target.planType,
     windows: buildAccountQuotaWindows(payload, t),
   };
+};
+
+const requestAccountQuotaCycleSpend = async (
+  entry: AccountQuotaEntry,
+  loadAnalytics: (
+    payload: UsageAnalyticsRequest,
+    options?: { cancelPrevious?: boolean }
+  ) => Promise<UsageAnalyticsResponse>
+): Promise<number | undefined> => {
+  const cycle = getAccountQuotaCycleBounds(entry.windows.find((window) => window.id === 'weekly'));
+  if (!cycle) return undefined;
+
+  const toMs = Math.min(cycle.endAtMs, Date.now());
+  if (toMs <= cycle.startAtMs) return 0;
+
+  const response = await loadAnalytics(
+    {
+      from_ms: cycle.startAtMs,
+      to_ms: toMs,
+      include: ['auth_index_stats'],
+      filters: { auth_index: entry.authIndex },
+    },
+    { cancelPrevious: false }
+  );
+  const stat = (response.auth_index_stats || []).find(
+    (item) => normalizeAuthIndex(item.key) === entry.authIndex
+  );
+  return stat ? analyticsNumber(stat.cost_usd) : 0;
 };
 
 const buildRealtimeLogRows = (rows: MonitoringEventRow[]): RealtimeLogRow[] => {
@@ -1453,12 +1490,21 @@ function AccountSummaryPrimary({
 
 function AccountQuotaValueForecast({
   forecast,
+  locale,
   t,
 }: {
   forecast: AccountQuotaForecast;
+  locale: string;
   t: TFunction;
 }) {
   const confidenceLabel = t(`monitoring.account_quota_forecast_confidence_${forecast.confidence}`);
+  const cycleLabel =
+    forecast.cycleStartAtMs !== null && forecast.cycleEndAtMs !== null
+      ? t('monitoring.account_quota_forecast_cycle', {
+          start: new Date(forecast.cycleStartAtMs).toLocaleString(locale),
+          end: new Date(forecast.cycleEndAtMs).toLocaleString(locale),
+        })
+      : null;
   return (
     <div className={styles.quotaForecast}>
       <div className={styles.quotaForecastHeader}>
@@ -1479,6 +1525,7 @@ function AccountQuotaValueForecast({
           <strong>{formatUsd(forecast.estimatedRemainingValueUsd)}</strong>
         </div>
       </div>
+      {cycleLabel ? <small className={styles.quotaForecastCycle}>{cycleLabel}</small> : null}
       <small className={styles.quotaForecastHint}>
         {t('monitoring.account_quota_forecast_hint', {
           used: Math.round(forecast.usedPercent),
@@ -1495,14 +1542,12 @@ function AccountQuotaPanel({
   t,
   onRefreshQuota,
   hasPrices,
-  spendByAuthIndex,
 }: {
   quotaState?: AccountQuotaState;
   locale: string;
   t: TFunction;
   onRefreshQuota: () => void;
   hasPrices: boolean;
-  spendByAuthIndex?: Map<string, number>;
 }) {
   const quotaEntries = quotaState?.entries ?? [];
   const quotaLoading = quotaState?.status === 'loading';
@@ -1550,11 +1595,8 @@ function AccountQuotaPanel({
 
   const renderEntryForecast = (entry: AccountQuotaEntry) => {
     if (!hasPrices) return null;
-    const forecast = buildAccountQuotaForecast(
-      spendByAuthIndex?.get(entry.authIndex),
-      entry.windows
-    );
-    return forecast ? <AccountQuotaValueForecast forecast={forecast} t={t} /> : null;
+    const forecast = buildAccountQuotaForecast(entry.observedSpendUsd, entry.windows);
+    return forecast ? <AccountQuotaValueForecast forecast={forecast} locale={locale} t={t} /> : null;
   };
 
   const renderRefreshButton = () => (
@@ -2052,7 +2094,6 @@ export function AccountExpandedDetails({
   summaryMetrics,
   quotaState,
   onRefreshQuota,
-  spendByAuthIndex,
   variant,
 }: {
   row: MonitoringAccountRow;
@@ -2062,7 +2103,6 @@ export function AccountExpandedDetails({
   summaryMetrics: AccountSummaryMetric[];
   quotaState?: AccountQuotaState;
   onRefreshQuota: () => void;
-  spendByAuthIndex?: Map<string, number>;
   variant: 'card' | 'table';
 }) {
   const tokenMetrics = sortAccountOverviewCardMetrics(summaryMetrics);
@@ -2076,7 +2116,6 @@ export function AccountExpandedDetails({
           t={t}
           onRefreshQuota={onRefreshQuota}
           hasPrices={hasPrices}
-          spendByAuthIndex={spendByAuthIndex}
         />
         <div className={styles.accountStructureModelPanel}>
           <AccountTokenMetricGrid metrics={tokenMetrics} t={t} variant="table" />
@@ -2094,7 +2133,6 @@ export function AccountExpandedDetails({
         t={t}
         onRefreshQuota={onRefreshQuota}
         hasPrices={hasPrices}
-        spendByAuthIndex={spendByAuthIndex}
       />
       <AccountModelUsageList row={row} hasPrices={hasPrices} locale={locale} t={t} />
     </div>
@@ -2117,7 +2155,6 @@ export function AccountOverviewCard({
   onFocus,
   onToggleEnabled,
   onRefreshQuota,
-  spendByAuthIndex,
 }: {
   row: MonitoringAccountRow;
   authState: MonitoringAccountAuthState;
@@ -2134,7 +2171,6 @@ export function AccountOverviewCard({
   onFocus: () => void;
   onToggleEnabled: (enabled: boolean) => void;
   onRefreshQuota: () => void;
-  spendByAuthIndex?: Map<string, number>;
 }) {
   const summaryMetrics = buildAccountSummaryMetrics(row, hasPrices, locale, t);
   const cardMetrics = sortAccountOverviewCardMetrics(summaryMetrics);
@@ -2240,7 +2276,6 @@ export function AccountOverviewCard({
           summaryMetrics={summaryMetrics}
           quotaState={quotaState}
           onRefreshQuota={onRefreshQuota}
-          spendByAuthIndex={spendByAuthIndex}
           variant="card"
         />
       ) : null}
@@ -2468,6 +2503,7 @@ export function MonitoringCenterPage() {
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [analyticsError, setAnalyticsError] = useState('');
   const analyticsRequestIdRef = useRef(0);
+
   const refreshAnalytics = useCallback(async () => {
     const requestId = analyticsRequestIdRef.current + 1;
     analyticsRequestIdRef.current = requestId;
@@ -2924,23 +2960,6 @@ export function MonitoringCenterPage() {
         : buildMonitoringSummary(scopedStatsRows),
     [analytics, analyticsMode, scopedStatsRows, securitySignalCount]
   );
-  const spendByAuthIndex = useMemo(() => {
-    const result = new Map<string, number>();
-    if (analyticsMode && analytics) {
-      (analytics.auth_index_stats || []).forEach((item) => {
-        const authIndex = normalizeAuthIndex(item.key);
-        if (authIndex) result.set(authIndex, analyticsNumber(item.cost_usd));
-      });
-      return result;
-    }
-
-    filteredRows.forEach((row) => {
-      if (!row.statsIncluded || !row.authIndex) return;
-      result.set(row.authIndex, (result.get(row.authIndex) || 0) + row.totalCost);
-    });
-    return result;
-  }, [analytics, analyticsMode, filteredRows]);
-
   const accountRows = useMemo(
     () =>
       analyticsMode && analytics
@@ -3335,19 +3354,32 @@ export function MonitoringCenterPage() {
         } satisfies AccountQuotaEntry;
       });
 
-      const hasSuccess = entries.some((entry) => !entry.error);
+      const entriesWithSpend = await Promise.all(
+        entries.map(async (entry) => {
+          if (entry.error || !hasPrices) return entry;
+          try {
+            const observedSpendUsd = await requestAccountQuotaCycleSpend(entry, loadAnalytics);
+            return observedSpendUsd === undefined ? entry : { ...entry, observedSpendUsd };
+          } catch {
+            return entry;
+          }
+        })
+      );
+      if (accountQuotaRequestIdsRef.current[account] !== requestId) return;
+
+      const hasSuccess = entriesWithSpend.some((entry) => !entry.error);
       setAccountQuotaStates((previous) => ({
         ...previous,
         [account]: {
           status: hasSuccess ? 'success' : 'error',
           targetKey,
-          entries,
-          error: hasSuccess ? '' : entries[0]?.error || t('common.unknown_error'),
+          entries: entriesWithSpend,
+          error: hasSuccess ? '' : entriesWithSpend[0]?.error || t('common.unknown_error'),
           lastRefreshedAt: Date.now(),
         },
       }));
     },
-    [accountQuotaTargetsByAccount, t]
+    [accountQuotaTargetsByAccount, hasPrices, loadAnalytics, t]
   );
 
   const toggleAccountExpanded = useCallback(
@@ -4396,7 +4428,6 @@ export function MonitoringCenterPage() {
                               summaryMetrics={summaryMetrics}
                               quotaState={accountQuotaStates[row.account]}
                               onRefreshQuota={() => void loadAccountQuota(row.account, true)}
-                              spendByAuthIndex={spendByAuthIndex}
                               variant="table"
                             />
                           </td>
@@ -4436,7 +4467,6 @@ export function MonitoringCenterPage() {
                   onFocus={() => focusAccount(row.account)}
                   onToggleEnabled={(enabled) => void handleAccountStatusToggle(row, enabled)}
                   onRefreshQuota={() => void loadAccountQuota(row.account, true)}
-                  spendByAuthIndex={spendByAuthIndex}
                 />
               );
             })}
