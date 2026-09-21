@@ -1,0 +1,20 @@
+{
+  "id": "b16fa02f0",
+  "name": "Finalize frontend checks",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/verify-frontend-telemetry.ps1",
+  "description": "Finalize frontend type-check and telemetry test with non-terminating native stderr",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b16fa02f0.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988861658,
+  "endTime": 1787988874753,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 54780,
+  "bytesWritten": 810,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 240
+}

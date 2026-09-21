@@ -1,0 +1,20 @@
+{
+  "id": "b4d76507c",
+  "name": "Build Fallback PPTX",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/build-jinma-pptx.ps1",
+  "description": "使用已安装的 PptxGenJS 生成可编辑 PPTX，并补写淡入淡出与 ZIP 完整性校验。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b4d76507c.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535637886,
+  "endTime": 1788535638993,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 49588,
+  "bytesWritten": 20443,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

@@ -1,0 +1,21 @@
+{
+  "id": "bfc8765d0",
+  "name": "无字体嵌入导出",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_pptx.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd --output D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx --force --no-embed-fonts",
+  "description": "关闭官方导出中的字体嵌入开关，验证金码奖 PPTX 是否因字体嵌入导致下载按钮无响应。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bfc8765d0.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788540510740,
+  "endTime": 1788540754270,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 42516,
+  "bytesWritten": 533,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

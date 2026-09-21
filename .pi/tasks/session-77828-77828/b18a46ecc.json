@@ -1,0 +1,21 @@
+{
+  "id": "b18a46ecc",
+  "name": "实测网页端下载",
+  "command": "python D:/Downloads/check-local-editor-export.py",
+  "description": "启动本地网页编辑器，通过真实浏览器点击导出和下载，验证最新 Kimi 外部导出桥接不再报错。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b18a46ecc.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788659725166,
+  "endTime": 1788659849178,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 25316,
+  "bytesWritten": 3375,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

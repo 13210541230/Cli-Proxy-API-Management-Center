@@ -1,0 +1,75 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例三验收｜高并发读取与数据完整性同时满足
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 验收同时覆盖查询规模、聚合覆盖、明细分页、降级来源和结果准确性。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>读取性能</strong></p>
+        <p>按 Tab 返回 summary、timeline、维度排名与明细，避免无关数据重复传输。</p>
+        <p>明细独立 keyset 分页。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>聚合完整性</strong></p>
+        <p>Rollup 失败时水位不前移；晚到事件进入 raw tail；聚合可删除后重建。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>解释能力</strong></p>
+        <p>当筛选或日期范围超出 Rollup 覆盖时，返回 raw fallback 及 source / complete 元数据。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 372, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 402, 840, 62]
+    content:
+      fontSize: 21
+      bold: true
+      color: "$ink"
+      text: 验收结论：分析结果兼顾性能、准确性和来源可解释性，避免静默少统计。

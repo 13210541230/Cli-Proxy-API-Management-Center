@@ -1,0 +1,20 @@
+{
+  "id": "bf92ddd12",
+  "name": "Smoke explicit origin host",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Verify the manager binary with explicit plugin host origin",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bf92ddd12.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788016400801,
+  "endTime": 1788016403429,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 55612,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

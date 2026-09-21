@@ -1,7 +1,6 @@
 package httpapi
 
 import (
-	"bytes"
 	"context"
 	"embed"
 	"encoding/csv"
@@ -159,14 +158,6 @@ type keyBindingImportRequest struct {
 	FileName string                    `json:"fileName"`
 }
 
-type accountPoolMembersRequest struct {
-	Items []store.AccountPoolMember `json:"items"`
-}
-
-type accountPoolBindingsRequest struct {
-	Items []store.AccountPoolBindingUpdate `json:"items"`
-}
-
 func New(cfg config.Config, store *store.Store, collector *collector.Manager, controllers ...*supervisor.Controller) *Server {
 	var processController *supervisor.Controller
 	if len(controllers) > 0 {
@@ -245,10 +236,6 @@ func (s *Server) handleRoot(w http.ResponseWriter, r *http.Request) {
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/departments") {
 		s.withCORS(s.handleEnterpriseDepartments)(w, r)
-		return
-	}
-	if strings.HasPrefix(r.URL.Path, "/v0/management/account-pools") {
-		s.withCORS(s.handleAccountPools)(w, r)
 		return
 	}
 	if strings.HasPrefix(r.URL.Path, "/v0/management/enterprise/key-bindings") {
@@ -1544,206 +1531,6 @@ func (s *Server) handleUsage(w http.ResponseWriter, r *http.Request) {
 	default:
 		methodNotAllowed(w)
 	}
-}
-
-func (s *Server) handleAccountPools(w http.ResponseWriter, r *http.Request) {
-	if !s.authorizeIfConfigured(w, r) {
-		return
-	}
-
-	path := strings.TrimRight(r.URL.Path, "/")
-	const basePath = "/v0/management/account-pools"
-	writeSnapshot := func() {
-		snapshot, err := s.store.LoadAccountPoolSnapshot(r.Context())
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
-		writeJSON(w, http.StatusOK, snapshot)
-	}
-	publishSnapshot := func() {
-		snapshot, err := s.store.LoadAccountPoolSnapshot(r.Context())
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
-		if err := s.publishAccountPoolPolicy(r.Context(), snapshot); err != nil {
-			_ = s.store.RecordAccountPoolPolicySync(r.Context(), snapshot.Policy.Version, snapshot.Policy.Hash, false, err.Error())
-		} else if err := s.store.RecordAccountPoolPolicySync(r.Context(), snapshot.Policy.Version, snapshot.Policy.Hash, true, ""); err != nil {
-			writeError(w, http.StatusInternalServerError, err)
-			return
-		}
-		writeSnapshot()
-	}
-	switch {
-	case (path == basePath || path == basePath+"/policy") && r.Method == http.MethodGet:
-		writeSnapshot()
-	case path == basePath+"/sync" && r.Method == http.MethodPost:
-		publishSnapshot()
-	case path == basePath && r.Method == http.MethodPost:
-		var item store.AccountPool
-		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		if err := s.store.UpsertAccountPool(r.Context(), item); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		publishSnapshot()
-	case strings.HasPrefix(path, basePath+"/") && strings.HasSuffix(path, "/members") && r.Method == http.MethodPut:
-		poolID := strings.TrimSuffix(strings.TrimPrefix(path, basePath+"/"), "/members")
-		var req accountPoolMembersRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		for i := range req.Items {
-			req.Items[i].PoolID = poolID
-		}
-		if err := s.validateCodexAccountPoolMembers(r.Context(), req.Items); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		if err := s.store.ReplaceAccountPoolMembers(r.Context(), poolID, req.Items); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		publishSnapshot()
-	case path == basePath+"/bindings" && r.Method == http.MethodPut:
-		var req accountPoolBindingsRequest
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		if err := s.store.SetAccountPoolBindings(r.Context(), req.Items); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		publishSnapshot()
-	case strings.HasPrefix(path, basePath+"/") && r.Method == http.MethodPut:
-		poolID := strings.TrimPrefix(path, basePath+"/")
-		if poolID == "" || strings.Contains(poolID, "/") {
-			methodNotAllowed(w)
-			return
-		}
-		var item store.AccountPool
-		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		item.ID = poolID
-		if err := s.store.UpsertAccountPool(r.Context(), item); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		publishSnapshot()
-	case strings.HasPrefix(path, basePath+"/") && r.Method == http.MethodDelete:
-		poolID := strings.TrimPrefix(path, basePath+"/")
-		if poolID == "" || strings.Contains(poolID, "/") {
-			writeError(w, http.StatusBadRequest, errors.New("account pool id is required"))
-			return
-		}
-		if err := s.store.DeleteAccountPool(r.Context(), poolID); err != nil {
-			writeError(w, http.StatusBadRequest, err)
-			return
-		}
-		publishSnapshot()
-	default:
-		methodNotAllowed(w)
-	}
-}
-
-func (s *Server) validateCodexAccountPoolMembers(ctx context.Context, members []store.AccountPoolMember) error {
-	setup, ok, err := s.resolveSetup(ctx)
-	if err != nil {
-		return err
-	}
-	if !ok || strings.TrimSpace(setup.CPAUpstreamURL) == "" || strings.TrimSpace(setup.ManagementKey) == "" {
-		return errors.New("CPA is not configured for auth-file validation")
-	}
-	request, err := http.NewRequestWithContext(ctx, http.MethodGet, strings.TrimRight(normalizeBaseURL(setup.CPAUpstreamURL), "/")+"/v0/management/auth-files", nil)
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Authorization", "Bearer "+strings.TrimSpace(setup.ManagementKey))
-	response, err := (&http.Client{Timeout: 15 * time.Second}).Do(request)
-	if err != nil {
-		return fmt.Errorf("validate Codex auth files: %w", err)
-	}
-	defer response.Body.Close()
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		return fmt.Errorf("CPA auth-file validation returned %s", response.Status)
-	}
-	var payload struct {
-		Files []struct {
-			ID        string `json:"id"`
-			AuthIndex string `json:"auth_index"`
-			Name      string `json:"name"`
-			Provider  string `json:"provider"`
-			Type      string `json:"type"`
-		} `json:"files"`
-	}
-	if err := json.NewDecoder(io.LimitReader(response.Body, 4<<20)).Decode(&payload); err != nil {
-		return fmt.Errorf("decode CPA auth-file list: %w", err)
-	}
-	byID := make(map[string]string, len(payload.Files)*3)
-	for _, file := range payload.Files {
-		provider := strings.ToLower(strings.TrimSpace(file.Provider))
-		if provider == "" {
-			provider = strings.ToLower(strings.TrimSpace(file.Type))
-		}
-		for _, id := range []string{file.ID, file.AuthIndex, file.Name} {
-			if id = strings.TrimSpace(id); id != "" {
-				byID[id] = provider
-			}
-		}
-	}
-	for _, member := range members {
-		provider, exists := byID[strings.TrimSpace(member.AuthID)]
-		if !exists {
-			return fmt.Errorf("Codex auth file %q was not found", member.AuthID)
-		}
-		if provider != "codex" {
-			return fmt.Errorf("auth file %q has non-Codex provider %q", member.AuthID, provider)
-		}
-	}
-	return nil
-}
-
-func (s *Server) publishAccountPoolPolicy(ctx context.Context, snapshot store.AccountPoolSnapshot) error {
-	setup, ok, err := s.resolveSetup(ctx)
-	if err != nil {
-		return err
-	}
-	if !ok || strings.TrimSpace(setup.CPAUpstreamURL) == "" || strings.TrimSpace(setup.ManagementKey) == "" {
-		return errors.New("CPA is not configured for account pool policy publication")
-	}
-	payload, err := json.Marshal(map[string]any{"policy": snapshot.Policy})
-	if err != nil {
-		return err
-	}
-	endpoint := strings.TrimRight(normalizeBaseURL(setup.CPAUpstreamURL), "/") + "/v0/management/plugins/cpa-account-config-manager/account-pools/policy"
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, endpoint, bytes.NewReader(payload))
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Authorization", "Bearer "+strings.TrimSpace(setup.ManagementKey))
-	req.Header.Set("Content-Type", "application/json")
-	response, err := (&http.Client{Timeout: 15 * time.Second}).Do(req)
-	if err != nil {
-		return fmt.Errorf("publish account pool policy: %w", err)
-	}
-	defer response.Body.Close()
-	if response.StatusCode < http.StatusOK || response.StatusCode >= http.StatusMultipleChoices {
-		body, _ := io.ReadAll(io.LimitReader(response.Body, 2048))
-		message := strings.TrimSpace(string(body))
-		if message == "" {
-			message = response.Status
-		}
-		return fmt.Errorf("CPA account pool policy rejected: %s", message)
-	}
-	return nil
 }
 
 func (s *Server) handleEnterpriseDepartments(w http.ResponseWriter, r *http.Request) {

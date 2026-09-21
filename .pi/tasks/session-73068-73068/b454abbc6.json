@@ -1,0 +1,20 @@
+{
+  "id": "b454abbc6",
+  "name": "Render Reordered Deck",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/render-jinma-ppt-latest.ps1",
+  "description": "渲染重排后的 25 页 PPT，检查企业需求、架构、AI 开发、案例和总结的顺序及视觉质量。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b454abbc6.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788611985896,
+  "endTime": 1788612053771,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 75372,
+  "bytesWritten": 3495,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

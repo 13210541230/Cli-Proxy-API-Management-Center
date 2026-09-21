@@ -1,0 +1,20 @@
+{
+  "id": "b2d2d3395",
+  "name": "验证金码奖完整导出",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_pptx.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd --output D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.external-bridge.pptx --force --no-embed-fonts",
+  "description": "使用最新版 Kimi handleExport 外部桥接，对 13 页金码奖 PPTD 做全量导出和 PPTX 结构校验。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b2d2d3395.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788575946389,
+  "endTime": 1788575988793,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 29564,
+  "bytesWritten": 1257,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

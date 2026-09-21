@@ -1,0 +1,20 @@
+{
+  "id": "b5e026f2a",
+  "name": "Retry normalized binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Retry normalized embedded HTML and binary verification with compatible hashing",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b5e026f2a.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788008688317,
+  "endTime": 1788008702551,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 55712,
+  "bytesWritten": 945,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

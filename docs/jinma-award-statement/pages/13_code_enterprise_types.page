@@ -1,0 +1,136 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例二｜限额治理从规则模型到状态机
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 将“超限处理”拆分为度量、规则、动作、恢复和异常保护，避免判定与执行耦合成不可解释的黑盒。
+  - elementId: s1
+    elementType: shape
+    bounds: [60, 158, 180, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s1t
+    elementType: text
+    bounds: [76, 176, 148, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 度量选择
+  - elementId: s2
+    elementType: shape
+    bounds: [286, 146, 180, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s2t
+    elementType: text
+    bounds: [300, 164, 152, 80]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>规则匹配</p>
+        <p style="font-size:14px">Default → Override</p>
+  - elementId: s3
+    elementType: shape
+    bounds: [512, 158, 180, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s3t
+    elementType: text
+    bounds: [526, 176, 152, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 超限状态
+  - elementId: s4
+    elementType: shape
+    bounds: [738, 146, 162, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$blue"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s4t
+    elementType: text
+    bounds: [752, 164, 134, 80]
+    content:
+      align: [center, middle]
+      fontSize: 17
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>协调闭环</p>
+        <p style="font-size:14px">reason · expires_at</p>
+  - elementId: a1
+    elementType: line
+    bounds: [240, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: a2
+    elementType: line
+    bounds: [466, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: a3
+    elementType: line
+    bounds: [692, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: b1
+    elementType: text
+    bounds: [60, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>默认与覆盖</strong></p>
+        <p>先按 Key Hash 查找覆盖规则，未命中再使用默认值；缺省 fallback model 使用稳定默认值。</p>
+  - elementId: b2
+    elementType: text
+    bounds: [355, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>动作与状态</strong></p>
+        <p>pause、downgrade、notify 分离记录，状态带 reason、expires_at 与可追溯来源。</p>
+  - elementId: b3
+    elementType: text
+    bounds: [650, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>异常保护</strong></p>
+        <p>上游状态读取失败时保留现状，不把网络错误解释为“没有暂停”。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 方案重点：策略可解释、动作可切换、状态可恢复、异常不产生猜测性变更。

@@ -1,0 +1,25 @@
+
+> cli-proxy-webui-react@0.0.0 build
+> tsc && vite build
+
+npm.cmd : The system cannot find the path specified.
+At D:\C_projects\Cli-Proxy-API-Management-Center\scripts\windows\build-embedded-binary.ps1:14 char:5
++     & npm.cmd run build 2>&1 | Tee-Object -FilePath $logPath -Append
++     ~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The system cann...path specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+The system cannot find the path specified.
+[36mvite v8.0.10 [32mbuilding client environment for production...[36m[39m
+[2K
+transforming...✓ 739 modules transformed.
+rendering chunks...
+[plugin vite:singlefile] 
+
+[plugin vite:singlefile] Inlining: index-AdesIrUi.js
+[plugin vite:singlefile] Inlining: style-B7RBYrS_.css
+computing gzip size...
+dist/index.html  2,871.92 kB │ gzip: 847.68 kB
+
+[32m✓ built in 1.67s[39m
+Embedded binary build succeeded: D:\C_projects\Cli-Proxy-API-Management-Center\bin\cpa-manager.exe (15876096 bytes)

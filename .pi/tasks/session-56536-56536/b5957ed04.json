@@ -1,0 +1,20 @@
+{
+  "id": "b5957ed04",
+  "name": "Rebuild selected trend binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Rebuild and embed the selected API Key trend UI",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b5957ed04.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788009763246,
+  "endTime": 1788009781066,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 13408,
+  "bytesWritten": 945,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

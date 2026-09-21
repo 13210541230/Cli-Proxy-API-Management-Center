@@ -1,0 +1,20 @@
+{
+  "id": "b917207d0",
+  "name": "Verify provider workspace",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-verification.ps1",
+  "description": "Run provider workspace type-check, tests, and build",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b917207d0.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788007313262,
+  "endTime": 1788007355872,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 17292,
+  "bytesWritten": 1979,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

@@ -1,0 +1,73 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例二关键实现｜费用计算与限额规则分层
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 计算负责形成统一事实，规则负责决定治理动作，二者通过明确的数据契约衔接。
+  - elementId: code-bg
+    elementType: shape
+    bounds: [60, 148, 550, 282]
+    shapeName: rect
+    fill: {type: solid, color: "$ink"}
+    border: {style: solid, width: 1, color: "$ink"}
+  - elementId: code
+    elementType: text
+    bounds: [76, 162, 518, 254]
+    content:
+      fontFamily: "Consolas"
+      fontSize: 11.2
+      color: "$white"
+      lineHeight: 1.2
+      text: |
+        func (c SpendLimitConfig) LimitForKey(keyHash string) SpendLimit {
+          if limit, ok := c.OverrideForKey(keyHash); ok {
+            return limit
+          }
+          return c.DefaultLimit()
+        }
+
+        func (c SpendLimitConfig) EffectiveFallbackModel() string {
+          model := strings.TrimSpace(c.FallbackModel)
+          if model == "" { return DefaultFallbackModel }
+          return model
+        }
+
+        // failed events are excluded from spend totals
+        // cost = prompt + cache + completion price
+  - elementId: r-title
+    elementType: text
+    bounds: [650, 148, 250, 30]
+    content:
+      style: "$label"
+      text: DESIGN DECISIONS
+  - elementId: r
+    elementType: text
+    bounds: [650, 188, 250, 214]
+    content:
+      fontSize: 14
+      color: "$text"
+      lineHeight: 1.3
+      text: |
+        <p><strong>规则优先级</strong>：Key override 命中时覆盖默认限额。</p>
+        <p><strong>统一度量</strong>：cost 与 tokens 采用相同的窗口与状态口径。</p>
+        <p><strong>成本准确</strong>：输入、缓存、输出分别按模型价格计算。</p>
+        <p><strong>失败隔离</strong>：failed 请求不进入限额账单，避免误触发治理动作。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 464, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 代码位置：usage-service/internal/store/spend_limit.go、collector/spend_limit.go、src/services/api/quotaLimits.ts。

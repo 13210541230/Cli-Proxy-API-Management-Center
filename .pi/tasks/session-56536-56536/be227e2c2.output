@@ -1,0 +1,7 @@
+=== RUN   TestAnalyticsProductionScale
+    scale_test.go:58: insert: 2m4.9645799s
+    scale_test.go:75: rollup: 34.430236s
+    scale_test.go:95: analytics query: 758.1885ms; response: 116688 bytes; source=rollup
+--- PASS: TestAnalyticsProductionScale (160.27s)
+PASS
+ok  	github.com/seakee/cpa-manager/usage-service/internal/analytics	160.296s

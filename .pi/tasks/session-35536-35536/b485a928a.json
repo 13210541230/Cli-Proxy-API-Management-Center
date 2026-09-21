@@ -1,0 +1,21 @@
+{
+  "id": "b485a928a",
+  "name": "Run regression tests",
+  "command": "npm test -- --runInBand; cd usage-service && go test ./...",
+  "description": "Run frontend and Usage Service regression tests",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\b485a928a.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787206649804,
+  "endTime": 1787206650957,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 28120,
+  "bytesWritten": 1091,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

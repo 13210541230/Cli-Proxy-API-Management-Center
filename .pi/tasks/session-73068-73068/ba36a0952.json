@@ -1,0 +1,20 @@
+{
+  "id": "ba36a0952",
+  "name": "Fix PPTX Colors",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/build-jinma-pptx.ps1",
+  "description": "修正主题色解析后重新生成 PPTX，避免局部颜色被错误替换为黑色。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\ba36a0952.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535723200,
+  "endTime": 1788535724271,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 2612,
+  "bytesWritten": 181,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

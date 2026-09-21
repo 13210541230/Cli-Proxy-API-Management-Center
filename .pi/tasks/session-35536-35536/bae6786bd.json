@@ -1,0 +1,20 @@
+{
+  "id": "bae6786bd",
+  "name": "前端构建基线",
+  "command": "npm run build",
+  "description": "测量当前管理面板单文件构建耗时与输出",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\bae6786bd.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787204991118,
+  "endTime": 1787205021535,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 118512,
+  "bytesWritten": 754,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 300
+}

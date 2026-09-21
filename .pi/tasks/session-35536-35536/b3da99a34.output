@@ -1,0 +1,50 @@
+
+> cli-proxy-webui-react@0.0.0 test
+> vitest run
+
+The system cannot find the path specified.
+The system cannot find the path specified.
+
+ RUN  v4.1.5 D:/C_projects/Cli-Proxy-API-Management-Center
+
+(node:98660) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ src/features/monitoring/accountOverviewQuotaTargets.test.ts (2 tests | 1 failed) 12ms
+     × keeps Codex quota targets when the account id is unavailable 7ms
+(node:142832) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/features/monitoring/accountOverviewQuotaTargets.test.ts > accountOverviewQuotaTargets > keeps Codex quota targets when the account id is unavailable
+AssertionError: expected [ { …(6) } ] to match object [ { authIndex: '1', …(2) } ]
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  [
+    {
+-     "accountId": null,
++     "accountId": "account@example.com",
+      "authIndex": "1",
+      "fileName": "codex-without-account.json",
+    },
+  ]
+
+ ❯ src/features/monitoring/accountOverviewQuotaTargets.test.ts:114:47
+    112|     );
+    113|
+    114|     expect(result.get('account@example.com')).toMatchObject([
+       |                                               ^
+    115|       {
+    116|         authIndex: '1',
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 21 passed (22)
+      Tests  1 failed | 158 passed (159)
+   Start at  14:29:10
+   Duration  4.14s (transform 9.50s, setup 0ms, import 26.02s, tests 903ms, environment 2ms)
+

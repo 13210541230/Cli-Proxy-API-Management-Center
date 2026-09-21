@@ -210,6 +210,14 @@ type ApiKeySummaryRow = {
 type ApiKeySummarySortKey = 'tokens' | 'cost' | 'requests';
 type ApiKeyTrendMetric = 'tokens' | 'requests' | 'cost';
 
+type UpstreamModelMismatchSummary = {
+  account: string;
+  count: number;
+  lastSeenAt: number;
+  requestModels: string[];
+  responseModels: string[];
+};
+
 const analyticsNumber = (value: unknown): number =>
   typeof value === 'number' && Number.isFinite(value) ? value : 0;
 
@@ -239,7 +247,9 @@ const buildAnalyticsSummary = (
   const failureCalls = analyticsNumber(source.failures);
   const activeDayCount = Math.max(
     1,
-    new Set(timeline.map((item) => Math.floor(analyticsNumber(item.bucket_ms) / (24 * 60 * 60 * 1000)))).size
+    new Set(
+      timeline.map((item) => Math.floor(analyticsNumber(item.bucket_ms) / (24 * 60 * 60 * 1000)))
+    ).size
   );
   const totalTokens = analyticsNumber(source.total_tokens);
   const latencySamples = analyticsNumber(source.latency_samples);
@@ -254,7 +264,8 @@ const buildAnalyticsSummary = (
     cachedTokens: analyticsNumber(source.cached_tokens),
     totalTokens,
     totalCost: analyticsNumber(source.cost_usd),
-    averageLatencyMs: latencySamples > 0 ? analyticsNumber(source.latency_sum_ms) / latencySamples : null,
+    averageLatencyMs:
+      latencySamples > 0 ? analyticsNumber(source.latency_sum_ms) / latencySamples : null,
     rpm30m: 0,
     tpm30m: 0,
     avgDailyRequests: totalCalls / activeDayCount,
@@ -293,20 +304,26 @@ export const buildAnalyticsApiKeyRows = (
     };
   });
   rows.sort((left, right) => {
-    if (sortKey === 'cost') return right.totalCost - left.totalCost || right.requests - left.requests;
-    if (sortKey === 'requests') return right.requests - left.requests || right.totalTokens - left.totalTokens;
+    if (sortKey === 'cost')
+      return right.totalCost - left.totalCost || right.requests - left.requests;
+    if (sortKey === 'requests')
+      return right.requests - left.requests || right.totalTokens - left.totalTokens;
     return right.totalTokens - left.totalTokens || right.requests - left.requests;
   });
   return rows.map((row, index) => ({ ...row, rank: index + 1 }));
 };
 
 const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): unknown => {
-  const apis: Record<string, { models: Record<string, { details: Array<Record<string, unknown>> }> }> = {};
+  const apis: Record<
+    string,
+    { models: Record<string, { details: Array<Record<string, unknown>> }> }
+  > = {};
   (response?.events?.items || []).forEach((item) => {
     const timestampMs = analyticsNumber(item.timestamp_ms);
-    const timestamp = typeof item.timestamp === 'string' && item.timestamp
-      ? item.timestamp
-      : new Date(timestampMs).toISOString();
+    const timestamp =
+      typeof item.timestamp === 'string' && item.timestamp
+        ? item.timestamp
+        : new Date(timestampMs).toISOString();
     const method = typeof item.method === 'string' ? item.method.trim().toUpperCase() : '';
     const path = typeof item.path === 'string' ? item.path.trim() : '';
     const endpoint = method && path ? `${method} ${path}` : String(item.endpoint || '-');
@@ -402,7 +419,10 @@ export const buildAnalyticsAccountRows = (
         models: [],
       };
     })
-    .sort((left, right) => right.totalCalls - left.totalCalls || left.account.localeCompare(right.account));
+    .sort(
+      (left, right) =>
+        right.totalCalls - left.totalCalls || left.account.localeCompare(right.account)
+    );
 
 type AccountQuotaWindow = {
   id: string;
@@ -526,22 +546,22 @@ const buildRealtimeMetaText = (row: MonitoringEventRow) => {
   return maskSensitiveText(text || '-');
 };
 
-const buildModelRouteMetaText = (row: MonitoringEventRow, t: TFunction) => {
-  const requested = row.requestedModel || '-';
-  const resolved = row.resolvedModel || row.model || '-';
-  const upstream = row.upstreamModel || t('monitoring.upstream_model_unknown', { defaultValue: '未声明' });
-  const route = row.modelMatch || 'unknown';
-  const routeLabel =
-    route === 'upstream_mismatch'
-      ? t('monitoring.model_route_mismatch', { defaultValue: '上游模型不一致' })
-      : route === 'expected_mapping'
-        ? t('monitoring.model_route_expected_mapping', { defaultValue: '配置映射' })
-        : route === 'response_alias'
-          ? t('monitoring.model_route_response_alias', { defaultValue: '响应别名' })
-          : route === 'match'
-            ? t('monitoring.model_route_match', { defaultValue: '一致' })
-            : t('monitoring.model_route_unknown', { defaultValue: '未确认' });
-  return `${routeLabel} · ${requested} → ${resolved} → ${upstream}`;
+export const getUpstreamRequestModel = (row: Pick<MonitoringEventRow, 'model' | 'resolvedModel'>) =>
+  row.resolvedModel?.trim() || row.model?.trim() || '';
+
+export const getUpstreamResponseModel = (row: Pick<MonitoringEventRow, 'upstreamModel'>) =>
+  row.upstreamModel?.trim() || '';
+
+export const isUpstreamModelMismatch = (
+  row: Pick<MonitoringEventRow, 'model' | 'resolvedModel' | 'upstreamModel'>
+) => {
+  const requestedUpstreamModel = getUpstreamRequestModel(row);
+  const respondedUpstreamModel = getUpstreamResponseModel(row);
+  return Boolean(
+    requestedUpstreamModel &&
+    respondedUpstreamModel &&
+    requestedUpstreamModel.toLowerCase() !== respondedUpstreamModel.toLowerCase()
+  );
 };
 
 const PREMIUM_CODEX_PLAN_TYPES = new Set(['pro', 'prolite', 'pro-lite', 'pro_lite']);
@@ -727,6 +747,36 @@ const buildRealtimeLogRows = (rows: MonitoringEventRow[]): RealtimeLogRow[] => {
       right.timestampMs - left.timestampMs ||
       right.requestCount - left.requestCount ||
       right.id.localeCompare(left.id)
+  );
+};
+
+const buildUpstreamModelMismatchSummaries = (
+  rows: MonitoringEventRow[]
+): UpstreamModelMismatchSummary[] => {
+  const summaries = new Map<string, UpstreamModelMismatchSummary>();
+  rows.forEach((row) => {
+    if (!isUpstreamModelMismatch(row)) return;
+    const account = row.account || row.authLabel || row.accountMasked || '-';
+    const requestModel = getUpstreamRequestModel(row);
+    const responseModel = getUpstreamResponseModel(row);
+    const summary = summaries.get(account) || {
+      account,
+      count: 0,
+      lastSeenAt: 0,
+      requestModels: [],
+      responseModels: [],
+    };
+    summary.count += 1;
+    summary.lastSeenAt = Math.max(summary.lastSeenAt, row.timestampMs);
+    if (!summary.requestModels.includes(requestModel)) summary.requestModels.push(requestModel);
+    if (!summary.responseModels.includes(responseModel)) summary.responseModels.push(responseModel);
+    summaries.set(account, summary);
+  });
+  return Array.from(summaries.values()).sort(
+    (left, right) =>
+      right.count - left.count ||
+      right.lastSeenAt - left.lastSeenAt ||
+      left.account.localeCompare(right.account)
   );
 };
 
@@ -2310,11 +2360,7 @@ export function MonitoringCenterPage() {
       if (!customTimeRange) return false;
       if (customTimeRange.endMs - customTimeRange.startMs <= 24 * 60 * 60 * 1000) return false;
     }
-    return (
-      deferredSearch.trim() === '' &&
-      selectedChannel === 'all' &&
-      selectedStatus === 'all'
-    );
+    return deferredSearch.trim() === '' && selectedChannel === 'all' && selectedStatus === 'all';
   }, [
     analyticsFallbackScope,
     analyticsScopeKey,
@@ -2539,11 +2585,7 @@ export function MonitoringCenterPage() {
 
   const reasoningEffortOptions = useMemo(() => {
     const values: string[] = analyticsMode
-      ? Array.from(
-          new Set(
-            (analytics?.reasoning_stats || []).map((item) => item.key || 'unknown')
-          )
-        )
+      ? Array.from(new Set((analytics?.reasoning_stats || []).map((item) => item.key || 'unknown')))
       : Array.from(new Set(filteredRows.map((row) => row.reasoningEffort || 'unknown')));
     return [
       {
@@ -2580,8 +2622,13 @@ export function MonitoringCenterPage() {
       (analytics?.api_key_stats || []).forEach((item) => {
         const hash = item.key;
         if (!hash || optionMap.has(hash)) return;
-        const alias = apiKeyAliases.find((item) => item.apiKeyHash.toLowerCase() === hash.toLowerCase())?.alias;
-        optionMap.set(hash, alias ? `${alias}（${hash.slice(-6)}）` : `未命名（${hash.slice(-6)}）`);
+        const alias = apiKeyAliases.find(
+          (item) => item.apiKeyHash.toLowerCase() === hash.toLowerCase()
+        )?.alias;
+        optionMap.set(
+          hash,
+          alias ? `${alias}（${hash.slice(-6)}）` : `未命名（${hash.slice(-6)}）`
+        );
       });
     } else {
       filteredRows.forEach((row) => {
@@ -2649,7 +2696,8 @@ export function MonitoringCenterPage() {
         }
         if (
           selectedReasoningEffort !== 'all' &&
-          String(row.reasoningEffort || 'unknown').toLowerCase() !== selectedReasoningEffort.toLowerCase()
+          String(row.reasoningEffort || 'unknown').toLowerCase() !==
+            selectedReasoningEffort.toLowerCase()
         ) {
           return false;
         }
@@ -2786,9 +2834,10 @@ export function MonitoringCenterPage() {
     () => scopedRows.filter((row) => row.statsIncluded),
     [scopedRows]
   );
-  const securitySignalCount = analyticsMode && analytics
-    ? analyticsNumber(analytics.security_signal_count)
-    : scopedRows.filter((row) => row.securitySignal === 'cyber_policy').length;
+  const securitySignalCount =
+    analyticsMode && analytics
+      ? analyticsNumber(analytics.security_signal_count)
+      : scopedRows.filter((row) => row.securitySignal === 'cyber_policy').length;
   const accountStatusNowMs = lastRefreshedAt?.getTime() ?? Date.now();
   const accountStatusBounds = useMemo(
     () => getRangeBounds(timeRange, accountStatusNowMs, customTimeRange),
@@ -2834,6 +2883,14 @@ export function MonitoringCenterPage() {
     [scopedStatsRows]
   );
   const realtimeLogRows = useMemo(() => buildRealtimeLogRows(scopedRows), [scopedRows]);
+  const upstreamModelMismatchSummaries = useMemo(
+    () => buildUpstreamModelMismatchSummaries(scopedRows),
+    [scopedRows]
+  );
+  const upstreamModelMismatchCount = useMemo(
+    () => upstreamModelMismatchSummaries.reduce((total, item) => total + item.count, 0),
+    [upstreamModelMismatchSummaries]
+  );
   const accountPagination = useMemo(
     () => buildPaginationState(sortedAccountRows, accountPage, accountPageSize),
     [accountPage, accountPageSize, sortedAccountRows]
@@ -2913,9 +2970,10 @@ export function MonitoringCenterPage() {
     selectedReasoningEffort !== 'all' ||
     selectedStatus !== 'all';
   const hasActiveDataFilter = hasSearchFilter || hasScopeFilter;
-  const failedGroupCount = analyticsMode && analytics
-    ? analyticsNumber(analytics.summary?.failures)
-    : groupedRealtimeRows.filter((row) => row.failureCalls > 0).length;
+  const failedGroupCount =
+    analyticsMode && analytics
+      ? analyticsNumber(analytics.summary?.failures)
+      : groupedRealtimeRows.filter((row) => row.failureCalls > 0).length;
   const failedOnlyActive = selectedStatus === 'failed';
   const connectionTone: MonitoringStatusTone =
     connectionStatus === 'connected' ? 'good' : connectionStatus === 'connecting' ? 'warn' : 'bad';
@@ -3894,9 +3952,7 @@ export function MonitoringCenterPage() {
                 </div>
                 <Button
                   variant={selected ? 'primary' : 'secondary'}
-                  onClick={() =>
-                    setSelectedApiKeyHash(selected ? 'all' : row.apiKeyHash || 'all')
-                  }
+                  onClick={() => setSelectedApiKeyHash(selected ? 'all' : row.apiKeyHash || 'all')}
                   disabled={!row.apiKeyHash}
                   className={styles.apiKeySummaryAction}
                 >
@@ -3917,95 +3973,93 @@ export function MonitoringCenterPage() {
           subtitle={t('monitoring.api_key_trend_desc', {
             defaultValue: '仅展示当前选中 API Key 的时间趋势（随当前时间范围变化）',
           })}
-        extra={
-          <div className={`${styles.inlineMetrics} ${styles.realtimeHeaderActions}`}>
-            <Select
-              value={apiKeyTrendMetric}
-              options={apiKeyTrendMetricOptions}
-              onChange={(value) => setApiKeyTrendMetric(value as ApiKeyTrendMetric)}
-              ariaLabel={t('monitoring.api_key_trend_metric_label', { defaultValue: '趋势指标' })}
-              fullWidth={false}
-            />
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedApiKeyHash('all')}
-            >
-              {t('monitoring.clear_api_key_selection', { defaultValue: '取消选择' })}
-            </Button>
+          extra={
+            <div className={`${styles.inlineMetrics} ${styles.realtimeHeaderActions}`}>
+              <Select
+                value={apiKeyTrendMetric}
+                options={apiKeyTrendMetricOptions}
+                onChange={(value) => setApiKeyTrendMetric(value as ApiKeyTrendMetric)}
+                ariaLabel={t('monitoring.api_key_trend_metric_label', { defaultValue: '趋势指标' })}
+                fullWidth={false}
+              />
+              <Button variant="ghost" size="sm" onClick={() => setSelectedApiKeyHash('all')}>
+                {t('monitoring.clear_api_key_selection', { defaultValue: '取消选择' })}
+              </Button>
+            </div>
+          }
+        >
+          <div className={styles.apiKeyTrendList}>
+            {apiKeyTrendSeriesRows.map((row, index) => {
+              const color = `hsl(${(index * 67) % 360} 72% 48%)`;
+              const points = buildSparklinePoints(row.values);
+              const totalText =
+                apiKeyTrendMetric === 'cost'
+                  ? formatUsd(row.total)
+                  : formatCompactNumber(row.total);
+              const selected = selectedApiKeyHash === row.apiKeyHash;
+              return (
+                <article key={`trend-${row.apiKeyHash}`} className={styles.apiKeyTrendCard}>
+                  <div className={styles.apiKeyTrendHeader}>
+                    <div className={styles.apiKeySummaryRank} aria-label={`#${index + 1}`}>
+                      {index + 1}
+                    </div>
+                    <div className={styles.apiKeySummaryIdentity}>
+                      <strong title={row.label}>{row.label}</strong>
+                      <span>
+                        {t('monitoring.api_key_hash_suffix', { defaultValue: 'Hash' })} ·{' '}
+                        {row.apiKeyHash.slice(-8)}
+                      </span>
+                    </div>
+                    <div className={styles.apiKeyTrendTotal}>
+                      <span>
+                        {apiKeyTrendMetric === 'cost'
+                          ? t('monitoring.estimated_cost')
+                          : apiKeyTrendMetric === 'requests'
+                            ? t('monitoring.total_calls')
+                            : t('monitoring.total_tokens')}
+                      </span>
+                      <strong>{totalText}</strong>
+                    </div>
+                  </div>
+                  <div className={styles.apiKeyTrendChart}>
+                    <svg
+                      width="100%"
+                      height="64"
+                      viewBox="0 0 220 44"
+                      preserveAspectRatio="none"
+                      role="img"
+                      aria-label={row.label}
+                    >
+                      <polyline
+                        fill="none"
+                        stroke={color}
+                        strokeWidth="2.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        points={points}
+                      />
+                    </svg>
+                  </div>
+                  <div className={styles.apiKeyTrendFooter}>
+                    <span>
+                      {`${row.bucketCount} ${t('monitoring.bucket_count', { defaultValue: '个时间点' })}`}
+                    </span>
+                    <button
+                      type="button"
+                      className={`${styles.apiKeyTrendAction} ${selected ? styles.apiKeyTrendActionSelected : ''}`}
+                      onClick={() => setSelectedApiKeyHash(selected ? 'all' : row.apiKeyHash)}
+                    >
+                      {selected
+                        ? t('monitoring.selected', { defaultValue: '已选中' })
+                        : t('monitoring.view_details', { defaultValue: '查看明细' })}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+            {apiKeyTrendSeriesRows.length === 0 ? renderMonitoringEmptyState() : null}
           </div>
-        }
-      >
-        <div className={styles.apiKeyTrendList}>
-          {apiKeyTrendSeriesRows.map((row, index) => {
-            const color = `hsl(${(index * 67) % 360} 72% 48%)`;
-            const points = buildSparklinePoints(row.values);
-            const totalText =
-              apiKeyTrendMetric === 'cost' ? formatUsd(row.total) : formatCompactNumber(row.total);
-            const selected = selectedApiKeyHash === row.apiKeyHash;
-            return (
-              <article key={`trend-${row.apiKeyHash}`} className={styles.apiKeyTrendCard}>
-                <div className={styles.apiKeyTrendHeader}>
-                  <div className={styles.apiKeySummaryRank} aria-label={`#${index + 1}`}>
-                    {index + 1}
-                  </div>
-                  <div className={styles.apiKeySummaryIdentity}>
-                    <strong title={row.label}>{row.label}</strong>
-                    <span>
-                      {t('monitoring.api_key_hash_suffix', { defaultValue: 'Hash' })} ·{' '}
-                      {row.apiKeyHash.slice(-8)}
-                    </span>
-                  </div>
-                  <div className={styles.apiKeyTrendTotal}>
-                    <span>
-                      {apiKeyTrendMetric === 'cost'
-                        ? t('monitoring.estimated_cost')
-                        : apiKeyTrendMetric === 'requests'
-                          ? t('monitoring.total_calls')
-                          : t('monitoring.total_tokens')}
-                    </span>
-                    <strong>{totalText}</strong>
-                  </div>
-                </div>
-                <div className={styles.apiKeyTrendChart}>
-                  <svg
-                    width="100%"
-                    height="64"
-                    viewBox="0 0 220 44"
-                    preserveAspectRatio="none"
-                    role="img"
-                    aria-label={row.label}
-                  >
-                    <polyline
-                      fill="none"
-                      stroke={color}
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      points={points}
-                    />
-                  </svg>
-                </div>
-                <div className={styles.apiKeyTrendFooter}>
-                  <span>
-                    {`${row.bucketCount} ${t('monitoring.bucket_count', { defaultValue: '个时间点' })}`}
-                  </span>
-                  <button
-                    type="button"
-                    className={`${styles.apiKeyTrendAction} ${selected ? styles.apiKeyTrendActionSelected : ''}`}
-                    onClick={() => setSelectedApiKeyHash(selected ? 'all' : row.apiKeyHash)}
-                  >
-                    {selected
-                      ? t('monitoring.selected', { defaultValue: '已选中' })
-                      : t('monitoring.view_details', { defaultValue: '查看明细' })}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-          {apiKeyTrendSeriesRows.length === 0 ? renderMonitoringEmptyState() : null}
-        </div>
-      </MonitoringPanel>
+        </MonitoringPanel>
       ) : null}
 
       <MonitoringPanel
@@ -4316,6 +4370,62 @@ export function MonitoringCenterPage() {
       </MonitoringPanel>
 
       <MonitoringPanel
+        title={t('monitoring.upstream_model_mismatch_title', {
+          defaultValue: '上游响应模型不一致',
+        })}
+        subtitle={t('monitoring.upstream_model_mismatch_desc', {
+          defaultValue:
+            '仅统计当前时间范围和筛选条件内，上游实际请求模型与响应声明模型不一致的调用。',
+        })}
+        className={styles.modelMismatchPanel}
+        extra={
+          <span className={upstreamModelMismatchCount > 0 ? styles.statusMetaWarn : undefined}>
+            {t('monitoring.upstream_model_mismatch_total', { defaultValue: '不一致调用' })}:{' '}
+            {formatCompactNumber(upstreamModelMismatchCount)}
+          </span>
+        }
+      >
+        {upstreamModelMismatchSummaries.length > 0 ? (
+          <div className={styles.tableWrapper}>
+            <table className={`${styles.table} ${styles.modelMismatchTable}`}>
+              <thead>
+                <tr>
+                  <th>{t('monitoring.account_label')}</th>
+                  <th>
+                    {t('monitoring.upstream_model_mismatch_count', { defaultValue: '不一致次数' })}
+                  </th>
+                  <th>
+                    {t('monitoring.upstream_request_model', { defaultValue: '上游请求模型' })}
+                  </th>
+                  <th>
+                    {t('monitoring.upstream_response_model', { defaultValue: '上游响应模型' })}
+                  </th>
+                  <th>{t('monitoring.column_last_seen')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upstreamModelMismatchSummaries.map((item) => (
+                  <tr key={item.account}>
+                    <td className={styles.mismatchAccountCell}>{item.account}</td>
+                    <td className={styles.badText}>{formatCompactNumber(item.count)}</td>
+                    <td className={styles.mismatchModelCell}>{item.requestModels.join('、')}</td>
+                    <td className={styles.mismatchModelCell}>{item.responseModels.join('、')}</td>
+                    <td>{new Date(item.lastSeenAt).toLocaleString(i18n.language)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <div className={styles.emptyBlockSmall}>
+            {t('monitoring.no_upstream_model_mismatches', {
+              defaultValue: '当前范围内未发现上游模型不一致。',
+            })}
+          </div>
+        )}
+      </MonitoringPanel>
+
+      <MonitoringPanel
         title={t('monitoring.realtime_table_title')}
         subtitle={t('monitoring.realtime_table_desc')}
         className={styles.realtimePanel}
@@ -4358,134 +4468,163 @@ export function MonitoringCenterPage() {
               </tr>
             </thead>
             <tbody>
-              {realtimePagination.pageItems.map((row) => (
-                <tr
-                  key={row.id}
-                  className={[
-                    row.failed ? styles.logRowFailed : '',
-                    row.securitySignal === 'cyber_policy' ? styles.logRowSecurity : '',
-                  ]
-                    .filter(Boolean)
-                    .join(' ') || undefined}
-                >
-                  <td>
-                    <div className={styles.logTypeCell}>
-                      <span
-                        className={[
-                          styles.logTypeIcon,
-                          row.failed ? styles.logTypeIconFailed : styles.logTypeIconSuccess,
-                        ]
-                          .filter(Boolean)
-                          .join(' ')}
-                        aria-hidden="true"
-                      />
-                      <div className={styles.primaryCell}>
-                        <span>{row.provider}</span>
-                        <small>{row.account || row.authLabel || row.accountMasked || '-'}</small>
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.primaryCell}>
-                      <span className={styles.monoCell}>{row.model}</span>
-                      <small className={styles.monoCell}>{buildRealtimeMetaText(row)}</small>
-                      <small
-                        className={row.modelMatch === 'upstream_mismatch' ? styles.badText : undefined}
-                        title={buildModelRouteMetaText(row, t)}
-                      >
-                        {buildModelRouteMetaText(row, t)}
-                      </small>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.primaryCell}>
-                      <span className={styles.reasoningEffortBadge}>{row.reasoningEffort}</span>
-                      <small title={row.executorType || undefined}>
-                        {[
-                          row.serviceTier !== 'unknown' ? row.serviceTier : '',
-                          row.executorType,
-                        ]
-                          .filter(Boolean)
-                          .join(' · ') || t('monitoring.reasoning_unknown', { defaultValue: 'unknown' })}
-                      </small>
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.recentStatusCell}>
-                      <RecentPattern pattern={row.recentPattern} variant="plain" />
-                    </div>
-                  </td>
-                  <td>
-                    <div className={styles.primaryCell}>
-                      <StatusBadge tone={row.failed ? 'bad' : 'good'}>
-                        {row.failed ? t('monitoring.result_failed') : t('monitoring.result_success')}
-                      </StatusBadge>
-                      {row.securitySignal === 'cyber_policy' ? (
-                        <span className={styles.securitySignalBadge}>
-                          {t('monitoring.security_signal_cyber_policy', { defaultValue: 'cyber_policy' })}
-                        </span>
-                      ) : null}
-                      {row.failed && (row.failStatusCode != null || row.errorCode || row.failSummary) ? (
-                        <small title={row.failSummary || undefined}>
-                          {[
-                            row.failStatusCode == null ? '' : String(row.failStatusCode),
-                            row.errorClass,
-                            row.errorCode,
-                            row.failSummary,
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
-                        </small>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td
+              {realtimePagination.pageItems.map((row) => {
+                const upstreamRequestModel = getUpstreamRequestModel(row);
+                const upstreamResponseModel = getUpstreamResponseModel(row);
+                const upstreamModelMismatch = isUpstreamModelMismatch(row);
+                return (
+                  <tr
+                    key={row.id}
                     className={
-                      row.successRate >= 0.95
-                        ? styles.goodText
-                        : row.successRate >= 0.85
-                          ? styles.warnText
-                          : styles.badText
+                      [
+                        row.failed ? styles.logRowFailed : '',
+                        row.securitySignal === 'cyber_policy' ? styles.logRowSecurity : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ') || undefined
                     }
                   >
-                    {formatPercent(row.successRate)}
-                  </td>
-                  <td>{formatCompactNumber(row.requestCount)}</td>
-                  <td>
-                    {row.outputTokensPerSecond === null
-                      ? '--'
-                      : `${formatCompactNumber(row.outputTokensPerSecond)} /s`}
-                  </td>
-                  <td>
-                    <div className={styles.primaryCell}>
-                      <span
-                        className={
-                          row.latencyMs !== null && row.latencyMs >= 30000
-                            ? styles.badText
-                            : row.latencyMs !== null && row.latencyMs >= 15000
-                              ? styles.warnText
-                              : undefined
-                        }
-                      >
-                        {formatDurationMs(row.latencyMs, { locale: i18n.language })}
-                      </span>
-                      <small>
-                        {row.ttftMs == null
-                          ? '--'
-                          : `${t('monitoring.time_to_first_token', { defaultValue: 'TTFT' })} ${formatDurationMs(row.ttftMs, { locale: i18n.language })}`}
-                      </small>
-                    </div>
-                  </td>
-                  <td>{new Date(row.timestampMs).toLocaleString(i18n.language)}</td>
-                  <td>
-                    <div className={styles.primaryCell}>
-                      <span>{formatCompactNumber(row.totalTokens)}</span>
-                      <small>{`I ${formatCompactNumber(row.inputTokens)} · O ${formatCompactNumber(row.outputTokens)} · R ${formatCompactNumber(row.reasoningTokens)} · C ${formatCompactNumber(row.cachedTokens)}`}</small>
-                    </div>
-                  </td>
-                  <td>{hasPrices ? formatUsd(row.totalCost) : '--'}</td>
-                </tr>
-              ))}
+                    <td>
+                      <div className={styles.logTypeCell}>
+                        <span
+                          className={[
+                            styles.logTypeIcon,
+                            row.failed ? styles.logTypeIconFailed : styles.logTypeIconSuccess,
+                          ]
+                            .filter(Boolean)
+                            .join(' ')}
+                          aria-hidden="true"
+                        />
+                        <div className={styles.primaryCell}>
+                          <span>{row.provider}</span>
+                          <small>{row.account || row.authLabel || row.accountMasked || '-'}</small>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.primaryCell}>
+                        <span className={styles.monoCell}>{upstreamRequestModel || '-'}</span>
+                        <small className={styles.monoCell}>{buildRealtimeMetaText(row)}</small>
+                        {upstreamModelMismatch ? (
+                          <small className={styles.modelMismatchWarning}>
+                            <span className={styles.modelMismatchBadge}>
+                              {t('monitoring.upstream_model_mismatch_badge', {
+                                defaultValue: '不一致',
+                              })}
+                            </span>
+                            <span aria-hidden="true">·</span>
+                            <span
+                              className={styles.badText}
+                              title={t('monitoring.upstream_response_model', {
+                                defaultValue: '上游响应模型',
+                              })}
+                            >
+                              {upstreamResponseModel ||
+                                t('monitoring.upstream_model_unknown', { defaultValue: '未声明' })}
+                            </span>
+                          </small>
+                        ) : (
+                          <small>
+                            {t('monitoring.upstream_response_model', { defaultValue: '响应' })} ·{' '}
+                            {upstreamResponseModel ||
+                              t('monitoring.upstream_model_unknown', { defaultValue: '未声明' })}
+                          </small>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.primaryCell}>
+                        <span className={styles.reasoningEffortBadge}>{row.reasoningEffort}</span>
+                        <small title={row.executorType || undefined}>
+                          {[row.serviceTier !== 'unknown' ? row.serviceTier : '', row.executorType]
+                            .filter(Boolean)
+                            .join(' · ') ||
+                            t('monitoring.reasoning_unknown', { defaultValue: 'unknown' })}
+                        </small>
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.recentStatusCell}>
+                        <RecentPattern pattern={row.recentPattern} variant="plain" />
+                      </div>
+                    </td>
+                    <td>
+                      <div className={styles.primaryCell}>
+                        <StatusBadge tone={row.failed ? 'bad' : 'good'}>
+                          {row.failed
+                            ? t('monitoring.result_failed')
+                            : t('monitoring.result_success')}
+                        </StatusBadge>
+                        {row.securitySignal === 'cyber_policy' ? (
+                          <span className={styles.securitySignalBadge}>
+                            {t('monitoring.security_signal_cyber_policy', {
+                              defaultValue: 'cyber_policy',
+                            })}
+                          </span>
+                        ) : null}
+                        {row.failed &&
+                        (row.failStatusCode != null || row.errorCode || row.failSummary) ? (
+                          <small title={row.failSummary || undefined}>
+                            {[
+                              row.failStatusCode == null ? '' : String(row.failStatusCode),
+                              row.errorClass,
+                              row.errorCode,
+                              row.failSummary,
+                            ]
+                              .filter(Boolean)
+                              .join(' · ')}
+                          </small>
+                        ) : null}
+                      </div>
+                    </td>
+                    <td
+                      className={
+                        row.successRate >= 0.95
+                          ? styles.goodText
+                          : row.successRate >= 0.85
+                            ? styles.warnText
+                            : styles.badText
+                      }
+                    >
+                      {formatPercent(row.successRate)}
+                    </td>
+                    <td>{formatCompactNumber(row.requestCount)}</td>
+                    <td>
+                      {row.outputTokensPerSecond === null
+                        ? '--'
+                        : `${formatCompactNumber(row.outputTokensPerSecond)} /s`}
+                    </td>
+                    <td>
+                      <div className={styles.primaryCell}>
+                        <span
+                          className={
+                            row.latencyMs !== null && row.latencyMs >= 30000
+                              ? styles.badText
+                              : row.latencyMs !== null && row.latencyMs >= 15000
+                                ? styles.warnText
+                                : undefined
+                          }
+                        >
+                          {formatDurationMs(row.latencyMs, { locale: i18n.language })}
+                        </span>
+                        <small>
+                          {row.ttftMs == null
+                            ? '--'
+                            : `${t('monitoring.time_to_first_token', { defaultValue: 'TTFT' })} ${formatDurationMs(row.ttftMs, { locale: i18n.language })}`}
+                        </small>
+                      </div>
+                    </td>
+                    <td>{new Date(row.timestampMs).toLocaleString(i18n.language)}</td>
+                    <td>
+                      <div className={styles.primaryCell}>
+                        <span>{formatCompactNumber(row.totalTokens)}</span>
+                        <small>{`I ${formatCompactNumber(row.inputTokens)} · O ${formatCompactNumber(row.outputTokens)} · R ${formatCompactNumber(row.reasoningTokens)} · C ${formatCompactNumber(row.cachedTokens)}`}</small>
+                      </div>
+                    </td>
+                    <td>{hasPrices ? formatUsd(row.totalCost) : '--'}</td>
+                  </tr>
+                );
+              })}
               {realtimeLogRows.length === 0 ? (
                 <tr>
                   <td colSpan={12}>{renderMonitoringEmptyState()}</td>

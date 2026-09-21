@@ -1,0 +1,20 @@
+{
+  "id": "b47438a58",
+  "name": "最终验证外部导出",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_pptx.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/minimal.external.pptx --force --no-embed-fonts",
+  "description": "验证修正 eval 字符串解码后，最新版 handleExport 的 URL 直接回传和 PPTX 完整校验。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b47438a58.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788575853563,
+  "endTime": 1788575867351,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 73272,
+  "bytesWritten": 996,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

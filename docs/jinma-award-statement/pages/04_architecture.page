@@ -1,0 +1,143 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 总体架构｜接入、治理、留痕与分析分层承载
+  - elementId: client
+    elementType: shape
+    bounds: [62, 160, 170, 74]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: client-text
+    elementType: text
+    bounds: [76, 176, 142, 44]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 客户端 / Agent
+  - elementId: gateway
+    elementType: shape
+    bounds: [300, 138, 238, 118]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: gateway-text
+    elementType: text
+    bounds: [322, 154, 194, 86]
+    content:
+      align: [center, middle]
+      fontSize: 19
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>CLIProxyAPI</p>
+        <p style="font-size:14px">协议兼容 · 认证 · 多账户路由</p>
+  - elementId: mgmt
+    elementType: shape
+    bounds: [650, 112, 236, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$blue"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: mgmt-text
+    elementType: text
+    bounds: [670, 127, 196, 62]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.28
+      text: |
+        <p>Management Center</p>
+        <p style="font-size:14px">Key · 配额 · 审计 · 运维</p>
+  - elementId: usage
+    elementType: shape
+    bounds: [300, 330, 238, 94]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: usage-text
+    elementType: text
+    bounds: [320, 344, 198, 64]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      lineHeight: 1.28
+      text: |
+        <p>Usage Service</p>
+        <p style="font-size:14px">队列 · SQLite · Rollup</p>
+  - elementId: controls
+    elementType: shape
+    bounds: [650, 292, 236, 132]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: controls-text
+    elementType: text
+    bounds: [670, 308, 196, 102]
+    content:
+      align: [center, middle]
+      fontSize: 17
+      bold: true
+      color: "$ink"
+      lineHeight: 1.34
+      text: |
+        <p>治理动作</p>
+        <p style="font-size:14px">限额 · 暂停 · 降级</p>
+        <p style="font-size:14px">告警 · 审计 · 恢复</p>
+  - elementId: l-client-gateway
+    elementType: line
+    bounds: [232, 194, 68, 2]
+    viewBox: [68, 2]
+    points: "0,1 68,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: l-gateway-mgmt
+    elementType: line
+    bounds: [538, 160, 112, 2]
+    viewBox: [112, 2]
+    points: "0,1 112,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: l-gateway-usage
+    elementType: line
+    bounds: [419, 256, 2, 74]
+    viewBox: [2, 74]
+    points: "1,0 1,74"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: l-mgmt-controls
+    elementType: line
+    bounds: [768, 204, 2, 88]
+    viewBox: [2, 88]
+    points: "1,0 1,88"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: usage-note
+    elementType: text
+    bounds: [62, 352, 180, 72]
+    content:
+      style: "$bodySmall"
+      text: |
+        <p><strong>数据边界</strong></p>
+        <p>原始事件进入 SQLite，派生汇总可重建；核心接入链路与治理分析解耦。</p>
+  - elementId: arch-foot
+    elementType: text
+    bounds: [62, 466, 820, 24]
+    content:
+      style: "$bodySmall"
+      fontSize: 12
+      text: 架构原则：转发链路保持稳定，治理动作通过管理中心执行，事实与聚合由 Usage Service 承载。

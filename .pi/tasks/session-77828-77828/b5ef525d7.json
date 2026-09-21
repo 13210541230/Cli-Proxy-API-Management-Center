@@ -1,0 +1,21 @@
+{
+  "id": "b5ef525d7",
+  "name": "重试金码奖 PPTX",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_pptx.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd --output D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx --force",
+  "description": "将 PPTX 下载等待窗口扩大到 240 秒后，重新生成金码奖最终演示文稿并执行内置完整性校验。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b5ef525d7.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788539709788,
+  "endTime": 1788539953611,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 56336,
+  "bytesWritten": 532,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

@@ -1,0 +1,78 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 工程化交付｜测试、构建、启动与冒烟形成发布门禁
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 交付验收覆盖功能正确性、边界安全、数据完整、构建产物和运行可用性。
+  - elementId: test-bg
+    elementType: shape
+    bounds: [60, 148, 400, 282]
+    shapeName: rect
+    fill: {type: solid, color: "$ink"}
+    border: {style: solid, width: 1, color: "$ink"}
+  - elementId: test-title
+    elementType: text
+    bounds: [78, 166, 350, 28]
+    content:
+      style: "$label"
+      color: "$white"
+      text: TEST MATRIX
+  - elementId: test-code
+    elementType: text
+    bounds: [78, 210, 364, 194]
+    content:
+      fontFamily: "Consolas"
+      fontSize: 11.2
+      color: "$white"
+      lineHeight: 1.28
+      text: |
+        KeySpend_TracksTokenTotals
+        KeySpend_MatchesCostFormula
+        UserSpend_CrossTimezoneBoundary
+        Rollup_MergesLateRawTail
+        PendingRecovery_AfterInsertFailure
+        PluginAPI_RejectsForeignOrigin
+        Analytics_KeysetPagination
+  - elementId: release-bg
+    elementType: shape
+    bounds: [500, 148, 400, 282]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: release-title
+    elementType: text
+    bounds: [520, 166, 360, 28]
+    content:
+      style: "$label"
+      text: RELEASE GATE
+  - elementId: release
+    elementType: text
+    bounds: [520, 208, 350, 194]
+    content:
+      fontSize: 14
+      color: "$text"
+      lineHeight: 1.28
+      text: |
+        <p>前端构建生成单文件 dist/index.html，并清理隐藏控制字符。</p>
+        <p>Go 构建生成原生运行包，完整性脚本校验内嵌资源。</p>
+        <p>冒烟启动二进制，检查 /health、/management.html、React root 与内容长度。</p>
+        <p>发布物同时满足可编译、可启动、可校验、可回归。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 464, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 相关材料：usage-service 测试、插件安全测试、build-embedded-release.ps1、smoke-embedded-binary.ps1。

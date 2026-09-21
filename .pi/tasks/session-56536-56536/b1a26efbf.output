@@ -1,0 +1,5 @@
+
+> cli-proxy-webui-react@0.0.0 type-check
+> tsc --noEmit
+
+src/features/monitoring/hooks/useMonitoringData.ts(1534,61): error TS2339: Property 'error_message' does not exist on type 'UsageDetailWithEndpoint'.

@@ -1,0 +1,20 @@
+{
+  "id": "be227e2c2",
+  "name": "Run scale benchmark",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\verify-usage-scale.ps1",
+  "description": "Build 1.4m usage fixture and measure rollup/analytics response",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\be227e2c2.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787980231580,
+  "endTime": 1787980393322,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 19832,
+  "bytesWritten": 350,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 2400
+}

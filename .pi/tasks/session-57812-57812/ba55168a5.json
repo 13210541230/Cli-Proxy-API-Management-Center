@@ -1,0 +1,21 @@
+{
+  "id": "ba55168a5",
+  "name": "Export Ordered Final",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\export-jinma-pptx-latest.ps1",
+  "description": "Export the verified ordered deck to PPTX",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\ba55168a5.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788630057165,
+  "endTime": 1788630121492,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 72364,
+  "bytesWritten": 1935,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

@@ -1,0 +1,8 @@
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] defaults: transition=fade, embed_fonts=off
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] generating PPTX in the browser
+open-kimi-ppt export failed: timed out waiting for download; observed files:
+  (none)

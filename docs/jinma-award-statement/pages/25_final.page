@@ -1,0 +1,74 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 总结｜从统一接入能力建设企业治理底座
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 以企业需求为牵引，以 AI 辅助工程方法推进，以可运行、可验证、可持续交付的能力完成收口。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>需求有落点</strong></span></p>
+        <p>身份、额度、分析与安全四类企业问题均形成对应功能、数据模型和运行边界。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$blue"><strong>开发有方法</strong></span></p>
+        <p>AI 辅助检索、拆解、排序、测试候选与材料编排；工程师负责边界、取舍和验收。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>交付有证据</strong></span></p>
+        <p>代码、测试、构建、启动、冒烟和视觉验收共同证明能力可运行、可复核、可持续。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 372, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 402, 840, 62]
+    content:
+      fontSize: 21
+      bold: true
+      color: "$ink"
+      text: CLIProxyAPI 解决“统一接入”，Management Center 使其进入企业可治理、可运营、可交付阶段。

@@ -1,0 +1,20 @@
+{
+  "id": "b387dbd31",
+  "name": "再次诊断 PPTX 下载",
+  "command": "python D:/Downloads/debug-pptx-export.py",
+  "description": "提高 agent-browser 内部等待上限后再次抓取 Kimi PPTX 导出对话框与点击后的页面状态。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b387dbd31.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788540183238,
+  "endTime": 1788540308004,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 71176,
+  "bytesWritten": 56152,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

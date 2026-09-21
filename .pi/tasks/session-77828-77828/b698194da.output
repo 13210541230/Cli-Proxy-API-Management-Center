@@ -1,0 +1,23 @@
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] defaults: transition=fade, embed_fonts=off
+[open-kimi-ppt] preparing the local external-export file from browser-rendered pages
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] rendering page images in the browser
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] warning: the official font switch is disabled for this deck
+[open-kimi-ppt] requesting PPTX through the latest host handleExport bridge
+[open-kimi-ppt] latest external bridge unavailable; using local export: external export returned an unsupported URL: '"http://127.0.0.1:54067/external-export.pptx"'
+{
+  "slides": 1,
+  "fadeTransitions": 1,
+  "fontParts": 0,
+  "bytes": 28963,
+  "exportPath": "local-rendered-fallback",
+  "transitionPatchedSlides": 1,
+  "output": "D:\\Downloads\\okp-minimal\\minimal.external.pptx"
+}

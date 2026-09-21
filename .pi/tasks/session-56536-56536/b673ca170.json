@@ -1,0 +1,20 @@
+{
+  "id": "b673ca170",
+  "name": "Lint provider workspace",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-lint.ps1",
+  "description": "Run eslint for provider workspace changes",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b673ca170.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788007322747,
+  "endTime": 1788007345980,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 35652,
+  "bytesWritten": 1136,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

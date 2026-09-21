@@ -1,0 +1,21 @@
+{
+  "id": "bd3082893",
+  "name": "Check frontend telemetry",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '& { Set-Location \"$PWD\"; npm run type-check }'",
+  "description": "Check TypeScript after extending monitoring detail fields",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bd3082893.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988328780,
+  "endTime": 1787988329184,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 25368,
+  "bytesWritten": 287,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

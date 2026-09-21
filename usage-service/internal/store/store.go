@@ -612,9 +612,6 @@ func (s *Store) init() error {
 	if err := s.ensureEnterpriseSchema(); err != nil {
 		return err
 	}
-	if err := s.ensureAccountPoolSchema(); err != nil {
-		return err
-	}
 	if err := s.ensureRollupStateSchema(); err != nil {
 		return err
 	}

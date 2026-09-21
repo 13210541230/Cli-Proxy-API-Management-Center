@@ -1,0 +1,97 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 执行计划与验收矩阵｜按依赖推进，按证据收口
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 每项建设均经历领域建模、接口实现、边界验证和运行交付四个阶段。
+  - elementId: line
+    elementType: line
+    bounds: [96, 190, 768, 3]
+    viewBox: [768, 3]
+    points: "0,1 768,1"
+    border: {style: solid, width: 3, color: "$red"}
+  - elementId: d1
+    elementType: shape
+    bounds: [72, 176, 48, 28]
+    shapeName: ellipse
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: d2
+    elementType: shape
+    bounds: [318, 176, 48, 28]
+    shapeName: ellipse
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: d3
+    elementType: shape
+    bounds: [564, 176, 48, 28]
+    shapeName: ellipse
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: d4
+    elementType: shape
+    bounds: [810, 176, 48, 28]
+    shapeName: ellipse
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: t1
+    elementType: text
+    bounds: [60, 232, 190, 144]
+    content:
+      style: "$bodySmall"
+      text: |
+        <p><strong>01 · 领域建模</strong></p>
+        <p>明确身份、额度、事实源、状态和安全边界。</p>
+        <p>产物：数据模型与需求矩阵。</p>
+  - elementId: t2
+    elementType: text
+    bounds: [274, 232, 190, 144]
+    content:
+      style: "$bodySmall"
+      text: |
+        <p><strong>02 · 接口实现</strong></p>
+        <p>按现有服务边界拆分 API、存储、页面和迁移任务。</p>
+        <p>产物：可运行增量实现。</p>
+  - elementId: t3
+    elementType: text
+    bounds: [488, 232, 190, 144]
+    content:
+      style: "$bodySmall"
+      text: |
+        <p><strong>03 · 边界验证</strong></p>
+        <p>覆盖失败、重试、恢复、权限、性能和数据脱敏场景。</p>
+        <p>产物：测试矩阵与结果。</p>
+  - elementId: t4
+    elementType: text
+    bounds: [702, 232, 190, 144]
+    content:
+      style: "$bodySmall"
+      text: |
+        <p><strong>04 · 运行交付</strong></p>
+        <p>验证构建、启动、内嵌资源、冒烟和视觉结果。</p>
+        <p>产物：发布包与复核记录。</p>
+  - elementId: matrix-title
+    elementType: text
+    bounds: [60, 404, 260, 28]
+    content:
+      style: "$label"
+      text: ACCEPTANCE MATRIX
+  - elementId: matrix
+    elementType: text
+    bounds: [60, 438, 840, 42]
+    content:
+      fontSize: 16
+      color: "$text"
+      text: 功能正确性｜数据完整性｜安全边界｜并发性能｜构建完整性｜运行可用性｜视觉一致性

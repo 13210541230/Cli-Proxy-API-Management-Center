@@ -1,0 +1,20 @@
+{
+  "id": "bb1802575",
+  "name": "Go usage tests",
+  "command": "cd usage-service && go test ./...",
+  "description": "Run usage-service unit tests to confirm current baseline",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bb1802575.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787905460855,
+  "endTime": 1787905468637,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 57736,
+  "bytesWritten": 686,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

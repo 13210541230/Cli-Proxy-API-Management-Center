@@ -1,0 +1,20 @@
+{
+  "id": "b8d1c06bb",
+  "name": "Build manager adapter",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Build and embed the generic plugin host frontend",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b8d1c06bb.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788014796160,
+  "endTime": 1788014813852,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 14988,
+  "bytesWritten": 945,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

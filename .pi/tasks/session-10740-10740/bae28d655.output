@@ -1,0 +1,14 @@
+::ffff:127.0.0.1 - - [06/Sep/2026 23:03:09] "GET /Cli-Proxy-API-Management-Center/.pi/tmp/audit-ui-harness.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:03:09] "GET /CLIProxyAPI/.worktrees/quota-rebase/plugins/enterprise-access-audit/go/internal/management/ui/index.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:03:09] code 404, message File not found
+::ffff:127.0.0.1 - - [06/Sep/2026 23:03:09] "GET /favicon.ico HTTP/1.1" 404 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:07:47] "GET /Cli-Proxy-API-Management-Center/.pi/tmp/audit-ui-harness.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:07:47] "GET /CLIProxyAPI/.worktrees/quota-rebase/plugins/enterprise-access-audit/go/internal/management/ui/index.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:09:42] "GET /Cli-Proxy-API-Management-Center/.pi/tmp/audit-ui-harness.html HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:09:42] "GET /CLIProxyAPI/.worktrees/quota-rebase/plugins/enterprise-access-audit/go/internal/management/ui/index.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:11:52] "GET /Cli-Proxy-API-Management-Center/.pi/tmp/audit-ui-harness.html HTTP/1.1" 304 -
+::ffff:127.0.0.1 - - [06/Sep/2026 23:11:52] "GET /CLIProxyAPI/.worktrees/quota-rebase/plugins/enterprise-access-audit/go/internal/management/ui/index.html HTTP/1.1" 200 -
+
+[background task timeout: Timed out after 600s]
+
+[background task Windows termination: taskkill terminate reported process not found for pid 29912 (exit=128 signal=null stderr="ERROR: The process with PID 66188 (child process of PID 29912) could not be terminated.\r\nReason: This process can only be terminated forcefully (with /F option).\r\nERROR: The process with PID 76192 (child process of PID 29912) could not be terminated.\r\nReason: This process can only be terminated forcefully (with /F option).\r\nERROR: The process with PID 29912 (child process of PID 10740) could not be terminated.\r\nReason: One or more child processes of this process were still running.\r\n"); treating as an already-exited race]

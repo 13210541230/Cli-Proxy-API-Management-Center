@@ -1,0 +1,20 @@
+{
+  "id": "bb8627316",
+  "name": "运行审计插件测试",
+  "command": "cd \"D:/C_projects/CLIProxyAPI/.worktrees/quota-rebase/plugins/enterprise-access-audit/go\" && go test ./...",
+  "description": "运行企业访问审计插件 Go 全量测试",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-10740-10740\\bb8627316.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788707646936,
+  "endTime": 1788707657867,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 41300,
+  "bytesWritten": 1134,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

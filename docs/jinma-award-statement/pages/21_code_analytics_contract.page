@@ -1,0 +1,136 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例四｜插件审计从访问需求落到安全契约
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 将“插件能读取审计数据”拆分为最小能力集合，并为每个入口定义拒绝条件。
+  - elementId: s1
+    elementType: shape
+    bounds: [60, 158, 180, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s1t
+    elementType: text
+    bounds: [76, 176, 148, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 审计需求
+  - elementId: s2
+    elementType: shape
+    bounds: [286, 146, 180, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s2t
+    elementType: text
+    bounds: [300, 164, 152, 80]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>安全契约</p>
+        <p style="font-size:14px">origin · method · path</p>
+  - elementId: s3
+    elementType: shape
+    bounds: [512, 158, 180, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s3t
+    elementType: text
+    bounds: [526, 176, 152, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 能力白名单
+  - elementId: s4
+    elementType: shape
+    bounds: [738, 146, 162, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$blue"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s4t
+    elementType: text
+    bounds: [752, 164, 134, 80]
+    content:
+      align: [center, middle]
+      fontSize: 17
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>可验证交付</p>
+        <p style="font-size:14px">拒绝越权 · 可审计</p>
+  - elementId: a1
+    elementType: line
+    bounds: [240, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: a2
+    elementType: line
+    bounds: [466, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: a3
+    elementType: line
+    bounds: [692, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: b1
+    elementType: text
+    bounds: [60, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>需求拆解</strong></p>
+        <p>先定义插件可访问的非秘密资源，再定义禁止访问的管理 API、凭证与原始事件。</p>
+  - elementId: b2
+    elementType: text
+    bounds: [355, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>实现选择</strong></p>
+        <p>插件页面通过宿主 API Client 获取数据；通信层双重校验来源，路径按插件命名空间限制。</p>
+  - elementId: b3
+    elementType: text
+    bounds: [650, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>验收口径</strong></p>
+        <p>foreign origin、越权 method、路径穿越和缺少 pluginId 均拒绝；合法请求可审计、可解释。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 方案重点：最小权限、宿主持有凭证、扩展能力可独立演进且不突破核心安全边界。

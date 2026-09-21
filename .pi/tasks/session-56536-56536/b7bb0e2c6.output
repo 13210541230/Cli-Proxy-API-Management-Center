@@ -1,0 +1,21 @@
+
+> cli-proxy-webui-react@0.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives
+
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\App.tsx
+  58:6  warning  React Hook useEffect has missing dependencies: 'language' and 'setLanguage'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\components\config\VisualConfigEditorBlocks.apiKeyAliasDelete.test.tsx
+  38:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\pages\ConfigPage.tsx
+  461:18  warning  'alertError' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\pages\QuotaLimitsPage.tsx
+  34:10  warning  '_config' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (0 errors, 6 warnings)
+

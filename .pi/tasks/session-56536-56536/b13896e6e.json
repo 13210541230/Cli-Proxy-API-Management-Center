@@ -1,0 +1,20 @@
+{
+  "id": "b13896e6e",
+  "name": "Lint API key toggle",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-lint.ps1",
+  "description": "Run lint after API Key toggle fix",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b13896e6e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788010262280,
+  "endTime": 1788010277576,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 54644,
+  "bytesWritten": 1136,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

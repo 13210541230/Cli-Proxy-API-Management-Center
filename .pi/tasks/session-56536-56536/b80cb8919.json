@@ -1,0 +1,20 @@
+{
+  "id": "b80cb8919",
+  "name": "Retry trend lint",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-lint.ps1",
+  "description": "Retry lint after locale syntax fix",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b80cb8919.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788009564735,
+  "endTime": 1788009582282,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 26748,
+  "bytesWritten": 1136,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

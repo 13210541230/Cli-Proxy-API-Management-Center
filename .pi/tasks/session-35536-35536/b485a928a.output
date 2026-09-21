@@ -1,0 +1,18 @@
+
+> cli-proxy-webui-react@0.0.0 test
+> vitest run --runInBand; cd usage-service
+
+file:///D:/C_projects/Cli-Proxy-API-Management-Center/node_modules/vitest/dist/chunks/cac.DJJmV0dT.js:406
+          throw new CACError(`Unknown option \`${name.length > 1 ? `--${name}` : `-${name}`}\``);
+                ^
+
+CACError: Unknown option `--runInBand;`
+    at Command.checkUnknownOptions (file:///D:/C_projects/Cli-Proxy-API-Management-Center/node_modules/vitest/dist/chunks/cac.DJJmV0dT.js:406:17)
+    at CAC.runMatchedCommand (file:///D:/C_projects/Cli-Proxy-API-Management-Center/node_modules/vitest/dist/chunks/cac.DJJmV0dT.js:606:13)
+    at CAC.parse (file:///D:/C_projects/Cli-Proxy-API-Management-Center/node_modules/vitest/dist/chunks/cac.DJJmV0dT.js:547:12)
+    at file:///D:/C_projects/Cli-Proxy-API-Management-Center/node_modules/vitest/dist/cli.js:11:13
+    at ModuleJob.run (node:internal/modules/esm/module_job:437:25)
+    at async node:internal/modules/esm/loader:639:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.9.0

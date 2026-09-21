@@ -1,0 +1,20 @@
+{
+  "id": "bc615863b",
+  "name": "渲染最终 PPTX",
+  "command": "python C:/Users/20557/.agents/skills/ppt-to-images/scripts/ppt_to_images.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx -o D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/.qa-pptx-images -w 1600",
+  "description": "使用 PowerPoint COM 将最终 PPTX 渲染为逐页 PNG，进行最终视觉复核。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bc615863b.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788541276562,
+  "endTime": 1788541303743,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 79328,
+  "bytesWritten": 2319,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

@@ -1,0 +1,20 @@
+{
+  "id": "bc002a929",
+  "name": "Smoke plugin host binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Smoke-test health and the embedded Management Center page in the rebuilt Windows binary.",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bc002a929.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788012473078,
+  "endTime": 1788012475733,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 62356,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 120
+}

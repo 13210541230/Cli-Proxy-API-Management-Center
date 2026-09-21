@@ -1,0 +1,20 @@
+{
+  "id": "b23209ee1",
+  "name": "Embed API key toggle",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Embed the verified API Key toggle UI and rebuild the Windows binary",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b23209ee1.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788010307097,
+  "endTime": 1788010321644,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 60256,
+  "bytesWritten": 945,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

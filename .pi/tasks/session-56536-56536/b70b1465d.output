@@ -1,0 +1,6 @@
+
+> cli-proxy-webui-react@0.0.0 type-check
+> tsc --noEmit
+
+src/i18n/locales/zh-CN.json(1436,5): error TS1005: ',' expected.
+src/i18n/locales/zh-TW.json(1332,5): error TS1005: ',' expected.

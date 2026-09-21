@@ -1,0 +1,15 @@
+
+> cli-proxy-webui-react@0.0.0 type-check
+> tsc --noEmit
+
+
+> cli-proxy-webui-react@0.0.0 test
+> vitest run --run
+
+node.exe : The system cannot find the path specified.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The system cann...path specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

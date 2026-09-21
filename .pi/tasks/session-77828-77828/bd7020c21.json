@@ -1,0 +1,20 @@
+{
+  "id": "bd7020c21",
+  "name": "验证全局网页编辑器",
+  "command": "python D:/Downloads/check-local-editor-export.py",
+  "description": "使用用户实际调用的全局 open-kimi-ppt-skill 包，真实验证网页端导出下载已包含修复。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bd7020c21.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788662569172,
+  "endTime": 1788662589784,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 22976,
+  "bytesWritten": 5273,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1500
+}

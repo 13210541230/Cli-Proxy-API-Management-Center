@@ -1,0 +1,20 @@
+{
+  "id": "b1a450f00",
+  "name": "Render New Template",
+  "command": "python C:/Users/20557/.agents/skills/ppt-to-images/scripts/ppt_to_images.py D:/Downloads/2026年金码奖申报陈述PPT模板-XX部门-姓名.pptx -o D:/Downloads/jinma-template-images -w 1920",
+  "description": "Render the supplied 2026 award template for visual analysis",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\b1a450f00.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788668817935,
+  "endTime": 1788668824574,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 37432,
+  "bytesWritten": 1239,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

@@ -1,0 +1,20 @@
+{
+  "id": "b314e681d",
+  "name": "Run full frontend tests",
+  "command": "npm test",
+  "description": "Run complete Vitest suite after correcting existing fixture",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\b314e681d.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787207608425,
+  "endTime": 1787207613420,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 90932,
+  "bytesWritten": 675,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 300
+}

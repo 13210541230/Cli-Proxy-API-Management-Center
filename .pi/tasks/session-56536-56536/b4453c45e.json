@@ -1,0 +1,21 @@
+{
+  "id": "b4453c45e",
+  "name": "Retry frontend checks",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/verify-frontend-telemetry.ps1",
+  "description": "Re-run TypeScript and telemetry normalization checks after type fix",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b4453c45e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988793106,
+  "endTime": 1787988806753,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 60036,
+  "bytesWritten": 530,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 240
+}

@@ -1,0 +1,20 @@
+{
+  "id": "b4aad3995",
+  "name": "Debug Image Export",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/debug-okp-images.ps1",
+  "description": "复现图片导出下载流程，检查导出对话框、点击动作与浏览器下载文件。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b4aad3995.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535312234,
+  "endTime": 1788535406262,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 6552,
+  "bytesWritten": 16827,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 240
+}

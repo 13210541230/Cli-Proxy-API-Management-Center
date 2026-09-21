@@ -1,0 +1,780 @@
+[open-kimi-ppt] prepared 20 local image resource(s), 5291477 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+READY SNAPSHOT
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "button"
+      },
+      "e4": {
+        "name": "",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e3]\n  - button [disabled, ref=e4]\n  - button [ref=e5]\n  - button [ref=e6]"
+  },
+  "error": null
+}
+DIALOG SNAPSHOT
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+DOWNLOAD REF e4
+AFTER CLICK 1/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 2/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 3/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 4/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 5/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 6/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 7/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 8/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 9/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 10/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 11/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}
+AFTER CLICK 12/12 files=['D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (1).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台 (2).zip', 'D:\\Downloads\\2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台.zip', 'D:\\Downloads\\AI编程工具工程化实践-Claude-v3h.zip', 'D:\\Downloads\\app_setup.6653007.zip', 'D:\\Downloads\\arm.zip', 'D:\\Downloads\\artifacts.zip', 'D:\\Downloads\\basic-10.2.0.5.0-linux-x64.zip', 'D:\\Downloads\\Bypass_1.16.52.zip', 'D:\\Downloads\\ccleanerpro_87028.zip', 'D:\\Downloads\\clash-pcx64.zip', 'D:\\Downloads\\CLIProxyAPI_6.8.55_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.2_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_6.9.7_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.0.9_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.104_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.105_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.142_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.143_windows_amd64.zip', 'D:\\Downloads\\CLIProxyAPI_7.2.144_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.17.12_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.2.1_windows_amd64.zip', 'D:\\Downloads\\cpa-manager_v1.21.8_windows_amd64.zip', 'D:\\Downloads\\CRCjsgj330.zip', 'D:\\Downloads\\dbeaver-ce-24.2.0-win32.win32.x86_64.zip', 'D:\\Downloads\\Dependencies_x64_Release.zip', 'D:\\Downloads\\depends22_x64.zip', 'D:\\Downloads\\dist.zip', 'D:\\Downloads\\duckdb-mysql-main.zip', 'D:\\Downloads\\dws_9.1.1_gsql_for_windows.zip', 'D:\\Downloads\\example.pptx', 'D:\\Downloads\\fastdb-code-r118.zip', 'D:\\Downloads\\fastdb-master.zip', 'D:\\Downloads\\fmt-master.zip', 'D:\\Downloads\\function.zip', 'D:\\Downloads\\googletest-release-1.10.0.zip', 'D:\\Downloads\\IDM(Repack).zip', 'D:\\Downloads\\Inet Download Manager 6.38.2.zip', 'D:\\Downloads\\instantclient-basic-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-11.2.0.4.0.zip', 'D:\\Downloads\\instantclient-basic-linux.x64-19.27.0.0.0dbru.zip', 'D:\\Downloads\\instantclient-sdk-linux.arm64-19.28.0.0.0dbru.zip', 'D:\\Downloads\\kdop-dev-workflow.zip', 'D:\\Downloads\\librdkafka-2.6.0.zip', 'D:\\Downloads\\libz.zip', 'D:\\Downloads\\macbs-node-lib.zip', 'D:\\Downloads\\macbs-service-lib.zip', 'D:\\Downloads\\mysql-community-libs-8.3.0-1.el7.x86_64.zip', 'D:\\Downloads\\patch.zip', 'D:\\Downloads\\Procdump.zip', 'D:\\Downloads\\sing-box-1.13.18-windows-amd64.zip', 'D:\\Downloads\\source_report-Code_Porting_Task1.zip', 'D:\\Downloads\\sqlines-3.3.301.zip', 'D:\\Downloads\\sqlite-tools-win-x64-3500300.zip', 'D:\\Downloads\\swe-pruner-public.zip', 'D:\\Downloads\\TrustAgent_guosen.zip', 'D:\\Downloads\\univpn-win-full-10781.18.1.0512-signed.zip', 'D:\\Downloads\\VAX64_2547.zip', 'D:\\Downloads\\WindTerm_2.7.0_Windows_Portable_x86_64.zip', 'D:\\Downloads\\Winslopr-26.04.04-win-x64.zip', 'D:\\Downloads\\x86.zip', 'D:\\Downloads\\x86库.zip', 'D:\\Downloads\\xdown-2.0.9.5.zip', 'D:\\Downloads\\小米 YU7｜介绍.zip']
+{
+  "success": true,
+  "data": {
+    "lifecycle": {
+      "effectiveLaunch": {
+        "browserLaunched": true,
+        "engine": "chrome",
+        "launchHash": 1331519113051772500
+      },
+      "launched": false,
+      "relaunchedBrowser": false,
+      "restartedBackground": false,
+      "restoreStatus": "not_configured",
+      "reused": true,
+      "saveStatus": "not_attempted"
+    },
+    "origin": "http://127.0.0.1:59433/export_host.html",
+    "refs": {
+      "e1": {
+        "name": "",
+        "role": "Iframe"
+      },
+      "e2": {
+        "name": "导出",
+        "role": "button"
+      },
+      "e3": {
+        "name": "",
+        "role": "switch"
+      },
+      "e4": {
+        "name": "下载",
+        "role": "button"
+      },
+      "e5": {
+        "name": "",
+        "role": "button"
+      },
+      "e6": {
+        "name": "",
+        "role": "button"
+      },
+      "e7": {
+        "name": "",
+        "role": "button"
+      },
+      "e8": {
+        "name": "",
+        "role": "button"
+      }
+    },
+    "snapshot": "- Iframe [ref=e1]\n  - button \"导出\" [ref=e2]\n  - button [ref=e5]\n  - button [disabled, ref=e6]\n  - button [ref=e7]\n  - button [ref=e8]\n  - switch [checked=true, ref=e3]\n  - button \"下载\" [ref=e4]"
+  },
+  "error": null
+}

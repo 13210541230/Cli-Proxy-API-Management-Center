@@ -1,0 +1,20 @@
+{
+  "id": "b23c2d64f",
+  "name": "Build audit origin fix",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\plugins\\enterprise-access-audit\\build.ps1 -OutputDirectory D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\.tmp\\enterprise-access-audit",
+  "description": "Build and race-test the updated audit plugin",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b23c2d64f.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788016288611,
+  "endTime": 1788016304196,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 7620,
+  "bytesWritten": 2245,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

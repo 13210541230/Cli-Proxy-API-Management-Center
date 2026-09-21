@@ -1,0 +1,20 @@
+{
+  "id": "b46a7ac94",
+  "name": "Build audit plugin retry",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\plugins\\enterprise-access-audit\\build.ps1 -OutputDirectory D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\.tmp\\enterprise-access-audit",
+  "description": "Retry the plugin build from its worktree",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b46a7ac94.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788014831442,
+  "endTime": 1788014848442,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 33020,
+  "bytesWritten": 2245,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

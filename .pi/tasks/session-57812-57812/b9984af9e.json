@@ -1,0 +1,20 @@
+{
+  "id": "b9984af9e",
+  "name": "PowerPoint visual QA",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-ppt-slides.ps1 -InputPath D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx -OutputDir D:/Downloads/jinma-layout-qa",
+  "description": "Render all revised pages with Microsoft PowerPoint",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\b9984af9e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788708698720,
+  "endTime": 1788708708463,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 28556,
+  "bytesWritten": 48,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

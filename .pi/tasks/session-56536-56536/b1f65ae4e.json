@@ -1,0 +1,21 @@
+{
+  "id": "b1f65ae4e",
+  "name": "Run full Go suite",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '& { Set-Location \"D:/C_projects/Cli-Proxy-API-Management-Center/usage-service\"; go test -count=1 ./...; exit $LASTEXITCODE }'",
+  "description": "Run complete usage-service regression suite after rollup and collector changes",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b1f65ae4e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787980354987,
+  "endTime": 1787980355339,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 65668,
+  "bytesWritten": 287,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 2400
+}

@@ -1,0 +1,21 @@
+{
+  "id": "b62a96c8d",
+  "name": "Run frontend verification",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-verification.ps1",
+  "description": "Run final frontend type-check, tests and single-file production build",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b62a96c8d.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787980764603,
+  "endTime": 1787980781221,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 5872,
+  "bytesWritten": 506,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

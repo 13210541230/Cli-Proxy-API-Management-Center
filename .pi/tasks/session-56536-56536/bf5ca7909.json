@@ -1,0 +1,20 @@
+{
+  "id": "bf5ca7909",
+  "name": "Run frontend plugin checks",
+  "command": "npm run type-check && npm test -- --run && npm run lint",
+  "description": "Run full frontend type-check, tests, and lint for the generic plugin host.",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bf5ca7909.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788012182866,
+  "endTime": 1788012222498,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 68536,
+  "bytesWritten": 1854,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

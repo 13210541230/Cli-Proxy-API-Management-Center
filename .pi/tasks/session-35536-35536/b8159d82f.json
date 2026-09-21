@@ -1,0 +1,20 @@
+{
+  "id": "b8159d82f",
+  "name": "Build optimized frontend",
+  "command": "npm run build",
+  "description": "Build frontend and report generated bundle sizes",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\b8159d82f.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787207119331,
+  "endTime": 1787207132200,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 78924,
+  "bytesWritten": 530,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 300
+}

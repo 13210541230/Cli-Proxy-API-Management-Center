@@ -1,0 +1,21 @@
+{
+  "id": "bc3652c50",
+  "name": "验证 PPT 图片导出",
+  "command": "python 'D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_images.py' 'D:/Downloads/open-kimi-ppt-skill/example/xiaomi-yu7-ppt-animation/xiaomi-yu7.pptd' --output 'D:/Downloads/open-kimi-ppt-skill/example/xiaomi-yu7-ppt-animation/.qa-images' --force",
+  "description": "使用安装后的导出脚本和本机浏览器对示例 PPTD 做图片导出、解包与总览图拼接验证。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bc3652c50.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788538619056,
+  "endTime": 1788538619311,
+  "exitCode": 2,
+  "signal": null,
+  "pid": 16116,
+  "bytesWritten": 192,
+  "isAgent": false,
+  "error": "Exited with code 2",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

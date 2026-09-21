@@ -1,0 +1,74 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例一验收｜导入、绑定、冲突与历史结果可复核
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 验收围绕数据完整性、重复处理、人工修正和安全展示四类结果展开。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>数据结果</strong></p>
+        <p>成功、警告、错误三类状态可见；重复 Key、部门缺失和格式错误均保留原因。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>流程结果</strong></p>
+        <p>预览与写入职责分离，导入历史记录总量、成功量、警告量、错误量和完成时间。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>安全结果</strong></p>
+        <p>原始凭证不进入分析展示；企业 Key、配额与用量页面通过 Hash 和掩码建立关联。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 372, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 402, 840, 62]
+    content:
+      fontSize: 21
+      bold: true
+      color: "$ink"
+      text: 验收结论：企业 Key 由“可调用凭证”扩展为“可治理的组织关系”。

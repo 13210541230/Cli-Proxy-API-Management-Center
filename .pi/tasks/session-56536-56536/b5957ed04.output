@@ -1,0 +1,23 @@
+== Frontend single-file build ==
+
+> cli-proxy-webui-react@0.0.0 build
+> tsc && vite build
+
+The system cannot find the path specified.
+The system cannot find the path specified.
+[36mvite v8.0.10 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 739 modules transformed.
+rendering chunks...
+[plugin vite:singlefile] 
+
+[plugin vite:singlefile] Inlining: index-DUdiONci.js
+[plugin vite:singlefile] Inlining: style-B7zJ1t_J.css
+computing gzip size...
+dist/index.html  2,938.56 kB │ gzip: 861.71 kB
+
+[32m✓ built in 1.79s[39m
+== Embedded binary build ==
+dist/index.html (normalized): 2938644 bytes SHA256 1FAEEEBF74E49AF2B31E88532711D2D2AEA90D5E3B54BABD2291C5F6DE3EC35F
+management.html: 2938644 bytes SHA256 1FAEEEBF74E49AF2B31E88532711D2D2AEA90D5E3B54BABD2291C5F6DE3EC35F
+cpa-manager.exe: 15942656 bytes SHA256 B12137400C3A1828C502DA7E35EE9EE4FE95FE98C80F3EB4EB1B461185576EA0
+Embedded source hash verified.

@@ -1,0 +1,21 @@
+{
+  "id": "ba25c2c93",
+  "name": "Build audit plugin",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\plugins\\enterprise-access-audit\\build.ps1 -OutputDirectory .tmp\\enterprise-access-audit",
+  "description": "Build and race-test the adapted enterprise audit plugin",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\ba25c2c93.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788014412459,
+  "endTime": 1788014412967,
+  "exitCode": 4294770688,
+  "signal": null,
+  "pid": 9068,
+  "bytesWritten": 263,
+  "isAgent": false,
+  "error": "Exited with code 4294770688",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

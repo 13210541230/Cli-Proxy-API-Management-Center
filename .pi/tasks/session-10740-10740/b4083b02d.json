@@ -1,0 +1,20 @@
+{
+  "id": "b4083b02d",
+  "name": "构建管理中心前端",
+  "command": "cd \"D:/C_projects/Cli-Proxy-API-Management-Center\" && npm run build",
+  "description": "验证管理中心前端策略入口移除与插件模型桥接改动",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-10740-10740\\b4083b02d.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788707637927,
+  "endTime": 1788707657201,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 4448,
+  "bytesWritten": 530,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

@@ -1,0 +1,17 @@
+[2026-09-06T23:37:01.0451647+08:00] manager=in_progress/; api=in_progress/
+[2026-09-06T23:38:44.1830457+08:00] manager=completed/failure; api=in_progress/
+[2026-09-06T23:47:28.3665445+08:00] manager=completed/failure; api=completed/success
+{
+    "managerRun":  "https://github.com/13210541230/Cli-Proxy-API-Management-Center/actions/runs/34042781175",
+    "managerConclusion":  "failure",
+    "managerBuildConclusion":  "success",
+    "managerRelease":  "https://github.com/13210541230/Cli-Proxy-API-Management-Center/releases/tag/v1.21.11",
+    "managerAssetCount":  8,
+    "apiRun":  "https://github.com/13210541230/CLIProxyAPI/actions/runs/34042793048",
+    "apiConclusion":  "success",
+    "apiRelease":  "https://github.com/13210541230/CLIProxyAPI/releases/tag/v7.2.147",
+    "apiAssetCount":  19,
+    "suiteAssetCount":  6,
+    "suiteManagerVersion":  "v1.21.11",
+    "suiteManagerCommit":  "37d73e00633d9a20a453809bd3557e76af2cf02b"
+}

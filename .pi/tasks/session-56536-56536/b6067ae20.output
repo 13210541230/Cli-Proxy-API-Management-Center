@@ -1,0 +1,11 @@
+The system cannot find the path specified.
+The system cannot find the path specified.
+
+ RUN  v4.1.5 D:/C_projects/Cli-Proxy-API-Management-Center
+
+
+ Test Files  1 passed (1)
+      Tests  6 passed (6)
+   Start at  17:31:17
+   Duration  396ms (transform 17ms, setup 0ms, import 27ms, tests 219ms, environment 0ms)
+

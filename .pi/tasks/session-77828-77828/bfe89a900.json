@@ -1,0 +1,21 @@
+{
+  "id": "bfe89a900",
+  "name": "重试最新版 PPTX 导出",
+  "command": "python D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_pptx.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/minimal.external.pptx --force --no-embed-fonts",
+  "description": "使用隔离 agent-browser namespace 重试最小 PPTD 的图片渲染、最新版 handleExport 和 PPTX 下载链路。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bfe89a900.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788575012491,
+  "endTime": 1788575018833,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 31964,
+  "bytesWritten": 1814,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

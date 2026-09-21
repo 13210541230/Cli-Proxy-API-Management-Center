@@ -1,0 +1,20 @@
+{
+  "id": "b529f2df6",
+  "name": "Render Expanded QA",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/render-jinma-ppt-latest.ps1",
+  "description": "使用已修复的最新版 open-kimi-ppt 导出 25 页图片总览，检查代码页视觉质量。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b529f2df6.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788584451223,
+  "endTime": 1788584519803,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 18424,
+  "bytesWritten": 3495,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

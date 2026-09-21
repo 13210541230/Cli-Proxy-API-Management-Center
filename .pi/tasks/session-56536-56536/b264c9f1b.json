@@ -1,0 +1,20 @@
+{
+  "id": "b264c9f1b",
+  "name": "Lint selected key trend",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-lint.ps1",
+  "description": "Run lint after API Key trend interaction changes",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b264c9f1b.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788009507359,
+  "endTime": 1788009526421,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 36440,
+  "bytesWritten": 1136,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

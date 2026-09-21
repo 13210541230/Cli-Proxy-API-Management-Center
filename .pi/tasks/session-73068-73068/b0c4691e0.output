@@ -1,0 +1,12 @@
+[open-kimi-ppt] prepared 6 local image resource(s), 1544488 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+Traceback (most recent call last):
+  File "D:\Downloads\capture-kimi-preview.py", line 16, in <module>
+    b.open(url); b.run(['wait','--fn','document.documentElement.dataset.deckStatus === "ready"'],timeout=120); b.run(['set','viewport','1600','900']); time.sleep(30)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 468, in run
+    raise ExportError(
+export_pptx.ExportError: agent-browser command failed (1): wait --fn document.documentElement.dataset.deckStatus === "ready"
+✗ Wait timed out after 60000ms
+

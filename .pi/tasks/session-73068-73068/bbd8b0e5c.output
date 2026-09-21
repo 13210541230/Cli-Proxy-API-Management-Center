@@ -1,0 +1,9 @@
+[open-kimi-ppt] prepared 6 local image resource(s), 1544488 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser 0.30.1 is below 0.33.2; installing agent-browser@latest
+[open-kimi-ppt] agent-browser upgraded to 0.36.0
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+open-kimi-ppt image export failed: agent-browser command failed (1): wait --fn document.documentElement.dataset.deckStatus === "ready"
+✗ Wait timed out after 60000ms
+

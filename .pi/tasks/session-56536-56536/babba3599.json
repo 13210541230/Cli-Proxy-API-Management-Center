@@ -1,0 +1,20 @@
+{
+  "id": "babba3599",
+  "name": "Build plugin host release",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Build the single-file frontend, embed it, and compile the Windows binary.",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\babba3599.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788012427472,
+  "endTime": 1788012448287,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 31800,
+  "bytesWritten": 945,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

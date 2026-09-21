@@ -1,0 +1,20 @@
+{
+  "id": "b939643c7",
+  "name": "Usage 服务测试",
+  "command": "cd usage-service && go test ./...",
+  "description": "运行 Usage Service 全量 Go 测试，确认当前基线",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\b939643c7.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787204991137,
+  "endTime": 1787205136352,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 119260,
+  "bytesWritten": 679,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

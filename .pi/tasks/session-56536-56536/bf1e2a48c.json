@@ -1,0 +1,21 @@
+{
+  "id": "bf1e2a48c",
+  "name": "Verify telemetry fields",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command '& { Set-Location \"$PWD/usage-service\"; go test -count=1 ./internal/usage ./internal/store ./internal/analytics }'",
+  "description": "Run targeted Go tests for request telemetry contract and analytics paging",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bf1e2a48c.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988281195,
+  "endTime": 1787988281635,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 31008,
+  "bytesWritten": 287,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

@@ -1,0 +1,20 @@
+{
+  "id": "bb4a32005",
+  "name": "Export Formal Deck",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\export-jinma-pptx-latest.ps1",
+  "description": "Export formally revised award deck to editable PPTX",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\bb4a32005.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788619276115,
+  "endTime": 1788619440484,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 49868,
+  "bytesWritten": 1337,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

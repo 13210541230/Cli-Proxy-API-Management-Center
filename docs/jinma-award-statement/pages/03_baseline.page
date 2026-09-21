@@ -1,0 +1,96 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 开源基础与建设目标｜从统一接入延伸至统一治理
+  - elementId: left-title
+    elementType: text
+    bounds: [70, 118, 330, 30]
+    content:
+      fontSize: 22
+      bold: true
+      color: "$red"
+      text: CLIProxyAPI 基础能力
+  - elementId: left-line
+    elementType: line
+    bounds: [70, 157, 300, 2]
+    viewBox: [300, 2]
+    points: "0,1 300,1"
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: left-body
+    elementType: text
+    bounds: [70, 180, 350, 190]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>协议兼容</strong>：兼容 OpenAI、Gemini、Claude、Codex 等调用协议。</p>
+        <p><strong>多账户接入</strong>：支持 OAuth、认证文件与账户路由。</p>
+        <p><strong>统一入口</strong>：客户端通过兼容 API 复用统一调用方式。</p>
+        <p><strong>原生优势</strong>：保留成熟的模型调用、认证与转发链路。</p>
+  - elementId: right-title
+    elementType: text
+    bounds: [520, 118, 340, 30]
+    content:
+      fontSize: 22
+      bold: true
+      color: "$blue"
+      text: 企业化建设目标
+  - elementId: right-line
+    elementType: line
+    bounds: [520, 157, 330, 2]
+    viewBox: [330, 2]
+    points: "0,1 330,1"
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: q1
+    elementType: text
+    bounds: [520, 184, 340, 38]
+    content:
+      fontSize: 19
+      bold: true
+      color: "$ink"
+      text: 身份治理：Key 绑定人员、部门与业务归属
+  - elementId: q2
+    elementType: text
+    bounds: [520, 236, 340, 38]
+    content:
+      fontSize: 19
+      bold: true
+      color: "$ink"
+      text: 用量治理：请求、Token、费用与状态可追溯
+  - elementId: q3
+    elementType: text
+    bounds: [520, 288, 340, 38]
+    content:
+      fontSize: 19
+      bold: true
+      color: "$ink"
+      text: 运行治理：限额、暂停、降级与告警可协调
+  - elementId: q4
+    elementType: text
+    bounds: [520, 340, 340, 38]
+    content:
+      fontSize: 19
+      bold: true
+      color: "$ink"
+      text: 安全治理：插件访问、凭证与审计数据有边界
+  - elementId: bottom-rule
+    elementType: line
+    bounds: [70, 410, 780, 1]
+    viewBox: [780, 1]
+    points: "0,0 780,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: conclusion
+    elementType: text
+    bounds: [70, 430, 780, 50]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      text: 建设原则：不替换核心接入链路，在既有管理 API 与服务边界上形成企业治理能力。

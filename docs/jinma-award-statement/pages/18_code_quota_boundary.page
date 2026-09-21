@@ -1,0 +1,70 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例三关键实现｜Rollup 覆盖水位与明细分页契约
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 聚合层与查询层共同表达覆盖范围，避免加速数据掩盖未覆盖的原始事件。
+  - elementId: code-bg
+    elementType: shape
+    bounds: [60, 148, 550, 282]
+    shapeName: rect
+    fill: {type: solid, color: "$ink"}
+    border: {style: solid, width: 1, color: "$ink"}
+  - elementId: code
+    elementType: text
+    bounds: [76, 162, 518, 254]
+    content:
+      fontFamily: "Consolas"
+      fontSize: 11.2
+      color: "$white"
+      lineHeight: 1.2
+      text: |
+        type HourlyRollup struct {
+          BucketMS int64
+          Model string
+          Requests, TotalTokens int64
+          InputTokens, OutputTokens int64
+        }
+
+        // checkpoint advances only after derived rows succeed
+        SaveRollupState(ctx, targetEventID, coverageWatermark)
+
+        // events: keyset(timestamp_ms, id)
+        // unsupported boundary -> raw fallback
+  - elementId: r-title
+    elementType: text
+    bounds: [650, 148, 250, 30]
+    content:
+      style: "$label"
+      text: QUERY CONTRACT
+  - elementId: r
+    elementType: text
+    bounds: [650, 188, 250, 214]
+    content:
+      fontSize: 14
+      color: "$text"
+      lineHeight: 1.3
+      text: |
+        <p><strong>可重建</strong>：usage_events 是唯一原始事实源。</p>
+        <p><strong>可对齐</strong>：checkpoint 与 coverage watermark 仅在聚合成功后推进。</p>
+        <p><strong>可分页</strong>：明细游标由 timestamp_ms + id 组成，并返回真实 total_count。</p>
+        <p><strong>可解释</strong>：response 返回 source / complete，前端展示结果来源。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 464, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 代码位置：usage-service/internal/store/rollup.go、dimension_rollup.go、analytics/service.go。

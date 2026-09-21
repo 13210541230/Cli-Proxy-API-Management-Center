@@ -1,0 +1,21 @@
+{
+  "id": "b68715b5f",
+  "name": "Export PPTX Deck",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-jinma-pptx.ps1",
+  "description": "导出最终可编辑 PPTX，并执行 ZIP/幻灯片完整性验证。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b68715b5f.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535267186,
+  "endTime": 1788535360623,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 54140,
+  "bytesWritten": 532,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

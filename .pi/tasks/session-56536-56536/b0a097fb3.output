@@ -1,0 +1,74 @@
+
+> cli-proxy-webui-react@0.0.0 type-check
+> tsc --noEmit
+
+
+> cli-proxy-webui-react@0.0.0 test
+> vitest run --run
+
+npm.cmd : The system cannot find the path specified.
+At D:\C_projects\Cli-Proxy-API-Management-Center\scripts\windows\verify-usage-ui.ps1:19 char:9
++         & npm.cmd @($step[1]) 2>&1 | Tee-Object -FilePath $logPath -A ...
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The system cann...path specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+The system cannot find the path specified.
+
+ RUN  v4.1.5 D:/C_projects/Cli-Proxy-API-Management-Center
+
+(node:16984) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22532) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  29 passed (29)
+      Tests  188 passed (188)
+   Start at  15:35:55
+   Duration  2.06s (transform 11.49s, setup 0ms, import 16.49s, tests 1.18s, environment 4ms)
+
+
+> cli-proxy-webui-react@0.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives
+
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\App.tsx
+  58:6  warning  React Hook useEffect has missing dependencies: 'language' and 'setLanguage'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\components\config\VisualConfigEditorBlocks.apiKeyAliasDelete.test.tsx
+  38:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\pages\ConfigPage.tsx
+  461:18  warning  'alertError' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\pages\QuotaLimitsPage.tsx
+  34:10  warning  '_config' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (0 errors, 6 warnings)
+
+
+> cli-proxy-webui-react@0.0.0 build
+> tsc && vite build
+
+npm.cmd : The system cannot find the path specified.
+At D:\C_projects\Cli-Proxy-API-Management-Center\scripts\windows\verify-usage-ui.ps1:19 char:9
++         & npm.cmd @($step[1]) 2>&1 | Tee-Object -FilePath $logPath -A ...
++         ~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The system cann...path specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+The system cannot find the path specified.
+[36mvite v8.0.10 [32mbuilding client environment for production...[36m[39m
+[2K
+transforming...✓ 739 modules transformed.
+rendering chunks...
+[plugin vite:singlefile] 
+
+[plugin vite:singlefile] Inlining: index-AdesIrUi.js
+[plugin vite:singlefile] Inlining: style-B7RBYrS_.css
+computing gzip size...
+dist/index.html  2,871.92 kB │ gzip: 847.68 kB
+
+[32m✓ built in 1.64s[39m

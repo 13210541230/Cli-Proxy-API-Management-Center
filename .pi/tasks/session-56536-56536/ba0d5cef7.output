@@ -1,0 +1,11 @@
+?   	github.com/seakee/cpa-manager/usage-service/cmd/cpa-manager	[no test files]
+ok  	github.com/seakee/cpa-manager/usage-service/internal/analytics	1.989s
+ok  	github.com/seakee/cpa-manager/usage-service/internal/collector	4.979s
+ok  	github.com/seakee/cpa-manager/usage-service/internal/config	(cached)
+ok  	github.com/seakee/cpa-manager/usage-service/internal/httpapi	(cached)
+ok  	github.com/seakee/cpa-manager/usage-service/internal/httpqueue	(cached)
+?   	github.com/seakee/cpa-manager/usage-service/internal/mail	[no test files]
+?   	github.com/seakee/cpa-manager/usage-service/internal/resp	[no test files]
+ok  	github.com/seakee/cpa-manager/usage-service/internal/rollup	2.747s
+ok  	github.com/seakee/cpa-manager/usage-service/internal/store	16.504s
+ok  	github.com/seakee/cpa-manager/usage-service/internal/usage	0.046s

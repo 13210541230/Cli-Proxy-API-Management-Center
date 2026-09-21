@@ -1,0 +1,20 @@
+{
+  "id": "b8044c050",
+  "name": "Retry telemetry tests",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/verify-usage-telemetry.ps1",
+  "description": "Verify the corrected usage event insert and telemetry mappings",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b8044c050.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988709988,
+  "endTime": 1787988722174,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 452,
+  "bytesWritten": 221,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

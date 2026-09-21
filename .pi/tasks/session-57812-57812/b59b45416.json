@@ -1,0 +1,20 @@
+{
+  "id": "b59b45416",
+  "name": "Export Page Eight Fix",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\export-and-patch-jinma-final.ps1",
+  "description": "Export page 8 fix and restore correct PowerPoint image order",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\b59b45416.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788662233432,
+  "endTime": 1788662326989,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 56304,
+  "bytesWritten": 1562,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

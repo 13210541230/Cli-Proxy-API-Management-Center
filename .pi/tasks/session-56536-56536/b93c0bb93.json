@@ -1,0 +1,20 @@
+{
+  "id": "b93c0bb93",
+  "name": "Rerun full Go suite",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-go-tests.ps1",
+  "description": "Run full usage-service Go tests through a logged PowerShell script",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b93c0bb93.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787980487690,
+  "endTime": 1787980502130,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 50140,
+  "bytesWritten": 835,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 2400
+}

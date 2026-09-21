@@ -1,0 +1,20 @@
+{
+  "id": "be267ee72",
+  "name": "隔离浏览器复测下载",
+  "command": "python D:/Downloads/check-local-editor-export.py",
+  "description": "让网页端测试浏览器与导出子流程使用不同 Chrome，确认前一轮长时间等待是否只是 CDP 端口竞争。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\be267ee72.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788661123611,
+  "endTime": 1788661146054,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 48868,
+  "bytesWritten": 5273,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1500
+}

@@ -1,0 +1,21 @@
+{
+  "id": "b5ef35ba2",
+  "name": "质检金码奖 PPT",
+  "command": "python D:/C_projects/Cli-Proxy-API-Management-Center/C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_images.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd --output D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/.qa-images --force",
+  "description": "使用修复后的下载目录识别逻辑，对金码奖申报陈述 PPTD 执行浏览器图片导出和视觉质检素材生成。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b5ef35ba2.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788539086847,
+  "endTime": 1788539086970,
+  "exitCode": 2,
+  "signal": null,
+  "pid": 29564,
+  "bytesWritten": 181,
+  "isAgent": false,
+  "error": "Exited with code 2",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

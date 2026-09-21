@@ -1,0 +1,21 @@
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go	0.165s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/auditlog	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/config	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/cyberpolicy	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/extract	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/intercept	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/management	0.663s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/model	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/state	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/store	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go	1.289s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/auditlog	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/config	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/cyberpolicy	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/extract	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/intercept	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/management	1.983s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/model	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/state	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/store	(cached)
+Built enterprise-access-audit for windows/amd64: D:\C_projects\CLIProxyAPI\.worktrees\quota-rebase\.tmp\enterprise-access-audit\enterprise-access-audit.dll

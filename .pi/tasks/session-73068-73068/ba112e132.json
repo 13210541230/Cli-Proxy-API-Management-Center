@@ -1,0 +1,20 @@
+{
+  "id": "ba112e132",
+  "name": "Render AI Cases",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/render-jinma-ppt-latest.ps1",
+  "description": "渲染替换代码页后的 25 页版本，检查 AI 需求拆解与实际案例页面的布局。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\ba112e132.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788594752108,
+  "endTime": 1788594836481,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 63028,
+  "bytesWritten": 3495,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

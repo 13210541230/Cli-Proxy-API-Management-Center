@@ -1,0 +1,20 @@
+{
+  "id": "b66567a93",
+  "name": "Retry Export PPTX",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-jinma-pptx-latest.ps1",
+  "description": "释放残留 PowerPoint 文件锁后重试导出最终 PPTX。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b66567a93.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788613364992,
+  "endTime": 1788613440183,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 54204,
+  "bytesWritten": 1337,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

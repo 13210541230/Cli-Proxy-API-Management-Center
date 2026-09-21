@@ -1,0 +1,28 @@
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] defaults: transition=fade, embed_fonts=off
+[open-kimi-ppt] preparing the local external-export file from browser-rendered pages
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+Traceback (most recent call last):
+  File "D:\Downloads\open-kimi-ppt-skill\skills\open-kimi-ppt\scripts\export_pptx.py", line 1044, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "D:\Downloads\open-kimi-ppt-skill\skills\open-kimi-ppt\scripts\export_pptx.py", line 1028, in main
+    summary = export_pptx(
+              ^^^^^^^^^^^^
+  File "D:\Downloads\open-kimi-ppt-skill\skills\open-kimi-ppt\scripts\export_pptx.py", line 886, in export_pptx
+    fallback = prepare_external_export(source, temp_dir / "fallback")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\Downloads\open-kimi-ppt-skill\skills\open-kimi-ppt\scripts\export_pptx.py", line 288, in prepare_external_export
+    export_images(source, image_output, force=True)
+  File "D:\Downloads\open-kimi-ppt-skill\skills\open-kimi-ppt\scripts\export_images.py", line 333, in export_images
+    browser.run(["set", "viewport", "1280", "720"])
+  File "D:\Downloads\open-kimi-ppt-skill\skills\open-kimi-ppt\scripts\export_pptx.py", line 611, in run
+    raise ExportError(
+export_pptx.ExportError: agent-browser command failed (1): set viewport 1280 720
+✗ Invalid response: EOF while parsing a value at line 1 column 0 (after 5 retries - daemon may be busy or unresponsive)
+

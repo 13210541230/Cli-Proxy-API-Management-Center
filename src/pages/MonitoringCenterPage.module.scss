@@ -1231,6 +1231,49 @@
   color: var(--monitor-red);
 }
 
+.modelMismatchWarning {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
+  color: var(--monitor-red);
+  font-weight: 700;
+}
+
+.modelMismatchBadge {
+  flex: 0 0 auto;
+  color: var(--monitor-red);
+  font-size: 11px;
+  line-height: 1.45;
+  white-space: nowrap;
+}
+
+.modelMismatchWarning .badText {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.modelMismatchPanel {
+  border-color: color-mix(in srgb, var(--monitor-red) 24%, var(--monitor-line));
+}
+
+.modelMismatchTable {
+  min-width: 820px;
+}
+
+.mismatchAccountCell {
+  font-weight: 700;
+}
+
+.mismatchModelCell {
+  color: var(--monitor-red);
+  font-family: var(--font-family-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-weight: 650;
+  white-space: normal;
+  word-break: break-word;
+}
+
 .patternBars {
   display: inline-grid;
   grid-auto-flow: column;

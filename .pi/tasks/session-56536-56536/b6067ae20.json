@@ -1,0 +1,20 @@
+{
+  "id": "b6067ae20",
+  "name": "Check embedded integrity",
+  "command": "npx vitest run tests/repoSourceIntegrity.test.mjs",
+  "description": "Verify the regenerated embedded frontend has no forbidden hidden Unicode",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b6067ae20.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787995876271,
+  "endTime": 1787995877797,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 53756,
+  "bytesWritten": 315,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

@@ -1,0 +1,20 @@
+{
+  "id": "b1a2f20c4",
+  "name": "Smoke cross-origin host",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Smoke test the rebuilt cross-origin plugin host binary",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b1a2f20c4.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788015739950,
+  "endTime": 1788015742578,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 1348,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

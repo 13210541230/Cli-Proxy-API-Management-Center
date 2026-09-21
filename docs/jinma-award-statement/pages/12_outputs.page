@@ -1,0 +1,77 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 需求二｜额度治理与运行状态协调
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 以成本或 Token 作为统一度量，将默认规则、Key 级覆盖、超限动作和上游状态纳入同一治理链路。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>度量模型</strong></p>
+        <p>支持 cost / tokens 两种模式，统一日、周窗口与失败请求处理口径。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      color: "$white"
+      text: |
+        <p><strong>策略模型</strong></p>
+        <p>默认限额优先，Key override 覆盖；超限动作包括 pause、downgrade、notify。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>可靠性边界</strong></p>
+        <p>上游暂停状态不可确认时，不执行猜测性暂停或恢复；状态变化保留 reason 与 expires_at。</p>
+  - elementId: flow
+    elementType: text
+    bounds: [60, 380, 840, 58]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      align: [center, middle]
+      text: 用量事实 → 成本 / Token 计算 → 策略匹配 → 治理动作 → 状态同步
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 相关功能：额度策略、Key 级覆盖、暂停 / 降级 / 告警、CPA 状态同步与异常保护。

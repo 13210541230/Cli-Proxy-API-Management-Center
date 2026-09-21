@@ -1,0 +1,20 @@
+{
+  "id": "be587f772",
+  "name": "Retry embedded release",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Retry frontend embedding and Windows binary compilation from the Go module",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\be587f772.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788008442723,
+  "endTime": 1788008458110,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 65084,
+  "bytesWritten": 932,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

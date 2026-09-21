@@ -1,0 +1,20 @@
+{
+  "id": "b6d50644b",
+  "name": "Final full Go suite",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-go-tests.ps1",
+  "description": "Run final full Go regression after API key timeline changes",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b6d50644b.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787981272784,
+  "endTime": 1787981286867,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 48936,
+  "bytesWritten": 835,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 2400
+}

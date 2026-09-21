@@ -1,0 +1,74 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例一关键实现｜企业 Key 领域模型与安全映射
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 领域模型把兼容性、组织关系、来源追踪和安全展示固化为可复用数据契约。
+  - elementId: code-bg
+    elementType: shape
+    bounds: [60, 148, 540, 282]
+    shapeName: rect
+    fill: {type: solid, color: "$ink"}
+    border: {style: solid, width: 1, color: "$ink"}
+  - elementId: code
+    elementType: text
+    bounds: [76, 162, 508, 254]
+    content:
+      fontFamily: "Consolas"
+      fontSize: 11.5
+      color: "$white"
+      lineHeight: 1.22
+      text: |
+        export interface EnterpriseKeyBinding {
+          apiKey: string;
+          apiKeyHash: string;
+          userName: string;
+          email?: string;
+          departmentId: string;
+          source: 'import' | 'manual';
+          departmentResolvedBy: 'csv' | 'manual';
+        }
+
+        export interface EnterpriseKeyMetadata {
+          apiKeyHash: string;
+          userName: string;
+          email?: string;
+          departmentId: string;
+        }
+  - elementId: r-title
+    elementType: text
+    bounds: [640, 148, 260, 30]
+    content:
+      style: "$label"
+      text: IMPLEMENTATION POINTS
+  - elementId: r
+    elementType: text
+    bounds: [640, 188, 260, 214]
+    content:
+      fontSize: 14
+      color: "$text"
+      lineHeight: 1.3
+      text: |
+        <p><strong>兼容层</strong>：apiKey 保留原有 CPA 管理与调用语义。</p>
+        <p><strong>关联层</strong>：apiKeyHash 作为配额、审计与 Analytics 的稳定连接键。</p>
+        <p><strong>来源层</strong>：区分 CSV 导入与人工修正，支持历史解释。</p>
+        <p><strong>展示层</strong>：页面只读取非秘密 metadata 与安全掩码。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 464, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 代码位置：src/types/enterpriseKey.ts、src/services/api/enterpriseKeys.ts、useEnterpriseKeyStore.ts。

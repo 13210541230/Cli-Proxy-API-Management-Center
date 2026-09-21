@@ -1,0 +1,20 @@
+{
+  "id": "bf9179071",
+  "name": "Rebuild audit plugin",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\plugins\\enterprise-access-audit\\build.ps1 -OutputDirectory D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\.tmp\\enterprise-access-audit",
+  "description": "Rebuild and race-test the cross-origin audit plugin UI",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bf9179071.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788015706397,
+  "endTime": 1788015723510,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 57960,
+  "bytesWritten": 2245,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

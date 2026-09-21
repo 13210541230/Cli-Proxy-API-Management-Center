@@ -1,0 +1,14 @@
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] defaults: transition=fade, embed_fonts=off
+[open-kimi-ppt] preparing the local external-export file from browser-rendered pages
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\Downloads\okp-minimal\minimal.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] rendering page images in the browser
+[open-kimi-ppt] opening the public Kimi slide editor
+open-kimi-ppt export failed: agent-browser command failed (1): set viewport 1280 720
+✗ Invalid response: EOF while parsing a value at line 1 column 0 (after 5 retries - daemon may be busy or unresponsive)
+

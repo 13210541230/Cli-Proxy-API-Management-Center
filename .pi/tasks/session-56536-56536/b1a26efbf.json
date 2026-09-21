@@ -1,0 +1,21 @@
+{
+  "id": "b1a26efbf",
+  "name": "Rerun frontend telemetry",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/verify-frontend-telemetry.ps1",
+  "description": "Run frontend type-check and telemetry normalization test through a script",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b1a26efbf.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988529781,
+  "endTime": 1787988542019,
+  "exitCode": 2,
+  "signal": null,
+  "pid": 36612,
+  "bytesWritten": 213,
+  "isAgent": false,
+  "error": "Exited with code 2",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 240
+}

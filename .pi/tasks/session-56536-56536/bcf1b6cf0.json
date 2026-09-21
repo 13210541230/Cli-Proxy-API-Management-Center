@@ -1,0 +1,20 @@
+{
+  "id": "bcf1b6cf0",
+  "name": "Run Go race checks",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-go-race.ps1",
+  "description": "Run race detector over usage analytics, rollup, collector and store packages",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bcf1b6cf0.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787980560067,
+  "endTime": 1787980729784,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 67172,
+  "bytesWritten": 299,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 2400
+}

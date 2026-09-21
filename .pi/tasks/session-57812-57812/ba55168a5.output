@@ -1,0 +1,30 @@
+[open-kimi-ppt] prepared 87 local image resource(s), 35191211 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] defaults: transition=fade, embed_fonts=on
+[open-kimi-ppt] preparing the local external-export file from browser-rendered pages
+[open-kimi-ppt] prepared 87 local image resource(s), 35191211 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+Traceback (most recent call last):
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 1074, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 1058, in main
+    summary = export_pptx(
+              ^^^^^^^^^^^^
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 919, in export_pptx
+    fallback = prepare_external_export(source, temp_dir / "fallback")
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 289, in prepare_external_export
+    export_images(source, image_output, force=True)
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_images.py", line 325, in export_images
+    browser.run(
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 612, in run
+    raise ExportError(
+export_pptx.ExportError: agent-browser command failed (1): wait --fn document.documentElement.dataset.deckStatus === "ready"
+✗ Wait timed out after 60000ms
+

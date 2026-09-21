@@ -1,0 +1,21 @@
+{
+  "id": "b70ba4d89",
+  "name": "Inspect CPA Manager Plus",
+  "command": "rm -rf /tmp/cpamp-research && git clone --depth 1 https://github.com/seakee/CPA-Manager-Plus.git /tmp/cpamp-research && printf '\\n== relevant files ==\\n' && find /tmp/cpamp-research -type f | grep -Ei '(usage|monitor|analytics|event|sqlite|database|request)' | head -240 && printf '\\n== usage references ==\\n' && grep -RIn --exclude-dir=.git -E 'usage_events|UsageSummary|usage-service|usage analytics|usageAnalytics|event.*usage|aggregation|rollup' /tmp/cpamp-research | head -240",
+  "description": "Clone and inspect CPA Manager Plus usage implementation",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b70ba4d89.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787906377344,
+  "endTime": 1787906387304,
+  "exitCode": 255,
+  "signal": null,
+  "pid": 5872,
+  "bytesWritten": 158,
+  "isAgent": false,
+  "error": "Exited with code 255",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

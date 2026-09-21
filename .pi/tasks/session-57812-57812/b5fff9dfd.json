@@ -1,0 +1,21 @@
+{
+  "id": "b5fff9dfd",
+  "name": "Render PowerPoint Order",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\render-patched-jinma.ps1",
+  "description": "Render patched PPTX through LibreOffice to verify PowerPoint order",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\b5fff9dfd.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788658972725,
+  "endTime": 1788658973225,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 36104,
+  "bytesWritten": 628,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

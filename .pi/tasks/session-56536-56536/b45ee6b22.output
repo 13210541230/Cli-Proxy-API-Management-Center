@@ -1,0 +1,60 @@
+
+> cli-proxy-webui-react@0.0.0 type-check
+> tsc --noEmit
+
+
+> cli-proxy-webui-react@0.0.0 test
+> vitest run
+
+node.exe : The system cannot find the path specified.
+At line:1 char:1
++ & "C:\Program Files\nodejs/node.exe" "C:\Program Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (The system cann...path specified.:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+The system cannot find the path specified.
+
+ RUN  v4.1.5 D:/C_projects/Cli-Proxy-API-Management-Center
+
+ ❯ tests/repoSourceIntegrity.test.mjs (6 tests | 1 failed) 459ms
+     × keeps changed text files free of hidden control unicode 405ms
+(node:15340) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51556) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+ FAIL  tests/repoSourceIntegrity.test.mjs > repo source integrity > keeps changed text files free of hidden control uni
+code
+AssertionError: expected [ …(12) ] to deeply equal []
+- Expected
++ Received
+- []
++ [
++   "usage-service/internal/httpapi/web/management.html:61:173361 contains U+FEFF (\"﻿\")",
++   "usage-service/internal/httpapi/web/management.html:142:3811 contains U+FEFF (\"﻿\")",
++   "usage-service/internal/httpapi/web/management.html:151:889 contains U+FEFF (\"﻿\")",
++   "usage-service/internal/httpapi/web/management.html:181:8 contains U+200B (\"​\")",
++   "usage-service/internal/httpapi/web/management.html:181:9 contains U+200E (\"‎\")",
++   "usage-service/internal/httpapi/web/management.html:181:10 contains U+200F (\"‏\")",
++   "usage-service/internal/httpapi/web/management.html:181:23 contains U+202D (\"‭\")",
++   "usage-service/internal/httpapi/web/management.html:181:24 contains U+202E (\"‮\")",
++   "usage-service/internal/httpapi/web/management.html:181:25 contains U+2066 (\"⁦\")",
++   "usage-service/internal/httpapi/web/management.html:181:26 contains U+2067 (\"⁧\")",
++   "usage-service/internal/httpapi/web/management.html:181:27 contains U+2069 (\"⁩\")",
++   "usage-service/internal/httpapi/web/management.html:181:28 contains U+FEFF (\"﻿\")",
++ ]
+ ❯ tests/repoSourceIntegrity.test.mjs:139:24
+    137|     });
+    138|
+    139|     expect(violations).toEqual([]);
+       |                        ^
+    140|   }, 15_000);
+    141|
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+ Test Files  1 failed | 28 passed (29)
+      Tests  1 failed | 187 passed (188)
+   Start at  21:19:31
+   Duration  2.27s (transform 12.13s, setup 0ms, import 17.63s, tests 1.46s, environment 4ms)
+

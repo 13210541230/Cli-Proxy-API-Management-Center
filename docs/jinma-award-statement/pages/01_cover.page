@@ -1,0 +1,55 @@
+pageType: cover
+background:
+  type: image
+  src: "media/template-cover.jpg"
+  fit: {mode: cover}
+elements:
+  - elementId: cover-kicker
+    elementType: text
+    bounds: [84, 126, 520, 24]
+    content:
+      fontFamily: "Arial"
+      fontSize: 15
+      bold: true
+      color: "$white"
+      letterSpacing: 1.8
+      wrap: false
+      text: 2025年度 金码奖
+  - elementId: cover-title
+    elementType: text
+    bounds: [84, 166, 650, 116]
+    content:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 37
+      bold: true
+      color: "$white"
+      lineHeight: 1.16
+      text: |
+        <p>基于 CLIProxyAPI 的</p>
+        <p>企业级 AI 网关管理平台建设</p>
+  - elementId: cover-subtitle
+    elementType: text
+    bounds: [86, 304, 610, 62]
+    content:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 19
+      color: "$white"
+      lineHeight: 1.42
+      text: |
+        <p>企业化改造、工程实施与产品化交付</p>
+        <p>研发中心</p>
+  - elementId: cover-rule
+    elementType: line
+    bounds: [86, 390, 320, 3]
+    viewBox: [320, 3]
+    points: "0,1 320,1"
+    border: {style: solid, width: 3, color: "$white"}
+  - elementId: cover-foot
+    elementType: text
+    bounds: [86, 420, 620, 28]
+    content:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 14
+      color: "$white"
+      wrap: false
+      text: 从统一接入延伸至身份治理、用量分析、安全审计与可验证交付

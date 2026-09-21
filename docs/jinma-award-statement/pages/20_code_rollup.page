@@ -1,0 +1,79 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 需求四｜安全审计与插件扩展边界
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 在扩展审计能力的同时，确保来源、方法、路径、凭证和原始数据均处于受控边界。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>业务需求</strong></p>
+        <p>企业审计能力以插件形态独立演进，不改变核心管理面板的稳定性。</p>
+        <p>页面复用宿主认证能力。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      color: "$white"
+      text: |
+        <p><strong>安全边界</strong></p>
+        <p>校验 iframe origin、HTTP method、插件路径与资源 allowlist。</p>
+        <p>管理凭证不进入插件页面。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>数据要求</strong></p>
+        <p>分析明细仅提供掩码、Hash 和非秘密 metadata，不暴露 raw_json 与明文 Key。</p>
+  - elementId: flow
+    elementType: text
+    bounds: [60, 380, 840, 58]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      align: [center, middle]
+      text: 审计需求 → 插件契约 → 来源与路径校验 → 数据脱敏 → 独立交付
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 相关功能：Enterprise Access Audit、插件资源管理、iframe 通信和 Analytics 安全展示。

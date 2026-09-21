@@ -1,0 +1,20 @@
+{
+  "id": "bf387ce06",
+  "name": "验证外部导出协议",
+  "command": "python D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_pptx.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/minimal.external.pptx --force --no-embed-fonts",
+  "description": "跳过失效的 viewport 命令，验证最新版 Kimi 外部导出桥接和 PPTX 下载。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bf387ce06.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788575091875,
+  "endTime": 1788575166961,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 43644,
+  "bytesWritten": 1126,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

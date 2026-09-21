@@ -1,0 +1,78 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 需求三｜高并发用量分析与可重建数据链路
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 在长时间范围和高并发访问下，同时满足查询性能、数据准确与结果可解释。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>性能要求</strong></p>
+        <p>避免每次请求整批拉取与内存汇总；汇总、趋势、维度排名按 Tab 按需返回。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>数据要求</strong></p>
+        <p>usage_events 保留原始事实；Rollup 作为可删除、可重建的读取加速层。</p>
+        <p>明细使用独立分页。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>解释要求</strong></p>
+        <p>Rollup 未覆盖、筛选不支持或部分日期时，必须回退 raw，并返回 source / complete。</p>
+        <p>禁止静默少统计。</p>
+  - elementId: flow
+    elementType: text
+    bounds: [60, 380, 840, 58]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      align: [center, middle]
+      text: 原始事实 → 聚合加速 → 按需查询 → 明细分页 → 来源与完整性说明
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 相关功能：usage_events、Hourly / Daily Rollup、维度聚合、Analytics include 与 Keyset 分页。

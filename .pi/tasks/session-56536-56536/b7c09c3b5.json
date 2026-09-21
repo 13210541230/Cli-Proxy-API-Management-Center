@@ -1,0 +1,20 @@
+{
+  "id": "b7c09c3b5",
+  "name": "Smoke embedded binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Start the compiled binary and verify health plus embedded panel response",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b7c09c3b5.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788008533689,
+  "endTime": 1788008537055,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 8924,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

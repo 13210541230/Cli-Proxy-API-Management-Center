@@ -1,0 +1,10 @@
+[open-kimi-ppt] prepared 20 local image resource(s), 5291477 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] starting debug browser on port 9337: C:\Users\20557\AppData\Local\Google\Chrome\Application\chrome.exe
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] defaults: transition=fade, embed_fonts=on
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] generating PPTX in the browser
+open-kimi-ppt export failed: timed out waiting for download; observed files:
+  (none)

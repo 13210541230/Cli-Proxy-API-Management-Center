@@ -1,0 +1,20 @@
+{
+  "id": "bf035208c",
+  "name": "Smoke API key toggle",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Verify the embedded binary serves the fixed API Key interaction build",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bf035208c.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788010342102,
+  "endTime": 1788010344681,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 64892,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

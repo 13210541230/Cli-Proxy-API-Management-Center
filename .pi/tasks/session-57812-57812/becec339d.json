@@ -1,0 +1,20 @@
+{
+  "id": "becec339d",
+  "name": "Render Template Deck",
+  "command": "python C:/Users/20557/.agents/skills/ppt-to-images/scripts/ppt_to_images.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx -o D:/Downloads/jinma-2026-template-images -w 1920",
+  "description": "Render the rebuilt template-based deck with PowerPoint",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\becec339d.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788671533436,
+  "endTime": 1788671539743,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 35244,
+  "bytesWritten": 1061,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

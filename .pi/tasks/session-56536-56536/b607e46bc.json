@@ -1,0 +1,20 @@
+{
+  "id": "b607e46bc",
+  "name": "Smoke normalized binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Verify the rebuilt binary serves the normalized embedded panel",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b607e46bc.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788008716206,
+  "endTime": 1788008719377,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 23816,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

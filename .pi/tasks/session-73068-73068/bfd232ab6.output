@@ -1,0 +1,138 @@
+[open-kimi-ppt] prepared 87 local image resource(s), 35200685 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] rendering page images in the browser
+{
+  "pages": 25,
+  "overview": "D:\\C_projects\\Cli-Proxy-API-Management-Center\\docs\\jinma-award-statement\\.qa-images\\overview.jpg",
+  "output": "D:\\C_projects\\Cli-Proxy-API-Management-Center\\docs\\jinma-award-statement\\.qa-images",
+  "images": [
+    {
+      "index": 1,
+      "image": "pages/1.jpeg",
+      "page": "pages/01_cover.page"
+    },
+    {
+      "index": 2,
+      "image": "pages/2.jpeg",
+      "page": "pages/02_highlights.page"
+    },
+    {
+      "index": 3,
+      "image": "pages/3.jpeg",
+      "page": "pages/03_baseline.page"
+    },
+    {
+      "index": 4,
+      "image": "pages/4.jpeg",
+      "page": "pages/04_architecture.page"
+    },
+    {
+      "index": 5,
+      "image": "pages/5.jpeg",
+      "page": "pages/05_enterprise_keys.page"
+    },
+    {
+      "index": 6,
+      "image": "pages/6.jpeg",
+      "page": "pages/08_security_plugin.page"
+    },
+    {
+      "index": 7,
+      "image": "pages/7.jpeg",
+      "page": "pages/12_outputs.page"
+    },
+    {
+      "index": 8,
+      "image": "pages/8.jpeg",
+      "page": "pages/16_code_spend_formula.page"
+    },
+    {
+      "index": 9,
+      "image": "pages/9.jpeg",
+      "page": "pages/20_code_rollup.page"
+    },
+    {
+      "index": 10,
+      "image": "pages/10.jpeg",
+      "page": "pages/06_quota_alerts.page"
+    },
+    {
+      "index": 11,
+      "image": "pages/11.jpeg",
+      "page": "pages/07_usage_analytics.page"
+    },
+    {
+      "index": 12,
+      "image": "pages/12.jpeg",
+      "page": "pages/09_workbench.page"
+    },
+    {
+      "index": 13,
+      "image": "pages/13.jpeg",
+      "page": "pages/10_delivery.page"
+    },
+    {
+      "index": 14,
+      "image": "pages/14.jpeg",
+      "page": "pages/11_contribution.page"
+    },
+    {
+      "index": 15,
+      "image": "pages/15.jpeg",
+      "page": "pages/13_code_enterprise_types.page"
+    },
+    {
+      "index": 16,
+      "image": "pages/16.jpeg",
+      "page": "pages/14_code_enterprise_api.page"
+    },
+    {
+      "index": 17,
+      "image": "pages/17.jpeg",
+      "page": "pages/15_code_key_import.page"
+    },
+    {
+      "index": 18,
+      "image": "pages/18.jpeg",
+      "page": "pages/17_code_spend_policy.page"
+    },
+    {
+      "index": 19,
+      "image": "pages/19.jpeg",
+      "page": "pages/18_code_quota_boundary.page"
+    },
+    {
+      "index": 20,
+      "image": "pages/20.jpeg",
+      "page": "pages/19_code_pending_recovery.page"
+    },
+    {
+      "index": 21,
+      "image": "pages/21.jpeg",
+      "page": "pages/21_code_analytics_contract.page"
+    },
+    {
+      "index": 22,
+      "image": "pages/22.jpeg",
+      "page": "pages/22_code_monitoring_mapper.page"
+    },
+    {
+      "index": 23,
+      "image": "pages/23.jpeg",
+      "page": "pages/23_code_plugin_guard.page"
+    },
+    {
+      "index": 24,
+      "image": "pages/24.jpeg",
+      "page": "pages/24_code_tests_release.page"
+    },
+    {
+      "index": 25,
+      "image": "pages/25.jpeg",
+      "page": "pages/25_final.page"
+    }
+  ]
+}

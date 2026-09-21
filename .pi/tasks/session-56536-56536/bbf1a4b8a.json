@@ -1,0 +1,20 @@
+{
+  "id": "bbf1a4b8a",
+  "name": "Verify workspace polish",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-verification.ps1",
+  "description": "Run final frontend verification for config, usage, OAuth, logs, and system pages",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bbf1a4b8a.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788008237995,
+  "endTime": 1788008278741,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 64252,
+  "bytesWritten": 1978,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

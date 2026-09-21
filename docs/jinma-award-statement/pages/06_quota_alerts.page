@@ -1,0 +1,136 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: AI 辅助开发方法｜将业务目标转化为可执行工作包
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: AI 用于理解代码、组织信息与生成候选方案，关键边界与验收标准由工程判断确定。
+  - elementId: s1
+    elementType: shape
+    bounds: [60, 158, 170, 100]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s1t
+    elementType: text
+    bounds: [74, 174, 142, 68]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 需求原文
+  - elementId: s2
+    elementType: shape
+    bounds: [270, 146, 190, 124]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s2t
+    elementType: text
+    bounds: [286, 162, 158, 92]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.32
+      text: |
+        <p>AI 检索与拆解</p>
+        <p style="font-size:14px">领域 · API · 数据 · 风险</p>
+  - elementId: s3
+    elementType: shape
+    bounds: [500, 158, 170, 100]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s3t
+    elementType: text
+    bounds: [514, 174, 142, 68]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 任务与依赖
+  - elementId: s4
+    elementType: shape
+    bounds: [710, 146, 190, 124]
+    shapeName: rect
+    fill: {type: solid, color: "$blue"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s4t
+    elementType: text
+    bounds: [726, 162, 158, 92]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.32
+      text: |
+        <p>实现与验收</p>
+        <p style="font-size:14px">代码 · 测试 · 运行 · 交付</p>
+  - elementId: a1
+    elementType: line
+    bounds: [230, 208, 40, 2]
+    viewBox: [40, 2]
+    points: "0,1 40,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: a2
+    elementType: line
+    bounds: [460, 208, 40, 2]
+    viewBox: [40, 2]
+    points: "0,1 40,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: a3
+    elementType: line
+    bounds: [670, 208, 40, 2]
+    viewBox: [40, 2]
+    points: "0,1 40,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: b1
+    elementType: text
+    bounds: [60, 322, 250, 118]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>AI 适合处理</strong></p>
+        <p>跨文件检索、调用链整理、差异归纳、候选测试生成和材料编排。</p>
+  - elementId: b2
+    elementType: text
+    bounds: [355, 322, 250, 118]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>工程师负责确定</strong></p>
+        <p>需求边界、兼容策略、失败语义、安全约束、取舍理由和最终验收。</p>
+  - elementId: b3
+    elementType: text
+    bounds: [650, 322, 250, 118]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>交付物保持可复核</strong></p>
+        <p>工作包包含输入、输出、影响范围、测试命令和验收证据，不以意图陈述替代结果。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 方法适用于企业 Key、额度治理、Usage Analytics 与插件审计等建设任务。

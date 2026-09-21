@@ -1,0 +1,20 @@
+{
+  "id": "b0a097fb3",
+  "name": "Run final UI checks",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./scripts/windows/verify-usage-ui.ps1",
+  "description": "Run complete frontend type-check, tests, lint, and single-file build",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b0a097fb3.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988942821,
+  "endTime": 1787988988337,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 31076,
+  "bytesWritten": 3206,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

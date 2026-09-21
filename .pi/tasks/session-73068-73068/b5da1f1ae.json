@@ -1,0 +1,20 @@
+{
+  "id": "b5da1f1ae",
+  "name": "Export Corrected Deck",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\export-jinma-pptx-latest.ps1",
+  "description": "Export corrected order and layout to editable PPTX",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b5da1f1ae.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788624883750,
+  "endTime": 1788624959257,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 22648,
+  "bytesWritten": 1337,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

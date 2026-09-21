@@ -1,0 +1,20 @@
+{
+  "id": "b83474711",
+  "name": "Export Final PPTX",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-jinma-pptx-latest.ps1",
+  "description": "重新导出修复溢出后的 25 页最终 PPTX，并写入 25 个淡入淡出转场。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b83474711.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788586359493,
+  "endTime": 1788586435179,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 38472,
+  "bytesWritten": 1337,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

@@ -1,0 +1,20 @@
+[open-kimi-ppt] prepared 6 local image resource(s), 1544488 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] deckStatus=ready; waiting 30s for slide thumbnails/canvas render
+[open-kimi-ppt] rendering page images in the browser
+patched image export failed: timed out waiting for download; observed files:
+  (none)
+Traceback (most recent call last):
+  File "D:\Downloads\export-jinma-images-wait.py", line 17, in <module>
+    summary=mod.export_images(manifest,out,False,True)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_images.py", line 342, in export_images
+    downloaded = find_download(
+                 ^^^^^^^^^^^^^^
+  File "C:\Users\20557\.agents\skills\open-kimi-ppt\scripts\export_pptx.py", line 583, in find_download
+    raise ExportError(f"timed out waiting for download; observed files:\n  {visible}")
+export_pptx.ExportError: timed out waiting for download; observed files:
+  (none)

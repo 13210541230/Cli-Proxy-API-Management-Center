@@ -1,0 +1,20 @@
+{
+  "id": "b7bb0e2c6",
+  "name": "Run frontend lint",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-lint.ps1",
+  "description": "Run final frontend lint and preserve warnings in verification log",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b7bb0e2c6.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787981234276,
+  "endTime": 1787981251509,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 64164,
+  "bytesWritten": 1136,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

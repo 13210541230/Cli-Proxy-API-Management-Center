@@ -1,0 +1,20 @@
+{
+  "id": "b698194da",
+  "name": "验证 URL 回传导出",
+  "command": "python D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_pptx.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/minimal.external.pptx --force --no-embed-fonts",
+  "description": "验证最新版 handleExport 回传 URL 后由本地运行器直接取回 PPTX，绕过 Chrome 隐藏 iframe 下载限制。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b698194da.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788575716713,
+  "endTime": 1788575732242,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 37236,
+  "bytesWritten": 1161,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

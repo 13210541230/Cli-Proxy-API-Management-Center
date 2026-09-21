@@ -1,0 +1,20 @@
+{
+  "id": "b485f9ba3",
+  "name": "Retry layout build",
+  "command": "python D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/build_expanded_template_deck.py",
+  "description": "Retry deck generation after releasing the PowerPoint file lock",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\b485f9ba3.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788708130558,
+  "endTime": 1788708131261,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 64788,
+  "bytesWritten": 386,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 120
+}

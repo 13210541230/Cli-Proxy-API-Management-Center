@@ -1,0 +1,79 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 需求一｜企业身份与凭证治理
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 上游 Key 保持协议兼容，旁路建立人员、部门、来源与历史关系，形成可审计身份模型。
+  - elementId: q1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: q1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>治理目标</strong></span></p>
+        <p>将 Key 与使用人、部门、邮箱及来源建立关系。</p>
+        <p>兼容 CPA Key 结构，保持原有接入方式。</p>
+  - elementId: q2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: q2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      color: "$white"
+      text: |
+        <p><span style="font-size:22px;color:$white"><strong>需求拆解</strong></span></p>
+        <p>批量导入、CSV 预览、部门解析、冲突处理、人工修正与历史查询。</p>
+  - elementId: q3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: q3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$blue"><strong>验收标准</strong></span></p>
+        <p>成功、警告、错误可区分；重复与部门缺失可修正；导入结果可追溯。</p>
+        <p>页面仅展示安全版本。</p>
+  - elementId: flow
+    elementType: text
+    bounds: [60, 380, 840, 58]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      align: [center, middle]
+      text: 需求 → 身份模型 → 预览与确认 → 写入与绑定 → 历史追踪
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 相关模块：企业 Key 管理、导入预览、绑定元数据、部门筛选与状态展示。

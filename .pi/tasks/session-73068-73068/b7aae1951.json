@@ -1,0 +1,21 @@
+{
+  "id": "b7aae1951",
+  "name": "Minimal PPTX Test",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-minimal.ps1",
+  "description": "用一页最小 PPTD 验证浏览器下载与 PPTX 导出链路是否正常。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b7aae1951.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535421132,
+  "endTime": 1788535514515,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 59992,
+  "bytesWritten": 403,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

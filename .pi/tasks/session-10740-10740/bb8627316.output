@@ -1,0 +1,11 @@
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go	1.048s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/auditlog	0.437s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/config	0.134s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/cyberpolicy	0.880s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/extract	0.879s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/intercept	1.735s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/management	(cached)
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/model	0.395s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/state	1.141s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/store	1.724s
+ok  	github.com/router-for-me/CLIProxyAPI/v7/plugins/enterprise-access-audit/go/internal/textclean	0.883s

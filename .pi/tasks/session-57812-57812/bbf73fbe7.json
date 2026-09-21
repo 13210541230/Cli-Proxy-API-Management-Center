@@ -1,0 +1,20 @@
+{
+  "id": "bbf73fbe7",
+  "name": "Render Expanded Template",
+  "command": "python C:/Users/20557/.agents/skills/ppt-to-images/scripts/ppt_to_images.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx -o D:/Downloads/jinma-expanded-template-images -w 1600",
+  "description": "Render expanded template-formatted deck with PowerPoint",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\bbf73fbe7.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788681745961,
+  "endTime": 1788681762702,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 67240,
+  "bytesWritten": 3035,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

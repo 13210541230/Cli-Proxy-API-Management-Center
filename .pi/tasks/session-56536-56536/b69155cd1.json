@@ -1,0 +1,21 @@
+{
+  "id": "b69155cd1",
+  "name": "Rebuild normalized binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Rebuild binary with normalized embedded HTML and verify hashes",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b69155cd1.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788008640180,
+  "endTime": 1788008654342,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 26540,
+  "bytesWritten": 1101,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

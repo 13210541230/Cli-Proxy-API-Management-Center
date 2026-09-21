@@ -1,0 +1,78 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例二验收｜度量、动作、恢复与异常保护
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 以可解释状态替代隐式副作用，确保限额治理能够执行、回溯和恢复。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>计算验收</strong></p>
+        <p>分别验证 cost / tokens、日 / 周窗口、缓存 Token 和失败请求排除。</p>
+        <p>结果与运营口径一致。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 178, 214, 144]
+    content:
+      style: "$body"
+      fontSize: 14
+      lineHeight: 1.22
+      text: |
+        <p><strong>动作验收</strong></p>
+        <p>默认规则与 Key 覆盖；pause、降级、通知和恢复窗口分别验证。</p>
+        <p>reason、expires_at 全程可追踪。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>异常验收</strong></p>
+        <p>上游返回 502、503、504、429 时执行有限重试；仍不可确认则保留现状，不执行暂停或恢复。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 372, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 402, 840, 62]
+    content:
+      fontSize: 21
+      bold: true
+      color: "$ink"
+      text: 验收结论：额度治理具备统一口径、明确动作、异常安全与状态恢复能力。

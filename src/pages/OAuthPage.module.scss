@@ -50,37 +50,38 @@
 }
 
 .content {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: $spacing-lg;
-  align-items: start;
+}
+
+.providerList {
+  display: flex;
+  flex-direction: column;
+  gap: $spacing-md;
 }
 
 .providerItem {
   min-width: 0;
 
   :global(.card) {
-    height: 100%;
+    padding: $spacing-md;
   }
 
-  &:last-child {
-    grid-column: span 2;
+  :global(.card-header) {
+    margin-bottom: $spacing-sm;
+  }
+
+  :global(.card-title) {
+    font-size: 15px;
+    font-weight: 600;
   }
 }
 
 .cardContent {
   display: flex;
   flex-direction: column;
-  gap: $spacing-md;
-
-  :global(.form-group) {
-    margin-bottom: 0;
-  }
-
-  :global(.status-badge) {
-    margin-bottom: 0;
-    align-self: flex-start;
-  }
+  gap: $spacing-sm;
 }
 
 .cardHint {

@@ -1,0 +1,20 @@
+{
+  "id": "bef435193",
+  "name": "重导最终页面图片",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_images.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd --output D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/.qa-final-images --force",
+  "description": "按最终修订后的 PPTD 重新导出浏览器页面图片，作为 PPTX 视觉交付底图并做最终检查。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bef435193.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788541417700,
+  "endTime": 1788541457117,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 41140,
+  "bytesWritten": 2085,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

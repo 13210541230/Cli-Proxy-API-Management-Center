@@ -1,0 +1,20 @@
+{
+  "id": "bfad32c6e",
+  "name": "Smoke selected trend binary",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\smoke-embedded-binary.ps1",
+  "description": "Verify rebuilt binary serves the selected-key trend UI panel",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\bfad32c6e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788009800077,
+  "endTime": 1788009803022,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 68540,
+  "bytesWritten": 100,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

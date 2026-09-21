@@ -1,0 +1,136 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例三｜Analytics 从查询问题拆解为数据链路
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 以“查询太慢且结果不可解释”为约束，分别设计事实源、聚合层、查询契约与分页边界。
+  - elementId: s1
+    elementType: shape
+    bounds: [60, 158, 180, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s1t
+    elementType: text
+    bounds: [76, 176, 148, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 原始事实
+  - elementId: s2
+    elementType: shape
+    bounds: [286, 146, 180, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: s2t
+    elementType: text
+    bounds: [300, 164, 152, 80]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>Rollup 加速</p>
+        <p style="font-size:14px">小时 · 日 · 维度</p>
+  - elementId: s3
+    elementType: shape
+    bounds: [512, 158, 180, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s3t
+    elementType: text
+    bounds: [526, 176, 152, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 按需查询
+  - elementId: s4
+    elementType: shape
+    bounds: [738, 146, 162, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$blue"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: s4t
+    elementType: text
+    bounds: [752, 164, 134, 80]
+    content:
+      align: [center, middle]
+      fontSize: 17
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>正确性保障</p>
+        <p style="font-size:14px">raw fallback</p>
+  - elementId: a1
+    elementType: line
+    bounds: [240, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: a2
+    elementType: line
+    bounds: [466, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: a3
+    elementType: line
+    bounds: [692, 204, 46, 2]
+    viewBox: [46, 2]
+    points: "0,1 46,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: b1
+    elementType: text
+    bounds: [60, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>拆解方式</strong></p>
+        <p>把“高并发查询”拆为事实保留、聚合重建、筛选适配、明细分页和降级说明五项任务。</p>
+  - elementId: b2
+    elementType: text
+    bounds: [355, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>实现选择</strong></p>
+        <p>summary、timeline、维度排名按 include 选择；events 使用独立 keyset，避免响应过度膨胀。</p>
+  - elementId: b3
+    elementType: text
+    bounds: [650, 314, 250, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>性能与正确性</strong></p>
+        <p>Rollup 只作加速；边界或不支持筛选回到 raw，并显式返回来源和完整性。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 设计结果：在高并发读取与原始事实保留之间建立可重建、可解释的平衡。

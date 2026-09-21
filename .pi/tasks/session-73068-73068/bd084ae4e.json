@@ -1,0 +1,20 @@
+{
+  "id": "bd084ae4e",
+  "name": "Render Final Layout",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\render-jinma-ppt-latest.ps1",
+  "description": "Re-render final deck after fixing order and overflow",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\bd084ae4e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788622781932,
+  "endTime": 1788622841402,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 17152,
+  "bytesWritten": 3495,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

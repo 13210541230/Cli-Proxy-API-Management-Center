@@ -1,0 +1,79 @@
+version: v2
+title: 2025年度金码奖申报陈述——从开源代理到企业级 AI 网关管理平台
+size: [960, 540]
+theme:
+  colors:
+    red: "#ED1B24"
+    blue: "#0667B1"
+    ink: "#16202A"
+    text: "#26323B"
+    muted: "#6B7280"
+    line: "#D7DDE3"
+    pale: "#F3F6F8"
+    green: "#2E9D50"
+    amber: "#C9821A"
+    white: "#FFFFFF"
+  textStyles:
+    title:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 30
+      bold: true
+      color: "$ink"
+      lineHeight: 1.12
+    subtitle:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 17
+      color: "$muted"
+      lineHeight: 1.3
+    body:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 16
+      color: "$text"
+      lineHeight: 1.42
+    bodySmall:
+      fontFamily: "Microsoft YaHei"
+      fontSize: 13
+      color: "$muted"
+      lineHeight: 1.3
+    label:
+      fontFamily: "Arial"
+      fontSize: 12
+      bold: true
+      color: "$blue"
+      letterSpacing: 1.2
+    number:
+      fontFamily: "Arial"
+      fontSize: 34
+      bold: true
+      color: "$red"
+    code:
+      fontFamily: "Consolas"
+      fontSize: 14
+      color: "$ink"
+      lineHeight: 1.3
+pages:
+  - pages/01_cover.page
+  - pages/02_highlights.page
+  - pages/05_enterprise_keys.page
+  - pages/03_baseline.page
+  - pages/04_architecture.page
+  - pages/06_quota_alerts.page
+  - pages/07_usage_analytics.page
+  - pages/08_security_plugin.page
+  - pages/09_workbench.page
+  - pages/10_delivery.page
+  - pages/11_contribution.page
+  - pages/12_outputs.page
+  - pages/13_code_enterprise_types.page
+  - pages/14_code_enterprise_api.page
+  - pages/15_code_key_import.page
+  - pages/16_code_spend_formula.page
+  - pages/17_code_spend_policy.page
+  - pages/18_code_quota_boundary.page
+  - pages/19_code_pending_recovery.page
+  - pages/20_code_rollup.page
+  - pages/21_code_analytics_contract.page
+  - pages/22_code_monitoring_mapper.page
+  - pages/23_code_plugin_guard.page
+  - pages/24_code_tests_release.page
+  - pages/25_final.page

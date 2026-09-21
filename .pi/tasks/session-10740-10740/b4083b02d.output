@@ -1,0 +1,17 @@
+
+> cli-proxy-webui-react@0.0.0 build
+> tsc && vite build
+
+The system cannot find the path specified.
+The system cannot find the path specified.
+[36mvite v8.0.10 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 739 modules transformed.
+rendering chunks...
+[plugin vite:singlefile] 
+
+[plugin vite:singlefile] Inlining: index-B_1tbMeD.js
+[plugin vite:singlefile] Inlining: style-B6DS2Mn8.css
+computing gzip size...
+dist/index.html  2,966.86 kB │ gzip: 870.47 kB
+
+[32m✓ built in 2.77s[39m

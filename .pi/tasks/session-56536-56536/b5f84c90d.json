@@ -1,0 +1,20 @@
+{
+  "id": "b5f84c90d",
+  "name": "Frontend usage tests",
+  "command": "npm test -- --run src/features/monitoring src/pages/MonitoringCenterPage.test.tsx",
+  "description": "Run monitoring and usage-related frontend tests",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b5f84c90d.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787905460861,
+  "endTime": 1787905464542,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 56172,
+  "bytesWritten": 589,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

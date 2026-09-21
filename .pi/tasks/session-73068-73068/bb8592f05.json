@@ -1,0 +1,21 @@
+{
+  "id": "bb8592f05",
+  "name": "Render PPT QA Final",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/render-jinma-ppt.ps1",
+  "description": "调试确认编辑器可用后，重新执行最终 PPT 图片导出。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\bb8592f05.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788534971418,
+  "endTime": 1788535228950,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 71960,
+  "bytesWritten": 580,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

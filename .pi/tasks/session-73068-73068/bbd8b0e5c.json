@@ -1,0 +1,21 @@
+{
+  "id": "bbd8b0e5c",
+  "name": "Render PPT QA Retry",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/render-jinma-ppt.ps1",
+  "description": "修正 Windows 启动方式后重新导出 PPT 图片并生成总览。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\bbd8b0e5c.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788534681789,
+  "endTime": 1788534802992,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 16676,
+  "bytesWritten": 598,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

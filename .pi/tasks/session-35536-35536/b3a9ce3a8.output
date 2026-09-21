@@ -1,0 +1,5130 @@
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push less than a minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Prepare FreeBSD output
+  * Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  * Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Prepare FreeBSD output
+  * Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push less than a minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Prepare FreeBSD output
+  * Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Prepare FreeBSD output
+  * Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  * Fetch tags
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push less than a minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  * Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 1 minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 1 minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  * Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 1 minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 1 minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-arm64-no-plugin (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  * Refresh models catalog
+  * Fetch tags
+  * Run actions/cache@v4
+  * Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 1 minute ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-amd64 no-plugin (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  * Build FreeBSD binary with CGO
+  * Build FreeBSD no-plugin binary
+  * Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build linux-arm64 no-plugin (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-arm64 glibc (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build freebsd-amd64 (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build linux-amd64 glibc (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 2 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build darwin-arm64 (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  * Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build darwin-amd64 (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  * Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-amd64 (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  * Run actions/upload-artifact@v4
+  * Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  * Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  * Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 3 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  * Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  * Post Run actions/checkout@v6
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* build windows-arm64 (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-arm64 in 4m0s (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* publish-checksums (ID 96365178401)
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+Refreshing run status every 3 seconds. Press Ctrl+C to quit.
+
+* v7.2.137 release · 32349088166
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-arm64 in 4m0s (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+* publish-checksums (ID 96365178401)
+  ✓ Set up job
+  ✓ Run actions/download-artifact@v4
+  * Publish final checksums
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+✓ v7.2.137 release · 32349088166
+Triggered via push about 4 minutes ago
+
+JOBS
+✓ prepare-release in 11s (ID 96364081625)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Create release
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 no-plugin in 1m42s (ID 96364138287)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 no-plugin in 1m48s (ID 96364138288)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-arm64-no-plugin in 1m31s (ID 96364138294)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  - Install FreeBSD cross-build dependencies
+  - Build FreeBSD binary with CGO
+  ✓ Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-amd64 in 3m6s (ID 96364138332)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build darwin-arm64 in 3m1s (ID 96364138333)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-amd64 glibc in 2m17s (ID 96364138336)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-amd64 in 3m4s (ID 96364138340)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build windows-arm64 in 4m0s (ID 96364138345)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build freebsd-amd64 in 2m4s (ID 96364138347)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Run actions/cache@v4
+  ✓ Generate Build Metadata
+  ✓ Prepare FreeBSD output
+  ✓ Install FreeBSD cross-build dependencies
+  ✓ Build FreeBSD binary with CGO
+  - Build FreeBSD no-plugin binary
+  ✓ Package FreeBSD archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/cache@v4
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ build linux-arm64 glibc in 1m50s (ID 96364138436)
+  ✓ Set up job
+  ✓ Run actions/checkout@v6
+  ✓ Run actions/setup-go@v6
+  ✓ Refresh models catalog
+  ✓ Fetch tags
+  ✓ Generate Build Metadata
+  ✓ Build archive
+  ✓ Run actions/upload-artifact@v4
+  ✓ Upload release assets
+  ✓ Refresh release checksums
+  ✓ Post Run actions/setup-go@v6
+  ✓ Post Run actions/checkout@v6
+  ✓ Complete job
+✓ publish-checksums in 10s (ID 96365178401)
+  ✓ Set up job
+  ✓ Run actions/download-artifact@v4
+  ✓ Publish final checksums
+  ✓ Complete job
+
+ANNOTATIONS
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/cache@v4, actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build freebsd-arm64-no-plugin: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+build linux-arm64 glibc: .github#2
+
+! Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/download-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
+publish-checksums: .github#2
+

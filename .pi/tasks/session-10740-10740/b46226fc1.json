@@ -1,0 +1,20 @@
+{
+  "id": "b46226fc1",
+  "name": "监控双仓发布",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./.pi/tmp/monitor-v1.21.11-v7.2.147.ps1",
+  "description": "等待 v1.21.11 与 v7.2.147 工作流完成并校验 Release 资产及联合包内管理中心版本",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-10740-10740\\b46226fc1.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788709014845,
+  "endTime": 1788709655320,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 77988,
+  "bytesWritten": 956,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 3600
+}

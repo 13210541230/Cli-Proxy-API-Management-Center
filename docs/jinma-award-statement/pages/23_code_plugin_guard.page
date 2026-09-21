@@ -1,0 +1,76 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例四验收｜扩展能力可用、越权访问可拒绝
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 以正向功能、拒绝路径、数据脱敏和兼容降级共同判定安全插件是否可交付。
+  - elementId: c1
+    elementType: shape
+    bounds: [60, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c1t
+    elementType: text
+    bounds: [78, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>正向能力</strong></p>
+        <p>企业审计插件可读取授权的非秘密 metadata、auth-files 投影和模型目录。</p>
+        <p>页面通过宿主完成请求。</p>
+  - elementId: c2
+    elementType: shape
+    bounds: [355, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: c2t
+    elementType: text
+    bounds: [373, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>拒绝能力</strong></p>
+        <p>foreign origin、越权 method、非法路径、缺少 pluginId 与路径穿越均拒绝；结果可解释。</p>
+  - elementId: c3
+    elementType: shape
+    bounds: [650, 158, 250, 174]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: c3t
+    elementType: text
+    bounds: [668, 180, 214, 132]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>兼容结果</strong></p>
+        <p>旧 CPA 不具备插件 API 时，核心管理面板保持可用；插件能力不阻断主流程。</p>
+        <p>测试结果纳入发布验收。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 372, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 402, 840, 62]
+    content:
+      fontSize: 21
+      bold: true
+      color: "$ink"
+      text: 验收结论：插件扩展与核心管理能力隔离，扩展可用性与安全边界同时得到验证。

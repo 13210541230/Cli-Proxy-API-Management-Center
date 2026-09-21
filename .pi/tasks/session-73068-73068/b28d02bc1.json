@@ -1,0 +1,21 @@
+{
+  "id": "b28d02bc1",
+  "name": "Render PPT QA",
+  "command": "python 'C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_images.py' 'D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd' --output 'D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/.qa-images' --force",
+  "description": "通过 open-kimi-ppt 导出 13 页图片总览，执行视觉质检前的渲染。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b28d02bc1.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788534617084,
+  "endTime": 1788534617248,
+  "exitCode": 2,
+  "signal": null,
+  "pid": 70120,
+  "bytesWritten": 183,
+  "isAgent": false,
+  "error": "Exited with code 2",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

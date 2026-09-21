@@ -1,0 +1,20 @@
+{
+  "id": "b40452991",
+  "name": "复测网页端下载",
+  "command": "python D:/Downloads/check-local-editor-export.py",
+  "description": "用轮询方式等待本地网页端导出，避开 agent-browser wait 的 60 秒内部上限并捕获真实错误。",
+  "status": "killed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b40452991.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788659958407,
+  "endTime": 1788660841232,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 72292,
+  "bytesWritten": 7260,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1500
+}

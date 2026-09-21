@@ -1,0 +1,21 @@
+{
+  "id": "b93358c87",
+  "name": "测试最小 PPTX 导出",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_pptx.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/minimal.pptx --force --no-embed-fonts",
+  "description": "用单页纯文本 PPTD 验证官方 PPTX 导出链路本身是否可用，隔离金码奖内容兼容性问题。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b93358c87.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788540860193,
+  "endTime": 1788541103473,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 39480,
+  "bytesWritten": 403,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

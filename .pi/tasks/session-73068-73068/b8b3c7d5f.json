@@ -1,0 +1,20 @@
+{
+  "id": "b8b3c7d5f",
+  "name": "Rerender Title Fixes",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/render-jinma-ppt-latest.ps1",
+  "description": "重新渲染修复标题换行后的 25 页版本，复核新增案例页面。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b8b3c7d5f.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788595171975,
+  "endTime": 1788595232524,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 8012,
+  "bytesWritten": 3495,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

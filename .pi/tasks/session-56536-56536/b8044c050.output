@@ -1,0 +1,3 @@
+ok  	github.com/seakee/cpa-manager/usage-service/internal/usage	0.034s
+ok  	github.com/seakee/cpa-manager/usage-service/internal/store	10.404s
+ok  	github.com/seakee/cpa-manager/usage-service/internal/analytics	0.716s

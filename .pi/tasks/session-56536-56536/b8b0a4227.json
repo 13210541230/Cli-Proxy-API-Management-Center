@@ -1,0 +1,20 @@
+{
+  "id": "b8b0a4227",
+  "name": "Build global plugin bridge",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\build-embedded-release.ps1",
+  "description": "Build the global plugin bridge fix into the manager binary",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b8b0a4227.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788017961468,
+  "endTime": 1788017977048,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 28156,
+  "bytesWritten": 945,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

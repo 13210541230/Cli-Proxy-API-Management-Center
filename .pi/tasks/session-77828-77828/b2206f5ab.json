@@ -1,0 +1,21 @@
+{
+  "id": "b2206f5ab",
+  "name": "导出金码奖 PPTX",
+  "command": "python C:/Users/20557/.agents/skills/open-kimi-ppt/scripts/export_pptx.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptd --output D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx --force",
+  "description": "视觉复检通过后，使用修复后的 exporter 生成最终金码奖 PPTX，并校验 ZIP、页数和淡入淡出切换。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b2206f5ab.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788539401926,
+  "endTime": 1788539499845,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 56124,
+  "bytesWritten": 652,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

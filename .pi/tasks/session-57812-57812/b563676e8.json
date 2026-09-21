@@ -1,0 +1,20 @@
+{
+  "id": "b563676e8",
+  "name": "Retry Ordered Export",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\export-jinma-pptx-current.ps1",
+  "description": "Retry export with the established browser-render wait workaround",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\b563676e8.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788630863476,
+  "endTime": 1788630996125,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 31276,
+  "bytesWritten": 1386,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

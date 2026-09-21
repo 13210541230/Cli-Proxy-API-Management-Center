@@ -1,0 +1,20 @@
+{
+  "id": "b2694e15f",
+  "name": "复核视觉版 PPTX",
+  "command": "python C:/Users/20557/.agents/skills/ppt-to-images/scripts/ppt_to_images.py D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/jinma-award-statement.pptx -o D:/C_projects/Cli-Proxy-API-Management-Center/docs/jinma-award-statement/.qa-pptx-final-images -w 1600",
+  "description": "将最终图像版 PPTX 再经 PowerPoint 渲染，确认全页底图无裁切、无黑边且页数完整。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b2694e15f.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788541584139,
+  "endTime": 1788541591851,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 31928,
+  "bytesWritten": 2409,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

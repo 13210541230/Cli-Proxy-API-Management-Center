@@ -1,0 +1,20 @@
+{
+  "id": "ba7d4bd6e",
+  "name": "Check telemetry utility",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -Command \"& { npm test -- --run src/utils/usage.test.ts; exit $LASTEXITCODE }\"",
+  "description": "Run the new frontend telemetry normalization test",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\ba7d4bd6e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787988472342,
+  "endTime": 1787988473904,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 53244,
+  "bytesWritten": 395,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 180
+}

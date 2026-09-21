@@ -1,0 +1,21 @@
+{
+  "id": "bae28d655",
+  "name": "启动审计界面预览",
+  "command": "cd \"D:/C_projects\" && python -m http.server 18765",
+  "description": "为企业审计插件 UI 视觉验证启动本地静态服务器",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-10740-10740\\bae28d655.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788706974885,
+  "endTime": 1788707579167,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 29912,
+  "bytesWritten": 2079,
+  "isAgent": false,
+  "error": "Timed out after 600s",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

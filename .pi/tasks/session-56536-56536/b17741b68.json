@@ -1,0 +1,20 @@
+{
+  "id": "b17741b68",
+  "name": "Rerun frontend checks",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-frontend-verification.ps1",
+  "description": "Retry frontend verification with native stderr handling fixed",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b17741b68.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787981154106,
+  "endTime": 1787981188002,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 55176,
+  "bytesWritten": 1980,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

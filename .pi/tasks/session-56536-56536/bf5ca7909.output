@@ -1,0 +1,44 @@
+
+> cli-proxy-webui-react@0.0.0 type-check
+> tsc --noEmit
+
+
+> cli-proxy-webui-react@0.0.0 test
+> vitest run --run
+
+The system cannot find the path specified.
+The system cannot find the path specified.
+
+ RUN  v4.1.5 D:/C_projects/Cli-Proxy-API-Management-Center
+
+(node:46656) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17100) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  31 passed (31)
+      Tests  193 passed (193)
+   Start at  22:03:21
+   Duration  2.31s (transform 13.23s, setup 0ms, import 18.31s, tests 1.50s, environment 4ms)
+
+
+> cli-proxy-webui-react@0.0.0 lint
+> eslint . --ext ts,tsx --report-unused-disable-directives
+
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\App.tsx
+  58:6  warning  React Hook useEffect has missing dependencies: 'language' and 'setLanguage'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\components\config\VisualConfigEditorBlocks.apiKeyAliasDelete.test.tsx
+  38:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  43:36  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  48:44  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\pages\ConfigPage.tsx
+  461:18  warning  'alertError' is defined but never used  @typescript-eslint/no-unused-vars
+
+D:\C_projects\Cli-Proxy-API-Management-Center\src\pages\QuotaLimitsPage.tsx
+  34:10  warning  '_config' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 6 problems (0 errors, 6 warnings)
+

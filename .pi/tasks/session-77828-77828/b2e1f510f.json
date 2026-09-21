@@ -1,0 +1,20 @@
+{
+  "id": "b2e1f510f",
+  "name": "确认网页端下载",
+  "command": "python D:/Downloads/check-local-editor-export.py",
+  "description": "在修复服务端超时参数后，再次真实点击网页端导出下载并确认页面显示成功。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b2e1f510f.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788662097757,
+  "endTime": 1788662123825,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 26436,
+  "bytesWritten": 5488,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1500
+}

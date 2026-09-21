@@ -1,0 +1,21 @@
+{
+  "id": "b016b777b",
+  "name": "Render PPT QA Wait",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-jinma-images-wait.ps1",
+  "description": "利用已确认的渲染竞态修复：ready 后等待画布完成，再导出图片总览。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b016b777b.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535923318,
+  "endTime": 1788536199326,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 71572,
+  "bytesWritten": 1231,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

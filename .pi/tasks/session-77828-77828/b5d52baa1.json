@@ -1,0 +1,20 @@
+{
+  "id": "b5d52baa1",
+  "name": "检查导出对话框 DOM",
+  "command": "python D:/Downloads/debug-pptx-dialog-dom.py",
+  "description": "读取官方导出 iframe 中的按钮、格式选项、禁用状态和点击后 DOM 变化，确定 PPTX 下载按钮为何无实际下载。",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b5d52baa1.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788540430910,
+  "endTime": 1788540444577,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 3784,
+  "bytesWritten": 55442,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

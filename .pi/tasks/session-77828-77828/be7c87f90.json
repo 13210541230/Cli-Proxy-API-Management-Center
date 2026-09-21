@@ -1,0 +1,21 @@
+{
+  "id": "be7c87f90",
+  "name": "验证图片渲染流程",
+  "command": "python D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_images.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/.qa-images --force",
+  "description": "单独验证最新版 Kimi 图片导出及 Windows 调试浏览器会话是否稳定。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\be7c87f90.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788574634749,
+  "endTime": 1788574640014,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 21588,
+  "bytesWritten": 424,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

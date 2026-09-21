@@ -1,0 +1,73 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 企业需求全景｜身份、治理、分析与安全形成完整闭环
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 34]
+    content:
+      style: "$subtitle"
+      text: 需求从企业运营责任出发，分别对应数据模型、治理策略、分析能力和安全边界。
+  - elementId: red-bar
+    elementType: shape
+    bounds: [60, 165, 10, 220]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+  - elementId: c1
+    elementType: text
+    bounds: [92, 160, 190, 210]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>身份治理</strong></span></p>
+        <p><strong>核心问题</strong>：Key 由谁使用、归属哪个部门？</p>
+        <p><strong>能力要求</strong>：导入、绑定、去重、历史追踪与安全展示。</p>
+  - elementId: c2
+    elementType: text
+    bounds: [310, 160, 190, 210]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$blue"><strong>额度治理</strong></span></p>
+        <p><strong>核心问题</strong>：使用量如何度量、超限如何处置？</p>
+        <p><strong>能力要求</strong>：成本 / Token、默认规则、Key 覆盖、暂停与降级。</p>
+  - elementId: c3
+    elementType: text
+    bounds: [528, 160, 190, 210]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>用量分析</strong></span></p>
+        <p><strong>核心问题</strong>：高并发与长时间范围下能否保持准确？</p>
+        <p><strong>能力要求</strong>：原始事实、可重建聚合、按需查询与明细分页。</p>
+  - elementId: c4
+    elementType: text
+    bounds: [746, 160, 154, 210]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$blue"><strong>安全交付</strong></span></p>
+        <p><strong>核心问题</strong>：扩展能力能否受控、结果能否复核？</p>
+        <p><strong>能力要求</strong>：来源与路径校验、凭证隔离、测试与发布验收。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 408, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 430, 840, 44]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      text: 需求拆解原则：每项企业诉求均落实为可执行功能、可验证边界和可交付产物。

@@ -1,0 +1,21 @@
+{
+  "id": "b310e47a2",
+  "name": "Verify dashboard UI",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\windows\\run-dashboard-ui-checks.ps1",
+  "description": "Run dashboard type-check, tests, lint, and build checks",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b310e47a2.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788006736900,
+  "endTime": 1788006737557,
+  "exitCode": 4294770688,
+  "signal": null,
+  "pid": 43652,
+  "bytesWritten": 265,
+  "isAgent": false,
+  "error": "Exited with code 4294770688",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1200
+}

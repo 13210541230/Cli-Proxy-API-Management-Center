@@ -1,0 +1,78 @@
+[open-kimi-ppt] prepared 6 local image resource(s), 1544488 bytes
+[open-kimi-ppt] Node.js version: 25.9.0
+[open-kimi-ppt] agent-browser version: 0.36.0
+[open-kimi-ppt] manifest: D:\C_projects\Cli-Proxy-API-Management-Center\docs\jinma-award-statement\jinma-award-statement.pptd
+[open-kimi-ppt] opening the public Kimi slide editor
+[open-kimi-ppt] rendering page images in the browser
+{
+  "pages": 13,
+  "overview": "D:\\C_projects\\Cli-Proxy-API-Management-Center\\docs\\jinma-award-statement\\.qa-images\\overview.jpg",
+  "output": "D:\\C_projects\\Cli-Proxy-API-Management-Center\\docs\\jinma-award-statement\\.qa-images",
+  "images": [
+    {
+      "index": 1,
+      "image": "pages/1.jpeg",
+      "page": "pages/01_cover.page"
+    },
+    {
+      "index": 2,
+      "image": "pages/2.jpeg",
+      "page": "pages/02_highlights.page"
+    },
+    {
+      "index": 3,
+      "image": "pages/3.jpeg",
+      "page": "pages/03_baseline.page"
+    },
+    {
+      "index": 4,
+      "image": "pages/4.jpeg",
+      "page": "pages/04_architecture.page"
+    },
+    {
+      "index": 5,
+      "image": "pages/5.jpeg",
+      "page": "pages/05_enterprise_keys.page"
+    },
+    {
+      "index": 6,
+      "image": "pages/6.jpeg",
+      "page": "pages/06_quota_alerts.page"
+    },
+    {
+      "index": 7,
+      "image": "pages/7.jpeg",
+      "page": "pages/07_usage_analytics.page"
+    },
+    {
+      "index": 8,
+      "image": "pages/8.jpeg",
+      "page": "pages/08_security_plugin.page"
+    },
+    {
+      "index": 9,
+      "image": "pages/9.jpeg",
+      "page": "pages/09_workbench.page"
+    },
+    {
+      "index": 10,
+      "image": "pages/10.jpeg",
+      "page": "pages/10_delivery.page"
+    },
+    {
+      "index": 11,
+      "image": "pages/11.jpeg",
+      "page": "pages/11_contribution.page"
+    },
+    {
+      "index": 12,
+      "image": "pages/12.jpeg",
+      "page": "pages/12_outputs.page"
+    },
+    {
+      "index": 13,
+      "image": "pages/13.jpeg",
+      "page": "pages/13_final.page"
+    }
+  ]
+}

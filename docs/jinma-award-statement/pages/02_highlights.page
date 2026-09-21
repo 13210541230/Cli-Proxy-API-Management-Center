@@ -1,0 +1,80 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 项目概述｜面向企业运营构建 AI 网关管理能力
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 34]
+    content:
+      style: "$subtitle"
+      text: 以 CLIProxyAPI 的统一接入能力为基础，补齐企业环境所需的身份、治理、分析、安全与交付能力。
+  - elementId: p1
+    elementType: shape
+    bounds: [60, 164, 250, 190]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: p1t
+    elementType: text
+    bounds: [78, 184, 214, 150]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>建设背景</strong></span></p>
+        <p>统一模型接入后，企业仍需回答“谁在使用、用了多少、如何控制、能否审计”等运营问题。</p>
+  - elementId: p2
+    elementType: shape
+    bounds: [355, 164, 250, 190]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: p2t
+    elementType: text
+    bounds: [373, 184, 214, 150]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$blue"><strong>建设范围</strong></span></p>
+        <p>企业 Key、配额与告警、Usage Analytics、安全插件、运维工作台及多平台发布链路。</p>
+  - elementId: p3
+    elementType: shape
+    bounds: [650, 164, 250, 190]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: p3t
+    elementType: text
+    bounds: [668, 184, 214, 150]
+    content:
+      style: "$body"
+      text: |
+        <p><span style="font-size:22px;color:$red"><strong>建设结果</strong></span></p>
+        <p>形成可配置、可观测、可审计、可恢复、可发布的企业级 AI 网关管理平台。</p>
+  - elementId: rule
+    elementType: line
+    bounds: [60, 394, 840, 1]
+    viewBox: [840, 1]
+    points: "0,0 840,0"
+    border: {style: solid, width: 1, color: "$line"}
+  - elementId: bottom-title
+    elementType: text
+    bounds: [60, 420, 250, 28]
+    content:
+      style: "$label"
+      text: PROJECT POSITIONING
+  - elementId: bottom
+    elementType: text
+    bounds: [60, 454, 840, 36]
+    content:
+      fontSize: 20
+      bold: true
+      color: "$ink"
+      text: CLIProxyAPI 负责统一接入，Management Center 负责统一治理，Usage Service 负责事实留存与分析。

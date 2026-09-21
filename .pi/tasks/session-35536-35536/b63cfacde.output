@@ -1,0 +1,15 @@
+The system cannot find the path specified.
+The system cannot find the path specified.
+
+ RUN  v4.1.5 D:/C_projects/Cli-Proxy-API-Management-Center
+
+(node:87392) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:90488) Warning: `--localstorage-file` was provided without a valid path
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  21 passed (21)
+      Tests  157 passed (157)
+   Start at  14:32:57
+   Duration  3.71s (transform 17.54s, setup 0ms, import 25.28s, tests 2.28s, environment 3ms)
+

@@ -1,0 +1,21 @@
+{
+  "id": "b33857668",
+  "name": "诊断 PPTX 下载",
+  "command": "python D:/Downloads/debug-pptx-export.py",
+  "description": "抓取金码奖示例在 Kimi 导出对话框中的状态、下载按钮及点击后的浏览器页面变化，判断官方 PPTX 写出失败原因。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b33857668.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788540058234,
+  "endTime": 1788540119945,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 69932,
+  "bytesWritten": 646,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

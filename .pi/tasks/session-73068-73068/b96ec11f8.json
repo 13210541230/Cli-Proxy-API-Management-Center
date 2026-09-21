@@ -1,0 +1,21 @@
+{
+  "id": "b96ec11f8",
+  "name": "Export Kimi PPTX Wait",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:/Downloads/export-jinma-pptx-wait.ps1",
+  "description": "利用 ready 后延迟修复，通过 Kimi 官方导出链路生成带默认字体/转场的 PPTX。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-73068-73068\\b96ec11f8.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788535934091,
+  "endTime": 1788536058296,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 50616,
+  "bytesWritten": 1295,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

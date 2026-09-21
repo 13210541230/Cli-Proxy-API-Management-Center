@@ -5,14 +5,13 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
-import { oauthApi, type OAuthProvider } from '@/services/api/oauth';
+import { oauthApi, type BuiltInOAuthProvider, type OAuthProvider } from '@/services/api/oauth';
 import { vertexApi, type VertexImportResponse } from '@/services/api/vertex';
 import { copyToClipboard } from '@/utils/clipboard';
 import styles from './OAuthPage.module.scss';
 import iconCodex from '@/assets/icons/codex.svg';
 import iconClaude from '@/assets/icons/claude.svg';
 import iconAntigravity from '@/assets/icons/antigravity.svg';
-import iconGemini from '@/assets/icons/gemini.svg';
 import iconKimiLight from '@/assets/icons/kimi-light.svg';
 import iconKimiDark from '@/assets/icons/kimi-dark.svg';
 import iconVertex from '@/assets/icons/vertex.svg';
@@ -64,19 +63,18 @@ function getErrorStatus(error: unknown): number | undefined {
   return typeof error.status === 'number' ? error.status : undefined;
 }
 
-const PROVIDERS: { id: OAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string } }[] = [
+const PROVIDERS: { id: BuiltInOAuthProvider; titleKey: string; hintKey: string; urlLabelKey: string; icon: string | { light: string; dark: string } }[] = [
   { id: 'codex', titleKey: 'auth_login.codex_oauth_title', hintKey: 'auth_login.codex_oauth_hint', urlLabelKey: 'auth_login.codex_oauth_url_label', icon: iconCodex },
   { id: 'anthropic', titleKey: 'auth_login.anthropic_oauth_title', hintKey: 'auth_login.anthropic_oauth_hint', urlLabelKey: 'auth_login.anthropic_oauth_url_label', icon: iconClaude },
   { id: 'antigravity', titleKey: 'auth_login.antigravity_oauth_title', hintKey: 'auth_login.antigravity_oauth_hint', urlLabelKey: 'auth_login.antigravity_oauth_url_label', icon: iconAntigravity },
-  { id: 'gemini-cli', titleKey: 'auth_login.gemini_cli_oauth_title', hintKey: 'auth_login.gemini_cli_oauth_hint', urlLabelKey: 'auth_login.gemini_cli_oauth_url_label', icon: iconGemini },
   { id: 'kimi', titleKey: 'auth_login.kimi_oauth_title', hintKey: 'auth_login.kimi_oauth_hint', urlLabelKey: 'auth_login.kimi_oauth_url_label', icon: { light: iconKimiLight, dark: iconKimiDark } },
   { id: 'xai', titleKey: 'auth_login.xai_oauth_title', hintKey: 'auth_login.xai_oauth_hint', urlLabelKey: 'auth_login.xai_oauth_url_label', icon: { light: iconGrok, dark: iconGrokDark } }
 ];
 
-const CALLBACK_SUPPORTED: OAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'gemini-cli', 'xai'];
+const CALLBACK_SUPPORTED: BuiltInOAuthProvider[] = ['codex', 'anthropic', 'antigravity', 'xai'];
 const SUCCESS_RESET_DELAY_MS = 5000;
-const getProviderI18nPrefix = (provider: OAuthProvider) => provider.replace('-', '_');
-const getAuthKey = (provider: OAuthProvider, suffix: string) =>
+const getProviderI18nPrefix = (provider: BuiltInOAuthProvider) => provider.replace('-', '_');
+const getAuthKey = (provider: BuiltInOAuthProvider, suffix: string) =>
   `auth_login.${getProviderI18nPrefix(provider)}_${suffix}`;
 
 const getIcon = (icon: string | { light: string; dark: string }, theme: 'light' | 'dark') => {
@@ -88,14 +86,14 @@ export function OAuthPage() {
   const navigate = useNavigate();
   const { showNotification } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
-  const [states, setStates] = useState<Record<OAuthProvider, ProviderState>>({} as Record<OAuthProvider, ProviderState>);
+  const [states, setStates] = useState<Record<BuiltInOAuthProvider, ProviderState>>({} as Record<BuiltInOAuthProvider, ProviderState>);
   const [vertexState, setVertexState] = useState<VertexImportState>({
     fileName: '',
     location: '',
     loading: false
   });
-  const pollingTimers = useRef<Partial<Record<OAuthProvider, number>>>({});
-  const successResetTimers = useRef<Partial<Record<OAuthProvider, number>>>({});
+  const pollingTimers = useRef<Partial<Record<BuiltInOAuthProvider, number>>>({});
+  const successResetTimers = useRef<Partial<Record<BuiltInOAuthProvider, number>>>({});
   const vertexFileInputRef = useRef<HTMLInputElement | null>(null);
 
   const clearTimers = useCallback(() => {
@@ -143,14 +141,10 @@ export function OAuthPage() {
     clearSuccessResetTimer(provider);
   };
 
-  const resetProviderAttempt = (provider: OAuthProvider) => {
+  const resetProviderAttempt = (provider: BuiltInOAuthProvider) => {
     clearProviderTimers(provider);
     setStates((prev) => {
-      const current = prev[provider] ?? {};
       const next: ProviderState = {};
-      if (provider === 'gemini-cli' && current.projectId !== undefined) {
-        next.projectId = current.projectId;
-      }
       return {
         ...prev,
         [provider]: next
@@ -203,19 +197,8 @@ export function OAuthPage() {
     pollingTimers.current[provider] = timer;
   };
 
-  const startAuth = async (provider: OAuthProvider) => {
+  const startAuth = async (provider: BuiltInOAuthProvider) => {
     clearProviderTimers(provider);
-    const geminiState = provider === 'gemini-cli' ? states[provider] : undefined;
-    const rawProjectId = provider === 'gemini-cli' ? (geminiState?.projectId || '').trim() : '';
-    const projectId = rawProjectId
-      ? rawProjectId.toUpperCase() === 'ALL'
-        ? 'ALL'
-        : rawProjectId
-      : undefined;
-    // 项目 ID 可选：留空自动选择第一个可用项目；输入 ALL 获取全部项目
-    if (provider === 'gemini-cli') {
-      updateProviderState(provider, { projectIdError: undefined });
-    }
     updateProviderState(provider, {
       url: undefined,
       state: undefined,
@@ -227,10 +210,7 @@ export function OAuthPage() {
       callbackUrl: ''
     });
     try {
-      const res = await oauthApi.startAuth(
-        provider,
-        provider === 'gemini-cli' ? { projectId: projectId || undefined } : undefined
-      );
+      const res = await oauthApi.startAuth(provider);
       if (!res.state) {
         const message = t('auth_login.missing_state');
         updateProviderState(provider, {
@@ -404,24 +384,6 @@ export function OAuthPage() {
               >
                 <div className={styles.cardContent}>
                   <div className={styles.cardHint}>{t(provider.hintKey)}</div>
-                  {provider.id === 'gemini-cli' && (
-                    <div className={styles.geminiProjectField}>
-                      <Input
-                        label={t('auth_login.gemini_cli_project_id_label')}
-                        hint={t('auth_login.gemini_cli_project_id_hint')}
-                        value={state.projectId || ''}
-                        error={state.projectIdError}
-                        disabled={Boolean(state.polling)}
-                        onChange={(e) =>
-                          updateProviderState(provider.id, {
-                            projectId: e.target.value,
-                            projectIdError: undefined
-                          })
-                        }
-                        placeholder={t('auth_login.gemini_cli_project_id_placeholder')}
-                      />
-                    </div>
-                  )}
                   {state.url && (
                     <div className={styles.authUrlBox}>
                       <div className={styles.authUrlLabel}>{t(provider.urlLabelKey)}</div>

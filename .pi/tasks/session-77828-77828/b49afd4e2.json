@@ -1,0 +1,21 @@
+{
+  "id": "b49afd4e2",
+  "name": "验证外部 PPTX 导出",
+  "command": "python D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_pptx.py D:/Downloads/okp-minimal/minimal.pptd --output D:/Downloads/okp-minimal/minimal.external.pptx --force --no-embed-fonts",
+  "description": "用最小 PPTD 验证最新版 Kimi 外部导出桥接和本地 PPTX 文件回传。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\b49afd4e2.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788574145853,
+  "endTime": 1788574165431,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 16840,
+  "bytesWritten": 825,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

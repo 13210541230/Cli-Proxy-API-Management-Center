@@ -1,0 +1,20 @@
+{
+  "id": "bc38ad43e",
+  "name": "Render Ordered Deck",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\Downloads\\render-jinma-ppt-latest.ps1",
+  "description": "Render the corrected manifest order for visual QA",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-57812-57812\\bc38ad43e.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788629600976,
+  "endTime": 1788629631731,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 67708,
+  "bytesWritten": 3615,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 1800
+}

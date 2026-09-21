@@ -1,0 +1,22 @@
+
+> cli-proxy-webui-react@0.0.0 build
+> tsc && vite build
+
+The system cannot find the path specified.
+The system cannot find the path specified.
+[36mvite v8.0.10 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 724 modules transformed.
+rendering chunks...
+[plugin vite:singlefile] 
+
+[plugin vite:singlefile] Inlining: index-CUgvpAre.js
+[plugin vite:singlefile] Inlining: style-C5bpxGuD.css
+computing gzip size...
+dist/index.html  2,737.23 kB │ gzip: 802.58 kB
+
+[33m[33m[PLUGIN_TIMINGS] Warning:[0m Your build spent significant time in plugins. Here is a breakdown:
+  - vite:css (75%)
+  - vite:asset (24%)
+See https://rolldown.rs/options/checks#plugintimings for more details.
+[39m
+[32m✓ built in 8.02s[39m

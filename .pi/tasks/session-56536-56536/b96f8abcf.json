@@ -1,0 +1,20 @@
+{
+  "id": "b96f8abcf",
+  "name": "Build runtime plugin fix",
+  "command": "powershell.exe -NoProfile -ExecutionPolicy Bypass -File D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\plugins\\enterprise-access-audit\\build.ps1 -OutputDirectory D:\\C_projects\\CLIProxyAPI\\.worktrees\\quota-rebase\\.tmp\\enterprise-access-audit",
+  "description": "Build the corrected audit plugin resource",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-56536-56536\\b96f8abcf.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788018011078,
+  "endTime": 1788018032680,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 46060,
+  "bytesWritten": 2241,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

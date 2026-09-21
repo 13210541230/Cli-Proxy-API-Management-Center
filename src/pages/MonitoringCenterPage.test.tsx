@@ -6,6 +6,9 @@ import {
   AccountOverviewCard,
   buildAnalyticsAccountRows,
   buildAnalyticsApiKeyRows,
+  getUpstreamRequestModel,
+  getUpstreamResponseModel,
+  isUpstreamModelMismatch,
 } from './MonitoringCenterPage';
 import { buildMonitoringAnalyticsRequest } from '@/features/monitoring/analyticsRequest';
 import { buildEmptyMonitoringStatusData } from '@/features/monitoring/accountOverviewState';
@@ -68,6 +71,22 @@ const t = ((key: string, options?: Record<string, unknown>) => {
   return value;
 }) as TFunction;
 
+describe('MonitoringCenterPage upstream model comparison', () => {
+  it('compares the resolved upstream request model with the upstream response model', () => {
+    const row = {
+      model: 'client-alias',
+      resolvedModel: 'provider-model',
+      upstreamModel: 'provider-model-v2',
+    };
+
+    expect(getUpstreamRequestModel(row)).toBe('provider-model');
+    expect(getUpstreamResponseModel(row)).toBe('provider-model-v2');
+    expect(isUpstreamModelMismatch(row)).toBe(true);
+    expect(isUpstreamModelMismatch({ ...row, upstreamModel: 'PROVIDER-MODEL' })).toBe(false);
+    expect(isUpstreamModelMismatch({ ...row, upstreamModel: '' })).toBe(false);
+  });
+});
+
 describe('MonitoringCenterPage analytics request', () => {
   it('uses aggregate dimensions and skips expensive legacy option/count scans', () => {
     const request = buildMonitoringAnalyticsRequest(1000, 2000, 'all');
@@ -86,10 +105,16 @@ describe('MonitoringCenterPage analytics request', () => {
     expect(request.include).not.toContain('api_key_timeline');
     expect(request.events_page).toEqual({ limit: 200, include_total_count: false });
 
-    const filtered = buildMonitoringAnalyticsRequest(1000, 2000, 'all', {
-      api_key_hash: 'hash-a',
-      model: 'model-a',
-    }, true);
+    const filtered = buildMonitoringAnalyticsRequest(
+      1000,
+      2000,
+      'all',
+      {
+        api_key_hash: 'hash-a',
+        model: 'model-a',
+      },
+      true
+    );
     expect(filtered.filters).toEqual({ api_key_hash: 'hash-a', model: 'model-a' });
     expect(filtered.include).toContain('api_key_timeline');
   });

@@ -1,0 +1,20 @@
+{
+  "id": "be5a8ec71",
+  "name": "Run Go tests",
+  "command": "cd usage-service && go test ./...",
+  "description": "Verify Usage Service packages after optimization",
+  "status": "completed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\be5a8ec71.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787207529251,
+  "endTime": 1787207541044,
+  "exitCode": 0,
+  "signal": null,
+  "pid": 3200,
+  "bytesWritten": 682,
+  "isAgent": false,
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 300
+}

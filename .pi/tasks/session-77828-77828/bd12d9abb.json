@@ -1,0 +1,21 @@
+{
+  "id": "bd12d9abb",
+  "name": "重跑 PPT 图片导出",
+  "command": "python D:/Downloads/open-kimi-ppt-skill/skills/open-kimi-ppt/scripts/export_images.py D:/Downloads/open-kimi-ppt-skill/example/xiaomi-yu7-ppt-animation/xiaomi-yu7.pptd --output D:/Downloads/open-kimi-ppt-skill/example/xiaomi-yu7-ppt-animation/.qa-images --force",
+  "description": "修正后台命令的 Windows 路径引用后，重新验证示例 PPTD 的图片导出链路。",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-77828-77828\\bd12d9abb.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1788538675240,
+  "endTime": 1788538922596,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 72304,
+  "bytesWritten": 467,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 900
+}

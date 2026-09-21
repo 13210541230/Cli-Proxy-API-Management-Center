@@ -1,0 +1,21 @@
+{
+  "id": "b3da99a34",
+  "name": "Run corrected tests",
+  "command": "npm test && cd usage-service && go test ./...",
+  "description": "Run frontend Vitest and Go regression tests",
+  "status": "failed",
+  "outputPath": ".pi\\tasks\\session-35536-35536\\b3da99a34.output",
+  "cwd": "D:\\C_projects\\Cli-Proxy-API-Management-Center",
+  "startTime": 1787207347856,
+  "endTime": 1787207354739,
+  "exitCode": 1,
+  "signal": null,
+  "pid": 140176,
+  "bytesWritten": 1756,
+  "isAgent": false,
+  "error": "Exited with code 1",
+  "notified": true,
+  "notifyOnCompletion": true,
+  "triggerOnCompletion": true,
+  "timeoutSeconds": 600
+}

@@ -1,0 +1,137 @@
+pageType: content
+background:
+  type: image
+  src: "media/template-inner.png"
+  fit: {mode: cover}
+elements:
+  - elementId: title
+    elementType: text
+    bounds: [58, 44, 820, 48]
+    content:
+      style: "$title"
+      text: 案例一｜企业 Key 从导入需求落到可审计闭环
+  - elementId: lead
+    elementType: text
+    bounds: [60, 100, 840, 30]
+    content:
+      style: "$subtitle"
+      text: 以“批量导入人员与 Key”为业务入口，拆解为身份模型、预览确认、写入规则与历史追踪。
+  - elementId: step1
+    elementType: shape
+    bounds: [60, 158, 190, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: step1t
+    elementType: text
+    bounds: [76, 176, 158, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 业务输入
+  - elementId: step2
+    elementType: shape
+    bounds: [290, 146, 190, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$red"}
+    border: {style: solid, width: 1, color: "$red"}
+  - elementId: step2t
+    elementType: text
+    bounds: [306, 164, 158, 80]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>领域拆解</p>
+        <p style="font-size:14px">Key Hash · 部门 · 来源</p>
+  - elementId: step3
+    elementType: shape
+    bounds: [520, 158, 190, 92]
+    shapeName: rect
+    fill: {type: solid, color: "$pale"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: step3t
+    elementType: text
+    bounds: [536, 176, 158, 56]
+    content:
+      align: [center, middle]
+      fontSize: 18
+      bold: true
+      color: "$ink"
+      text: 交互拆解
+  - elementId: step4
+    elementType: shape
+    bounds: [750, 146, 150, 116]
+    shapeName: rect
+    fill: {type: solid, color: "$blue"}
+    border: {style: solid, width: 1, color: "$blue"}
+  - elementId: step4t
+    elementType: text
+    bounds: [764, 164, 122, 80]
+    content:
+      align: [center, middle]
+      fontSize: 17
+      bold: true
+      color: "$white"
+      lineHeight: 1.3
+      text: |
+        <p>闭环验收</p>
+        <p style="font-size:14px">部分成功可见</p>
+        <p style="font-size:14px">结果可追溯</p>
+  - elementId: a1
+    elementType: line
+    bounds: [250, 204, 40, 2]
+    viewBox: [40, 2]
+    points: "0,1 40,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: a2
+    elementType: line
+    bounds: [480, 204, 40, 2]
+    viewBox: [40, 2]
+    points: "0,1 40,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$blue"}
+  - elementId: a3
+    elementType: line
+    bounds: [710, 204, 40, 2]
+    viewBox: [40, 2]
+    points: "0,1 40,1"
+    arrow: [null, stealth]
+    border: {style: solid, width: 2, color: "$red"}
+  - elementId: b1
+    elementType: text
+    bounds: [60, 314, 260, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>实现决策</strong></p>
+        <p>generatePreview 只生成预览；import 才执行写入。预览项承载部门解析、Key 生成和错误原因。</p>
+  - elementId: b2
+    elementType: text
+    bounds: [350, 314, 260, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>状态设计</strong></p>
+        <p>以 ok、warning、error 区分部分成功，避免把失败行静默吞掉；history 记录任务级结果。</p>
+  - elementId: b3
+    elementType: text
+    bounds: [640, 314, 260, 130]
+    content:
+      style: "$body"
+      text: |
+        <p><strong>运行效果</strong></p>
+        <p>企业 Key 页、配额页和 Analytics 共享身份关联，管理动作具备组织上下文。</p>
+  - elementId: source
+    elementType: text
+    bounds: [60, 474, 840, 20]
+    content:
+      style: "$bodySmall"
+      fontSize: 11
+      text: 相关功能：CSV 预览、批量导入、部门解析、冲突处理与导入历史。
