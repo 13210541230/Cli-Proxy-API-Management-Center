@@ -352,6 +352,12 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,
+          turn_state_class: readDetailString(
+            detailRaw.turn_state_class ?? detailRaw.turnStateClass
+          ),
+          turn_state_evidence: readDetailString(
+            detailRaw.turn_state_evidence ?? detailRaw.turnStateEvidence
+          ),
           __modelName: modelName,
           __timestampMs: Number.isNaN(timestampMs) ? 0 : timestampMs,
         });
@@ -449,6 +455,12 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,
+          turn_state_class: readDetailString(
+            detailRaw.turn_state_class ?? detailRaw.turnStateClass
+          ),
+          turn_state_evidence: readDetailString(
+            detailRaw.turn_state_evidence ?? detailRaw.turnStateEvidence
+          ),
           __modelName: modelName,
           __endpoint: endpoint,
           __endpointMethod: endpointMethod,

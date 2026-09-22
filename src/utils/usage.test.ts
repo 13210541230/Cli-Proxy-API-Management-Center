@@ -46,4 +46,39 @@ describe('usage detail telemetry', () => {
       failed: true,
     });
   });
+
+  it('keeps turn-state classification fields through detail collection', () => {
+    const details = collectUsageDetailsWithEndpoint({
+      apis: {
+        'POST /v1/responses': {
+          models: {
+            'gpt-5.6-luna': {
+              details: [
+                {
+                  timestamp: '2026-09-22T06:56:32Z',
+                  turn_state_class: 'suspected',
+                  turn_state_evidence: 'blocks=11;length=312',
+                  failed: false,
+                  tokens: { input_tokens: 1, output_tokens: 1 },
+                },
+                {
+                  timestamp: '2026-09-22T06:56:33Z',
+                  turnStateClass: 'missing',
+                  turnStateEvidence: 'response_without_turn_state',
+                  failed: false,
+                  tokens: { input_tokens: 1, output_tokens: 1 },
+                },
+              ],
+            },
+          },
+        },
+      },
+    });
+
+    expect(details).toHaveLength(2);
+    expect(details[0].turn_state_class).toBe('suspected');
+    expect(details[0].turn_state_evidence).toBe('blocks=11;length=312');
+    expect(details[1].turn_state_class).toBe('missing');
+    expect(details[1].turn_state_evidence).toBe('response_without_turn_state');
+  });
 });
