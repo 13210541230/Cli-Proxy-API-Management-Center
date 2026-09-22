@@ -2,7 +2,7 @@
  * Normalization and parsing functions for quota data.
  */
 
-import type { ClaudeUsagePayload, CodexUsagePayload, GeminiCliCodeAssistPayload, GeminiCliQuotaPayload, KimiUsagePayload } from '@/types';
+import type { ClaudeUsagePayload, CodexUsagePayload, GeminiCliCodeAssistPayload, GeminiCliQuotaPayload, KimiUsagePayload, XaiBillingWindow } from '@/types';
 import { normalizeAuthIndex } from '@/utils/authIndex';
 
 const GEMINI_CLI_MODEL_SUFFIX = '_vertex';
@@ -223,4 +223,60 @@ export function parseKimiUsagePayload(payload: unknown): KimiUsagePayload | null
     return payload as KimiUsagePayload;
   }
   return null;
+}
+
+function toFiniteNumber(value: unknown): number | null {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function parseBillingWindow(payload: unknown): XaiBillingWindow | null {
+  let data: unknown = payload;
+  if (typeof payload === 'string') {
+    const trimmed = payload.trim();
+    if (!trimmed) return null;
+    try {
+      data = JSON.parse(trimmed);
+    } catch {
+      return null;
+    }
+  }
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  const window: XaiBillingWindow = {};
+  const percent = toFiniteNumber(record.creditUsagePercent);
+  if (percent !== null) window.percent = Math.max(0, Math.min(100, percent));
+  const currentPeriod =
+    record.currentPeriod && typeof record.currentPeriod === 'object'
+      ? (record.currentPeriod as Record<string, unknown>)
+      : null;
+  if (currentPeriod) {
+    if (typeof currentPeriod.start === 'string') window.periodStart = currentPeriod.start;
+    if (typeof currentPeriod.end === 'string') window.periodEnd = currentPeriod.end;
+  }
+  const monthlyLimit = toFiniteNumber(record.monthlyLimit);
+  const used = toFiniteNumber(record.used);
+  if (monthlyLimit !== null && monthlyLimit > 0 && used !== null) {
+    window.percent = Math.max(0, Math.min(100, (used / monthlyLimit) * 100));
+    window.detail = `${used} / ${monthlyLimit}`;
+  }
+  const prepaid = toFiniteNumber(record.prepaidBalance);
+  if (prepaid !== null && !window.detail) {
+    window.detail = String(prepaid);
+  }
+  const hasData =
+    window.percent !== undefined || window.periodStart !== undefined || window.periodEnd !== undefined;
+  return hasData ? window : null;
+}
+
+export function parseXaiWeeklyBillingPayload(payload: unknown): XaiBillingWindow | null {
+  return parseBillingWindow(payload);
+}
+
+export function parseXaiMonthlyBillingPayload(payload: unknown): XaiBillingWindow | null {
+  return parseBillingWindow(payload);
 }

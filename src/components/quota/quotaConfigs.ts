@@ -27,6 +27,8 @@ import type {
   GeminiCliUserTier,
   KimiQuotaRow,
   KimiQuotaState,
+  XaiQuotaRow,
+  XaiQuotaState,
 } from '@/types';
 import {
   apiCallApi,
@@ -60,10 +62,15 @@ import {
   parseGeminiCliQuotaPayload,
   parseGeminiCliCodeAssistPayload,
   parseKimiUsagePayload,
+  parseXaiMonthlyBillingPayload,
+  parseXaiWeeklyBillingPayload,
   resolveCodexChatgptAccountId,
   resolveCodexPlanType,
   resolveCodexSubscriptionActiveUntil,
   resolveGeminiCliProjectId,
+  XAI_BILLING_MONTHLY_URL,
+  XAI_BILLING_HEADERS,
+  XAI_BILLING_WEEKLY_URL,
   formatQuotaResetTime,
   formatShanghaiDateTime,
   formatKimiResetHint,
@@ -71,6 +78,7 @@ import {
   buildCodexQuotaWindowInfos,
   buildGeminiCliQuotaBuckets,
   buildKimiQuotaRows,
+  buildXaiQuotaRows,
   createStatusError,
   getStatusFromError,
   isAntigravityFile,
@@ -79,6 +87,7 @@ import {
   isDisabledAuthFile,
   isGeminiCliFile,
   isKimiFile,
+  isXaiFile,
   isRuntimeOnlyAuthFile,
 } from '@/utils/quota';
 import { normalizeAuthIndex } from '@/utils/authIndex';
@@ -88,7 +97,7 @@ import styles from '@/pages/QuotaPage.module.scss';
 
 type QuotaUpdater<T> = T | ((prev: T) => T);
 
-type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi';
+type QuotaType = 'antigravity' | 'claude' | 'codex' | 'gemini-cli' | 'kimi' | 'xai';
 export type QuotaSortMode = 'default' | 'name-asc' | 'plan-desc' | 'plan-asc';
 
 const DEFAULT_ANTIGRAVITY_PROJECT_ID = 'bamboo-precept-lgxtn';
@@ -111,11 +120,13 @@ export interface QuotaStore {
   codexQuota: Record<string, CodexQuotaState>;
   geminiCliQuota: Record<string, GeminiCliQuotaState>;
   kimiQuota: Record<string, KimiQuotaState>;
+  xaiQuota: Record<string, XaiQuotaState>;
   setAntigravityQuota: (updater: QuotaUpdater<Record<string, AntigravityQuotaState>>) => void;
   setClaudeQuota: (updater: QuotaUpdater<Record<string, ClaudeQuotaState>>) => void;
   setCodexQuota: (updater: QuotaUpdater<Record<string, CodexQuotaState>>) => void;
   setGeminiCliQuota: (updater: QuotaUpdater<Record<string, GeminiCliQuotaState>>) => void;
   setKimiQuota: (updater: QuotaUpdater<Record<string, KimiQuotaState>>) => void;
+  setXaiQuota: (updater: QuotaUpdater<Record<string, XaiQuotaState>>) => void;
   clearQuotaCache: () => void;
 }
 
@@ -1500,4 +1511,107 @@ export const KIMI_CONFIG: QuotaConfig<KimiQuotaState, KimiQuotaRow[]> = {
   controlClassName: styles.kimiControl,
   gridClassName: styles.kimiGrid,
   renderQuotaItems: renderKimiItems,
+};
+
+const fetchXaiQuota = async (file: AuthFileItem, t: TFunction): Promise<XaiQuotaRow[]> => {
+  const rawAuthIndex = file['auth_index'] ?? file.authIndex;
+  const authIndex = normalizeAuthIndex(rawAuthIndex);
+  if (!authIndex) {
+    throw new Error(t('xai_quota.missing_auth_index'));
+  }
+
+  const header = { ...XAI_BILLING_HEADERS };
+  const [weeklyResult, monthlyResult] = await Promise.all([
+    apiCallApi.request({ authIndex, method: 'GET', url: XAI_BILLING_WEEKLY_URL, header }),
+    apiCallApi.request({ authIndex, method: 'GET', url: XAI_BILLING_MONTHLY_URL, header }),
+  ]);
+
+  const weeklyOk = weeklyResult.statusCode >= 200 && weeklyResult.statusCode < 300;
+  const monthlyOk = monthlyResult.statusCode >= 200 && monthlyResult.statusCode < 300;
+  if (!weeklyOk && !monthlyOk) {
+    throw createStatusError(getApiCallErrorMessage(monthlyResult), monthlyResult.statusCode);
+  }
+
+  const weekly = weeklyOk
+    ? parseXaiWeeklyBillingPayload(weeklyResult.body ?? weeklyResult.bodyText)
+    : null;
+  const monthly = monthlyOk
+    ? parseXaiMonthlyBillingPayload(monthlyResult.body ?? monthlyResult.bodyText)
+    : null;
+  const rows = buildXaiQuotaRows(weekly, monthly);
+  if (rows.length === 0) {
+    throw new Error(t('xai_quota.empty_data'));
+  }
+  return rows;
+};
+
+const renderXaiItems = (
+  quota: XaiQuotaState,
+  t: TFunction,
+  helpers: QuotaRenderHelpers
+): ReactNode => {
+  const { styles: styleMap, QuotaProgressBar } = helpers;
+  const { createElement: h } = React;
+  const rows = quota.rows ?? [];
+
+  if (rows.length === 0) {
+    return h('div', { className: styleMap.quotaMessage }, t('xai_quota.empty_data'));
+  }
+
+  return rows.map((row) => {
+    const percent = row.percent;
+    const percentLabel = percent === null ? '--' : `${Math.round(percent)}%`;
+    const startText = row.periodStart ? formatShanghaiDateTime(row.periodStart) : '';
+    const endText = row.periodEnd ? formatShanghaiDateTime(row.periodEnd) : '';
+    const periodLabel = startText && endText
+      ? t('xai_quota.period', { start: startText, end: endText })
+      : endText
+        ? t('xai_quota.period_end', { end: endText })
+        : '';
+
+    return h(
+      'div',
+      { key: row.id, className: styleMap.quotaRow },
+      h(
+        'div',
+        { className: styleMap.quotaRowHeader },
+        h('span', { className: styleMap.quotaModel }, t(row.labelKey)),
+        h(
+          'div',
+          { className: styleMap.quotaMeta },
+          h('span', { className: styleMap.quotaPercent }, percentLabel),
+          row.detail ? h('span', { className: styleMap.quotaAmount }, row.detail) : null,
+          periodLabel ? h('span', { className: styleMap.quotaReset }, periodLabel) : null
+        )
+      ),
+      h(QuotaProgressBar, {
+        percent,
+        highThreshold: QUOTA_PROGRESS_HIGH_THRESHOLD,
+        mediumThreshold: QUOTA_PROGRESS_MEDIUM_THRESHOLD,
+      })
+    );
+  });
+};
+
+export const XAI_CONFIG: QuotaConfig<XaiQuotaState, XaiQuotaRow[]> = {
+  type: 'xai',
+  i18nPrefix: 'xai_quota',
+  cardIdleMessageKey: 'quota_management.card_idle_hint',
+  filterFn: (file) => isXaiFile(file) && !isDisabledAuthFile(file),
+  fetchQuota: fetchXaiQuota,
+  storeSelector: (state) => state.xaiQuota,
+  storeSetter: 'setXaiQuota',
+  buildLoadingState: () => ({ status: 'loading', rows: [] }),
+  buildSuccessState: (rows) => ({ status: 'success', rows }),
+  buildErrorState: (message, status) => ({
+    status: 'error',
+    rows: [],
+    error: message,
+    errorStatus: status,
+  }),
+  cardClassName: styles.xaiCard,
+  controlsClassName: styles.xaiControls,
+  controlClassName: styles.xaiControl,
+  gridClassName: styles.xaiGrid,
+  renderQuotaItems: renderXaiItems,
 };

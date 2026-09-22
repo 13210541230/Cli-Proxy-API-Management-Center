@@ -984,6 +984,24 @@
     "limit_index": "Limit #{{index}}",
     "reset_hint": "resets in {{hint}}"
   },
+  "xai_quota": {
+    "title": "xAI Quota",
+    "empty_title": "No xAI Auth Files",
+    "empty_desc": "Upload an xAI/Grok credential to view remaining quota.",
+    "idle": "Click here to refresh quota",
+    "loading": "Loading quota...",
+    "load_failed": "Failed to load quota: {{message}}",
+    "missing_auth_index": "Auth file missing auth_index",
+    "empty_data": "No quota data available",
+    "refresh_button": "Refresh Quota",
+    "fetch_all": "Fetch All",
+    "expires_at": "valid until {{time}}",
+    "no_expiry": "No expiry",
+    "weekly": "Weekly credits",
+    "monthly": "Monthly quota",
+    "period": "{{start}} → {{end}}",
+    "period_end": "until {{end}}"
+  },
   "vertex_import": {
     "title": "Vertex JSON Login",
     "description": "Upload a Google service account JSON to store it as auth-dir/vertex-<project>.json using the same rules as the CLI vertex-import helper.",

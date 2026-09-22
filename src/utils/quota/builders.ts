@@ -10,6 +10,8 @@ import type {
   GeminiCliParsedBucket,
   GeminiCliQuotaBucketState,
   KimiUsagePayload,
+  XaiBillingWindow,
+  XaiQuotaRow,
   KimiUsageDetail,
   KimiLimitItem,
   KimiLimitWindow,
@@ -403,5 +405,33 @@ export function buildKimiQuotaRows(payload: KimiUsagePayload): KimiQuotaRow[] {
     });
   }
 
+  return rows;
+}
+
+export function buildXaiQuotaRows(
+  weekly: XaiBillingWindow | null,
+  monthly: XaiBillingWindow | null
+): XaiQuotaRow[] {
+  const rows: XaiQuotaRow[] = [];
+  if (weekly) {
+    rows.push({
+      id: 'xai-weekly',
+      labelKey: 'xai_quota.weekly',
+      percent: weekly.percent ?? null,
+      periodStart: weekly.periodStart,
+      periodEnd: weekly.periodEnd,
+      detail: weekly.detail,
+    });
+  }
+  if (monthly) {
+    rows.push({
+      id: 'xai-monthly',
+      labelKey: 'xai_quota.monthly',
+      percent: monthly.percent ?? null,
+      periodStart: monthly.periodStart,
+      periodEnd: monthly.periodEnd,
+      detail: monthly.detail,
+    });
+  }
   return rows;
 }

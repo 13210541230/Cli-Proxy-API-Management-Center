@@ -148,7 +148,8 @@
 .claudeGrid,
 .codexGrid,
 .geminiCliGrid,
-.kimiGrid {
+.kimiGrid,
+.xaiGrid {
   display: grid;
   gap: $spacing-md;
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
@@ -162,7 +163,8 @@
 .claudeControls,
 .codexControls,
 .geminiCliControls,
-.kimiControls {
+.kimiControls,
+.xaiControls {
   display: flex;
   gap: $spacing-md;
   flex-wrap: wrap;
@@ -174,7 +176,8 @@
 .claudeControl,
 .codexControl,
 .geminiCliControl,
-.kimiControl {
+.kimiControl,
+.xaiControl {
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -308,6 +311,12 @@
   background-image: linear-gradient(180deg,
       rgba(220, 232, 255, 0.2),
       rgba(220, 232, 255, 0));
+}
+
+.xaiCard {
+  background-image: linear-gradient(180deg,
+      rgba(232, 238, 249, 0.25),
+      rgba(232, 238, 249, 0));
 }
 
 .quotaSection {

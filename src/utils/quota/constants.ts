@@ -38,6 +38,10 @@ export const TYPE_COLORS: Record<string, TypeColorSet> = {
     light: { bg: '#dce8ff', text: '#0560cf' },
     dark: { bg: '#003880', text: '#70b5ff' },
   },
+  xai: {
+    light: { bg: '#e8eef9', text: '#1f2937' },
+    dark: { bg: '#1f2937', text: '#cbd5e1' },
+  },
   antigravity: {
     light: { bg: '#e0f7fa', text: '#006064' },
     dark: { bg: '#004d40', text: '#80deea' },
@@ -202,4 +206,13 @@ export const KIMI_USAGE_URL = 'https://api.kimi.com/coding/v1/usages';
 
 export const KIMI_REQUEST_HEADERS = {
   Authorization: 'Bearer $TOKEN$',
+};
+
+export const XAI_BILLING_WEEKLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing?format=credits';
+export const XAI_BILLING_MONTHLY_URL = 'https://cli-chat-proxy.grok.com/v1/billing';
+export const XAI_BILLING_HEADERS = {
+  Authorization: 'Bearer $TOKEN$',
+  'x-xai-token-auth': 'xai-grok-cli',
+  'x-grok-client-version': '0.2.120',
+  'User-Agent': 'grok-pager/0.2.120 grok-shell/0.2.120 (macos; aarch64)',
 };

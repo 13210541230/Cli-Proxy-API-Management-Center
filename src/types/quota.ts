@@ -324,3 +324,26 @@ export interface KimiQuotaState {
   error?: string;
   errorStatus?: number;
 }
+
+export interface XaiBillingWindow {
+  percent?: number;
+  periodStart?: string;
+  periodEnd?: string;
+  detail?: string;
+}
+
+export interface XaiQuotaRow {
+  id: string;
+  labelKey: string;
+  percent: number | null;
+  periodStart?: string;
+  periodEnd?: string;
+  detail?: string;
+}
+
+export interface XaiQuotaState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  rows: XaiQuotaRow[];
+  error?: string;
+  errorStatus?: number;
+}
