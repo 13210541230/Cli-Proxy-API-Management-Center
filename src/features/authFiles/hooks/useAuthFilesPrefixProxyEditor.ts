@@ -11,7 +11,7 @@ type AuthFileHeadersErrorKey =
   | 'auth_files.headers_invalid_object'
   | 'auth_files.headers_invalid_value';
 
-export type PrefixProxyEditorField = 'prefix' | 'proxyUrl' | 'priority' | 'note' | 'headersText';
+export type PrefixProxyEditorField = 'prefix' | 'proxyUrl' | 'baseUrl' | 'priority' | 'note' | 'headersText';
 
 export type PrefixProxyEditorFieldValue = string;
 
@@ -26,6 +26,7 @@ export type PrefixProxyEditorState = {
   json: Record<string, unknown> | null;
   prefix: string;
   proxyUrl: string;
+  baseUrl: string;
   priority: string;
   note: string;
   noteTouched: boolean;
@@ -172,6 +173,12 @@ const buildAuthFileFieldsPatch = (
     patch.proxy_url = nextProxyURL;
   }
 
+  const originalBaseURL = normalizeTextField(original.base_url);
+  const nextBaseURL = editor.baseUrl.trim();
+  if (nextBaseURL !== originalBaseURL) {
+    patch.base_url = nextBaseURL;
+  }
+
   const originalPriority = parsePriorityValue(original.priority);
   const priorityText = editor.priority.trim();
   const nextPriority = parsePriorityValue(priorityText);
@@ -305,6 +312,7 @@ export function useAuthFilesPrefixProxyEditor(
       json: null,
       prefix: '',
       proxyUrl: '',
+      baseUrl: '',
       priority: '',
       note: '',
       noteTouched: false,
@@ -352,6 +360,7 @@ export function useAuthFilesPrefixProxyEditor(
       const originalText = JSON.stringify(json);
       const prefix = typeof json.prefix === 'string' ? json.prefix : '';
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
+      const baseUrl = typeof json.base_url === 'string' ? json.base_url : '';
       const priority = parsePriorityValue(json.priority);
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
@@ -373,6 +382,7 @@ export function useAuthFilesPrefixProxyEditor(
           json,
           prefix,
           proxyUrl,
+          baseUrl,
           priority: priority !== undefined ? String(priority) : '',
           note,
           noteTouched: false,
@@ -400,6 +410,7 @@ export function useAuthFilesPrefixProxyEditor(
       if (!prev) return prev;
       if (field === 'prefix') return { ...prev, prefix: String(value) };
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
+      if (field === 'baseUrl') return { ...prev, baseUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
       if (field === 'headersText') {

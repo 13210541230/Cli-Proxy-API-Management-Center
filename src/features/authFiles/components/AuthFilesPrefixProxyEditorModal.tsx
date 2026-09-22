@@ -140,6 +140,14 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                   onChange={(e) => onChange('proxyUrl', e.target.value)}
                 />
                 <Input
+                  label={t('auth_files.base_url_label')}
+                  value={editor.baseUrl}
+                  placeholder={t('auth_files.base_url_placeholder')}
+                  hint={t('auth_files.base_url_hint')}
+                  disabled={disableControls || editor.saving || !editor.json}
+                  onChange={(e) => onChange('baseUrl', e.target.value)}
+                />
+                <Input
                   label={t('auth_files.priority_label')}
                   value={editor.priority}
                   placeholder={t('auth_files.priority_placeholder')}
