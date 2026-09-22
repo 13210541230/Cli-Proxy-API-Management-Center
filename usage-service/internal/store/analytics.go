@@ -331,6 +331,8 @@ type UsageEventPageItem struct {
 	UpstreamModel        string
 	ModelMatch           string
 	ModelEvidence        string
+	TurnStateClass       string
+	TurnStateEvidence    string
 	Endpoint             string
 	Method               string
 	Path                 string
@@ -397,6 +399,7 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	rows, err := s.db.QueryContext(ctx, `select
 		ue.id, ue.request_id, ue.event_hash, ue.timestamp_ms, ue.timestamp, ue.provider, ue.model,
 		ue.requested_model, ue.resolved_model, ue.upstream_model, ue.model_match, ue.model_evidence,
+		ue.turn_state_class, ue.turn_state_evidence,
 		ue.reasoning_effort, ue.ttft_ms, ue.service_tier, ue.request_service_tier, ue.response_service_tier,
 		ue.executor_type, ue.fail_status_code, ue.fail_summary, ue.error_code, ue.error_type, ue.error_class,
 		ue.security_signal, ue.endpoint, ue.method, ue.path,
@@ -413,7 +416,7 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 	items := make([]UsageEventPageItem, 0, limit)
 	for rows.Next() {
 		var item UsageEventPageItem
-		var requestID, provider, requestedModel, resolvedModel, upstreamModel, modelMatch, modelEvidence sql.NullString
+		var requestID, provider, requestedModel, resolvedModel, upstreamModel, modelMatch, modelEvidence, turnStateClass, turnStateEvidence sql.NullString
 		var reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, errorCode, errorType, errorClass, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash sql.NullString
 		var apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot sql.NullString
 		var ttft, failStatusCode, authSnapshotAt, latency sql.NullInt64
@@ -421,6 +424,7 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 		if err := rows.Scan(
 			&item.ID, &requestID, &item.EventHash, &item.TimestampMS, &item.Timestamp, &provider, &item.Model,
 			&requestedModel, &resolvedModel, &upstreamModel, &modelMatch, &modelEvidence,
+			&turnStateClass, &turnStateEvidence,
 			&reasoningEffort, &ttft, &serviceTier, &requestServiceTier, &responseServiceTier, &executorType,
 			&failStatusCode, &failSummary, &errorCode, &errorType, &errorClass, &securitySignal, &endpoint, &method, &path, &authType, &authIndex, &source, &sourceHash, &apiKeyHash,
 			&accountSnapshot, &authLabelSnapshot, &authFileSnapshot, &authProviderSnapshot,
@@ -448,6 +452,8 @@ func (s *Store) PageUsageEvents(ctx context.Context, query UsageEventPageQuery) 
 		item.UpstreamModel = upstreamModel.String
 		item.ModelMatch = modelMatch.String
 		item.ModelEvidence = modelEvidence.String
+		item.TurnStateClass = turnStateClass.String
+		item.TurnStateEvidence = turnStateEvidence.String
 		item.ReasoningEffort = reasoningEffort.String
 		item.ServiceTier = serviceTier.String
 		item.RequestServiceTier = requestServiceTier.String

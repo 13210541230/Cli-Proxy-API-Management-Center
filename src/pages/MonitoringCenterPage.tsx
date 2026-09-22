@@ -343,6 +343,8 @@ const buildAnalyticsUsagePayload = (response: UsageAnalyticsResponse | null): un
       upstream_model: item.upstream_model,
       model_match: item.model_match,
       model_evidence: item.model_evidence,
+      turn_state_class: item.turn_state_class,
+      turn_state_evidence: item.turn_state_evidence,
       auth_index: item.auth_index,
       api_key_hash: item.api_key_hash,
       account_snapshot: item.account_snapshot,
@@ -1596,7 +1598,9 @@ function AccountQuotaPanel({
   const renderEntryForecast = (entry: AccountQuotaEntry) => {
     if (!hasPrices) return null;
     const forecast = buildAccountQuotaForecast(entry.observedSpendUsd, entry.windows);
-    return forecast ? <AccountQuotaValueForecast forecast={forecast} locale={locale} t={t} /> : null;
+    return forecast ? (
+      <AccountQuotaValueForecast forecast={forecast} locale={locale} t={t} />
+    ) : null;
   };
 
   const renderRefreshButton = () => (
@@ -1697,18 +1701,20 @@ function AccountQuotaPanel({
                   </div>
                 </div>
 
-                {entry.error
-                  ? renderStateMessage(
-                      t('codex_quota.load_failed', { message: entry.error }),
-                      undefined,
-                      true
-                    )
-                  : entry.windows.length > 0
-                    ? <>
-                        {renderQuotaWindows(entry.windows)}
-                        {renderEntryForecast(entry)}
-                      </>
-                    : renderStateMessage(t('codex_quota.empty_windows'), t('codex_quota.idle'))}
+                {entry.error ? (
+                  renderStateMessage(
+                    t('codex_quota.load_failed', { message: entry.error }),
+                    undefined,
+                    true
+                  )
+                ) : entry.windows.length > 0 ? (
+                  <>
+                    {renderQuotaWindows(entry.windows)}
+                    {renderEntryForecast(entry)}
+                  </>
+                ) : (
+                  renderStateMessage(t('codex_quota.empty_windows'), t('codex_quota.idle'))
+                )}
               </div>
             );
           })}
@@ -4649,6 +4655,19 @@ export function MonitoringCenterPage() {
                               t('monitoring.upstream_model_unknown', { defaultValue: '未声明' })}
                           </small>
                         )}
+                        {row.turnStateClass === 'missing' || row.turnStateClass === 'suspected' ? (
+                          <small title={row.turnStateEvidence || undefined}>
+                            <span className={styles.modelMismatchBadge}>
+                              {row.turnStateClass === 'missing'
+                                ? t('monitoring.turn_state_missing', {
+                                    defaultValue: '疑似降智·无票',
+                                  })
+                                : t('monitoring.turn_state_suspected', {
+                                    defaultValue: '疑似降智',
+                                  })}
+                            </span>
+                          </small>
+                        ) : null}
                       </div>
                     </td>
                     <td>

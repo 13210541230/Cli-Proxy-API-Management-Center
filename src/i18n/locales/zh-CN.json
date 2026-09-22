@@ -1683,6 +1683,8 @@
     "upstream_request_model": "上游请求模型",
     "upstream_response_model": "上游响应模型",
     "upstream_model_mismatch_badge": "不一致",
+    "turn_state_suspected": "疑似降智",
+    "turn_state_missing": "疑似降智·无票",
     "no_upstream_model_mismatches": "当前范围内未发现上游模型不一致。",
     "model_pricing_desc": "在监控页直接维护模型单价，账号、模型和实时日志花费会立即联动更新。",
     "price_storage_hint": "单价设置会优先写入 SQLite；旧版浏览器本地价格会自动迁移。",

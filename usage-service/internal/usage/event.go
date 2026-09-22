@@ -25,6 +25,11 @@ type Event struct {
 	UpstreamModel  string `json:"upstream_model,omitempty"`
 	ModelMatch     string `json:"model_match,omitempty"`
 	ModelEvidence  string `json:"model_evidence,omitempty"`
+	// TurnStateClass buckets the upstream X-Codex-Turn-State observation for
+	// Codex responses: normal, suspected, missing, or empty when not applicable.
+	TurnStateClass string `json:"turn_state_class,omitempty"`
+	// TurnStateEvidence carries blocks/length/issued_at or the rejection reason.
+	TurnStateEvidence string `json:"turn_state_evidence,omitempty"`
 	// ReasoningEffort is the request-side model reasoning setting. It is
 	// separate from response-side ReasoningTokens and may be absent in legacy events.
 	ReasoningEffort      string `json:"reasoning_effort,omitempty"`
@@ -81,6 +86,8 @@ type Detail struct {
 	UpstreamModel        string `json:"upstream_model,omitempty"`
 	ModelMatch           string `json:"model_match,omitempty"`
 	ModelEvidence        string `json:"model_evidence,omitempty"`
+	TurnStateClass       string `json:"turn_state_class,omitempty"`
+	TurnStateEvidence    string `json:"turn_state_evidence,omitempty"`
 	AuthIndex            string `json:"auth_index,omitempty"`
 	APIKeyHash           string `json:"api_key_hash,omitempty"`
 	AccountSnapshot      string `json:"account_snapshot,omitempty"`
@@ -174,6 +181,7 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		upstreamModel, modelEvidence = readResponseModel(record)
 	}
 	modelMatch := classifyModelMatch(requestedModel, resolvedModel, upstreamModel)
+	turnStateClass, turnStateEvidence := readTurnState(record)
 	errorCode := readString(record, "error_code", "errorCode")
 	errorType := readString(record, "error_type", "errorType")
 	errorClass := classifyError(failStatusCode, errorCode, errorType)
@@ -203,6 +211,8 @@ func NormalizeRaw(raw []byte) (Event, error) {
 		UpstreamModel:        upstreamModel,
 		ModelMatch:           modelMatch,
 		ModelEvidence:        modelEvidence,
+		TurnStateClass:       turnStateClass,
+		TurnStateEvidence:    turnStateEvidence,
 		ReasoningEffort:      readString(record, "reasoning_effort", "reasoningEffort", "thinking_level", "thinkingLevel"),
 		TTFTMS:               ttftMS,
 		ServiceTier:          serviceTier,
@@ -286,6 +296,8 @@ func BuildPayload(events []Event) Payload {
 			UpstreamModel:        event.UpstreamModel,
 			ModelMatch:           event.ModelMatch,
 			ModelEvidence:        event.ModelEvidence,
+			TurnStateClass:       event.TurnStateClass,
+			TurnStateEvidence:    event.TurnStateEvidence,
 			AuthIndex:            event.AuthIndex,
 			APIKeyHash:           event.APIKeyHash,
 			AccountSnapshot:      event.AccountSnapshot,

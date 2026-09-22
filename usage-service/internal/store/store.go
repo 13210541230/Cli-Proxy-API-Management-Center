@@ -415,6 +415,8 @@ func (s *Store) init() error {
 			upstream_model text,
 			model_match text,
 			model_evidence text,
+			turn_state_class text,
+			turn_state_evidence text,
 			reasoning_effort text,
 			ttft_ms integer,
 			service_tier text,
@@ -659,6 +661,8 @@ func (s *Store) ensureUsageEventSnapshotColumns() error {
 		{name: "upstream_model", definition: "text"},
 		{name: "model_match", definition: "text"},
 		{name: "model_evidence", definition: "text"},
+		{name: "turn_state_class", definition: "text"},
+		{name: "turn_state_evidence", definition: "text"},
 		{name: "reasoning_effort", definition: "text"},
 		{name: "ttft_ms", definition: "integer"},
 		{name: "service_tier", definition: "text"},
@@ -1195,13 +1199,14 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 	stmt, err := tx.PrepareContext(ctx, `insert or ignore into usage_events (
 		request_id, event_hash, timestamp_ms, timestamp, provider, model,
 		requested_model, resolved_model, upstream_model, model_match, model_evidence,
+		turn_state_class, turn_state_evidence,
 		reasoning_effort, ttft_ms, service_tier, request_service_tier, response_service_tier, executor_type,
 		fail_status_code, fail_summary, error_code, error_type, error_class, security_signal, endpoint, method, path,
 		auth_type, auth_index, source, source_hash, api_key_hash,
 		account_snapshot, auth_label_snapshot, auth_file_snapshot, auth_provider_snapshot, auth_snapshot_at_ms,
 		input_tokens, output_tokens, reasoning_tokens, cached_tokens, cache_tokens, total_tokens,
 		latency_ms, failed, raw_json, created_at_ms
-	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+	) values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
 	if err != nil {
 		return InsertResult{}, err
 	}
@@ -1226,6 +1231,8 @@ func (s *Store) InsertEvents(ctx context.Context, events []usage.Event) (InsertR
 			nullString(event.UpstreamModel),
 			nullString(event.ModelMatch),
 			nullString(event.ModelEvidence),
+			nullString(event.TurnStateClass),
+			nullString(event.TurnStateEvidence),
 			nullString(event.ReasoningEffort),
 			nullInt(event.TTFTMS),
 			nullString(event.ServiceTier),
@@ -1306,6 +1313,7 @@ func (s *Store) RecentEventsFiltered(
 	query := `select
 		request_id, event_hash, timestamp_ms, timestamp, provider, model,
 		requested_model, resolved_model, upstream_model, model_match, model_evidence,
+		turn_state_class, turn_state_evidence,
 		reasoning_effort,
 		ttft_ms, service_tier, request_service_tier, response_service_tier, executor_type,
 		fail_status_code, fail_summary, security_signal, endpoint, method, path,
@@ -1343,7 +1351,7 @@ func (s *Store) RecentEventsFiltered(
 	events := make([]usage.Event, 0)
 	for rows.Next() {
 		var event usage.Event
-		var requestID, provider, requestedModel, resolvedModel, upstreamModel, modelMatch, modelEvidence, reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash, apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot, rawJSON sql.NullString
+		var requestID, provider, requestedModel, resolvedModel, upstreamModel, modelMatch, modelEvidence, turnStateClass, turnStateEvidence, reasoningEffort, serviceTier, requestServiceTier, responseServiceTier, executorType, failSummary, securitySignal, endpoint, method, path, authType, authIndex, source, sourceHash, apiKeyHash, accountSnapshot, authLabelSnapshot, authFileSnapshot, authProviderSnapshot, rawJSON sql.NullString
 		var ttft, failStatusCode, authSnapshotAt, latency sql.NullInt64
 		var failed int
 		if err := rows.Scan(
@@ -1358,6 +1366,8 @@ func (s *Store) RecentEventsFiltered(
 			&upstreamModel,
 			&modelMatch,
 			&modelEvidence,
+			&turnStateClass,
+			&turnStateEvidence,
 			&reasoningEffort,
 			&ttft,
 			&serviceTier,
@@ -1400,6 +1410,8 @@ func (s *Store) RecentEventsFiltered(
 		event.UpstreamModel = upstreamModel.String
 		event.ModelMatch = modelMatch.String
 		event.ModelEvidence = modelEvidence.String
+		event.TurnStateClass = turnStateClass.String
+		event.TurnStateEvidence = turnStateEvidence.String
 		event.ReasoningEffort = reasoningEffort.String
 		event.ServiceTier = serviceTier.String
 		event.RequestServiceTier = requestServiceTier.String

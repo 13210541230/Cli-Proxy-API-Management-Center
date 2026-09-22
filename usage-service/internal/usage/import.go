@@ -188,6 +188,8 @@ func eventFromExportedRecord(record map[string]any) (Event, bool, error) {
 		UpstreamModel:        readString(record, "upstream_model", "upstreamModel"),
 		ModelMatch:           readString(record, "model_match", "modelMatch"),
 		ModelEvidence:        readString(record, "model_evidence", "modelEvidence", "upstream_model_evidence", "upstreamModelEvidence"),
+		TurnStateClass:       readString(record, "turn_state_class", "turnStateClass"),
+		TurnStateEvidence:    readString(record, "turn_state_evidence", "turnStateEvidence"),
 		ReasoningEffort:      readString(record, "reasoning_effort", "reasoningEffort", "thinking_level", "thinkingLevel"),
 		TTFTMS:               readOptionalInt(record, "ttft_ms", "ttftMs", "time_to_first_token_ms", "timeToFirstTokenMs"),
 		ServiceTier:          readString(record, "service_tier", "serviceTier"),

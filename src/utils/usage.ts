@@ -33,6 +33,10 @@ export interface UsageDetail {
   modelMatch?: string;
   model_evidence?: string;
   modelEvidence?: string;
+  turn_state_class?: string;
+  turnStateClass?: string;
+  turn_state_evidence?: string;
+  turnStateEvidence?: string;
   auth_index: string | number | null;
   api_key_hash?: string;
   apiKeyHash?: string;
@@ -254,11 +258,7 @@ const readTokens = (detail: Record<string, unknown>): UsageTokens => {
 
 const normalizeSourceWithCache = (sourceCache: Map<string, string>, value: unknown): string => {
   const raw =
-    typeof value === 'string'
-      ? value
-      : value === null || value === undefined
-        ? ''
-        : String(value);
+    typeof value === 'string' ? value : value === null || value === undefined ? '' : String(value);
   const trimmed = raw.trim();
   if (!trimmed) return '';
 
@@ -310,7 +310,9 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
             detailRaw.AuthIndex ??
             null) as UsageDetail['auth_index'],
           api_key_hash: readDetailString(detailRaw.api_key_hash ?? detailRaw.apiKeyHash),
-          account_snapshot: readDetailString(detailRaw.account_snapshot ?? detailRaw.accountSnapshot),
+          account_snapshot: readDetailString(
+            detailRaw.account_snapshot ?? detailRaw.accountSnapshot
+          ),
           auth_label_snapshot: readDetailString(
             detailRaw.auth_label_snapshot ?? detailRaw.authLabelSnapshot
           ),
@@ -326,7 +328,9 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           reasoning_effort: readDetailString(
             detailRaw.reasoning_effort ?? detailRaw.reasoningEffort
           ),
-          ttft_ms: toPositiveNumber(detailRaw.ttft_ms ?? detailRaw.ttftMs ?? detailRaw.time_to_first_token_ms),
+          ttft_ms: toPositiveNumber(
+            detailRaw.ttft_ms ?? detailRaw.ttftMs ?? detailRaw.time_to_first_token_ms
+          ),
           service_tier: readDetailString(detailRaw.service_tier ?? detailRaw.serviceTier),
           request_service_tier: readDetailString(
             detailRaw.request_service_tier ?? detailRaw.requestServiceTier
@@ -344,9 +348,7 @@ export function collectUsageDetails(usageData: unknown): UsageDetail[] {
           error_code: readDetailString(detailRaw.error_code ?? detailRaw.errorCode),
           error_type: readDetailString(detailRaw.error_type ?? detailRaw.errorType),
           error_class: readDetailString(detailRaw.error_class ?? detailRaw.errorClass),
-          security_signal: readDetailString(
-            detailRaw.security_signal ?? detailRaw.securitySignal
-          ),
+          security_signal: readDetailString(detailRaw.security_signal ?? detailRaw.securitySignal),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,
@@ -405,7 +407,9 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
             detailRaw.AuthIndex ??
             null) as UsageDetail['auth_index'],
           api_key_hash: readDetailString(detailRaw.api_key_hash ?? detailRaw.apiKeyHash),
-          account_snapshot: readDetailString(detailRaw.account_snapshot ?? detailRaw.accountSnapshot),
+          account_snapshot: readDetailString(
+            detailRaw.account_snapshot ?? detailRaw.accountSnapshot
+          ),
           auth_label_snapshot: readDetailString(
             detailRaw.auth_label_snapshot ?? detailRaw.authLabelSnapshot
           ),
@@ -421,7 +425,9 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           reasoning_effort: readDetailString(
             detailRaw.reasoning_effort ?? detailRaw.reasoningEffort
           ),
-          ttft_ms: toPositiveNumber(detailRaw.ttft_ms ?? detailRaw.ttftMs ?? detailRaw.time_to_first_token_ms),
+          ttft_ms: toPositiveNumber(
+            detailRaw.ttft_ms ?? detailRaw.ttftMs ?? detailRaw.time_to_first_token_ms
+          ),
           service_tier: readDetailString(detailRaw.service_tier ?? detailRaw.serviceTier),
           request_service_tier: readDetailString(
             detailRaw.request_service_tier ?? detailRaw.requestServiceTier
@@ -439,9 +445,7 @@ export function collectUsageDetailsWithEndpoint(usageData: unknown): UsageDetail
           error_code: readDetailString(detailRaw.error_code ?? detailRaw.errorCode),
           error_type: readDetailString(detailRaw.error_type ?? detailRaw.errorType),
           error_class: readDetailString(detailRaw.error_class ?? detailRaw.errorClass),
-          security_signal: readDetailString(
-            detailRaw.security_signal ?? detailRaw.securitySignal
-          ),
+          security_signal: readDetailString(detailRaw.security_signal ?? detailRaw.securitySignal),
           latency_ms: latencyMs ?? undefined,
           tokens: readTokens(detailRaw),
           failed: detailRaw.failed === true,

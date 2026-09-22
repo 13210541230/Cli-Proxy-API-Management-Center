@@ -1551,6 +1551,8 @@
     "upstream_request_model": "Модель запроса upstream",
     "upstream_response_model": "Модель ответа upstream",
     "upstream_model_mismatch_badge": "Несовпадение",
+    "turn_state_suspected": "Подозрение на понижение",
+    "turn_state_missing": "Подозрение на понижение · без состояния",
     "no_upstream_model_mismatches": "В текущем диапазоне несовпадений моделей upstream не найдено.",
     "model_pricing_desc": "Управляйте ценами моделей прямо на странице мониторинга, чтобы расходы по аккаунтам, моделям и live log обновлялись мгновенно.",
     "price_storage_hint": "Цены сохраняются в SQLite, если доступно; старые цены из local storage переносятся автоматически.",

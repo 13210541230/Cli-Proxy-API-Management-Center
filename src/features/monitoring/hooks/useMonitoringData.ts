@@ -357,6 +357,8 @@ export type MonitoringEventRow = {
   upstreamModel?: string;
   modelMatch?: string;
   modelEvidence?: string;
+  turnStateClass?: string;
+  turnStateEvidence?: string;
   reasoningEffort?: string;
   ttftMs?: number | null;
   tokensPerSecond?: number | null;
@@ -665,7 +667,9 @@ const buildRangeFilteredRows = (
       return false;
     }
 
-    const normalizedReasoningEffort = String(reasoningEffort || '').trim().toLowerCase();
+    const normalizedReasoningEffort = String(reasoningEffort || '')
+      .trim()
+      .toLowerCase();
     if (
       normalizedReasoningEffort &&
       normalizedReasoningEffort !== 'all' &&
@@ -1516,9 +1520,8 @@ const buildEventRows = (
         extractTotalTokens(detail)
       );
       const totalCost = calculateCost(detail, modelPrices);
-      const latencyMs = typeof detail.latency_ms === 'number' && detail.latency_ms >= 0
-        ? detail.latency_ms
-        : null;
+      const latencyMs =
+        typeof detail.latency_ms === 'number' && detail.latency_ms >= 0 ? detail.latency_ms : null;
       const ttftMsRaw = Number(detail.ttft_ms ?? detail.ttftMs);
       const ttftMs = Number.isFinite(ttftMsRaw) && ttftMsRaw >= 0 ? ttftMsRaw : null;
       const tokensPerSecond =
@@ -1567,6 +1570,8 @@ const buildEventRows = (
         upstreamModel: readString(detail.upstream_model ?? detail.upstreamModel),
         modelMatch: readString(detail.model_match ?? detail.modelMatch),
         modelEvidence: readString(detail.model_evidence ?? detail.modelEvidence),
+        turnStateClass: readString(detail.turn_state_class ?? detail.turnStateClass),
+        turnStateEvidence: readString(detail.turn_state_evidence ?? detail.turnStateEvidence),
         reasoningEffort,
         endpoint,
         endpointMethod,
@@ -1615,6 +1620,8 @@ const buildEventRows = (
           detail.resolved_model ?? detail.resolvedModel,
           detail.upstream_model ?? detail.upstreamModel,
           detail.model_match ?? detail.modelMatch,
+          detail.turn_state_class ?? detail.turnStateClass,
+          detail.turn_state_evidence ?? detail.turnStateEvidence,
           detail.error_code ?? detail.errorCode,
           detail.error_class ?? detail.errorClass,
           sourceLabel,

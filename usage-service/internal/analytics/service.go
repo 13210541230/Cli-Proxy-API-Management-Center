@@ -217,6 +217,8 @@ type EventItem struct {
 	UpstreamModel        string `json:"upstream_model,omitempty"`
 	ModelMatch           string `json:"model_match,omitempty"`
 	ModelEvidence        string `json:"model_evidence,omitempty"`
+	TurnStateClass       string `json:"turn_state_class,omitempty"`
+	TurnStateEvidence    string `json:"turn_state_evidence,omitempty"`
 	Endpoint             string `json:"endpoint,omitempty"`
 	Method               string `json:"method,omitempty"`
 	Path                 string `json:"path,omitempty"`
@@ -916,7 +918,7 @@ func eventItems(items []store.UsageEventPageItem) []EventItem {
 			ID: item.ID, RequestID: item.RequestID, EventHash: item.EventHash, TimestampMS: item.TimestampMS, Timestamp: item.Timestamp,
 			Provider: item.Provider, Model: item.Model, RequestedModel: item.RequestedModel,
 			ResolvedModel: item.ResolvedModel, UpstreamModel: item.UpstreamModel, ModelMatch: item.ModelMatch,
-			ModelEvidence: item.ModelEvidence, Endpoint: item.Endpoint, Method: item.Method, Path: item.Path,
+			ModelEvidence: item.ModelEvidence, TurnStateClass: item.TurnStateClass, TurnStateEvidence: item.TurnStateEvidence, Endpoint: item.Endpoint, Method: item.Method, Path: item.Path,
 			AuthType: item.AuthType, AuthIndex: item.AuthIndex, Source: usage.MaskUsageSource(item.Source), SourceHash: item.SourceHash,
 			APIKeyHash: item.APIKeyHash, AccountSnapshot: item.AccountSnapshot, AuthLabelSnapshot: item.AuthLabelSnapshot,
 			AuthFileSnapshot: item.AuthFileSnapshot, AuthProviderSnapshot: item.AuthProviderSnapshot, AuthSnapshotAtMS: item.AuthSnapshotAtMS,
