@@ -82,6 +82,7 @@ const CodexInspectionPage = lazy(() =>
     default: CodexInspectionPage,
   }))
 );
+const ConfigPage = lazy(() => import('@/pages/ConfigPage').then(({ ConfigPage }) => ({ default: ConfigPage })));
 const LogsPage = lazy(() => import('@/pages/LogsPage').then(({ LogsPage }) => ({ default: LogsPage })));
 const SystemPage = lazy(() => import('@/pages/SystemPage').then(({ SystemPage }) => ({ default: SystemPage })));
 const EnterpriseKeysPage = lazy(() =>
@@ -108,8 +109,8 @@ const PluginResourcePage = lazy(() =>
 const mainRoutes = [
   { path: '/', element: <DashboardPage /> },
   { path: '/dashboard', element: <DashboardPage /> },
-  { path: '/settings', element: <Navigate to="/" replace /> },
-  { path: '/api-keys', element: <Navigate to="/" replace /> },
+  { path: '/settings', element: <Navigate to="/config" replace /> },
+  { path: '/api-keys', element: <Navigate to="/config" replace /> },
   { path: '/ai-providers/gemini/new', element: <AiProvidersGeminiEditPage /> },
   { path: '/ai-providers/gemini/:index', element: <AiProvidersGeminiEditPage /> },
   { path: '/ai-providers/codex/new', element: <AiProvidersCodexEditPage /> },
@@ -158,6 +159,7 @@ const mainRoutes = [
   { path: '/quota', element: <QuotaPage /> },
   { path: '/monitoring', element: <MonitoringCenterPage /> },
   { path: '/monitoring/codex-inspection', element: <CodexInspectionPage /> },
+  { path: '/config', element: <ConfigPage /> },
 
   { path: '/logs', element: <LogsPage /> },
   { path: '/system', element: <SystemPage /> },
