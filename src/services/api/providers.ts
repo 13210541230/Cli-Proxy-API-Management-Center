@@ -152,8 +152,84 @@ const serializeOpenAIProvider = (provider: OpenAIProviderConfig) => {
   if (models && models.length) payload.models = models;
   if (provider.priority !== undefined) payload.priority = provider.priority;
   if (provider.testModel) payload['test-model'] = provider.testModel;
+  if (provider.disableCooling !== undefined) payload['disable-cooling'] = provider.disableCooling;
   return payload;
 };
+
+// ---- Preservation merge for full-list PUT saves ----
+// CPA replaces whole credential/provider lists on PUT while serializers only emit the
+// fields this panel models. Fields added by newer CLIProxyAPI versions (request-retry,
+// weight, request-scoped-errors, support-prompt-cache-key, ...) would therefore be
+// wiped from config.yaml by every save. Merge each outgoing item over the raw server
+// copy: unmanaged keys survive untouched, managed keys follow the serializer
+// (present = set, absent = cleared), and lists of equal length merge positionally so
+// identity edits (renames, key rotation) keep their unmodeled fields as well.
+
+type SavedMergeSpec = {
+  managed: string[];
+  identity?: string;
+  nest?: { key: string; managed: string[]; identity?: string };
+};
+
+const mergeSavedList = (
+  rawList: unknown,
+  sentList: Record<string, unknown>[],
+  spec: SavedMergeSpec
+): Record<string, unknown>[] => {
+  const raws = Array.isArray(rawList) ? rawList : [];
+  const mergeOne = (raw: unknown, sent: Record<string, unknown>): Record<string, unknown> => {
+    const base = isRecord(raw) ? raw : {};
+    const merged: Record<string, unknown> = { ...base, ...sent };
+    for (const key of spec.managed) {
+      if (!(key in sent)) delete merged[key];
+    }
+    if (spec.nest && Array.isArray(sent[spec.nest.key])) {
+      const rawEntries = isRecord(base) && Array.isArray(base[spec.nest.key]) ? base[spec.nest.key] : [];
+      merged[spec.nest.key] = mergeSavedList(rawEntries, sent[spec.nest.key] as Record<string, unknown>[], {
+        managed: spec.nest.managed,
+        identity: spec.nest.identity
+      });
+    }
+    return merged;
+  };
+  if (raws.length === sentList.length) {
+    return sentList.map((sent, index) => mergeOne(raws[index], sent));
+  }
+  if (spec.identity) {
+    const used = new Set<number>();
+    return sentList.map((sent) => {
+      const idx = raws.findIndex(
+        (raw, index) => !used.has(index) && isRecord(raw) && raw[spec.identity as string] === sent[spec.identity as string]
+      );
+      if (idx >= 0) {
+        used.add(idx);
+        return mergeOne(raws[idx], sent);
+      }
+      return mergeOne(undefined, sent);
+    });
+  }
+  return sentList.map((sent) => mergeOne(undefined, sent));
+};
+
+const fetchRawList = async (path: string, alias: string): Promise<unknown[]> => {
+  try {
+    const data = await apiClient.get(path);
+    return extractArrayPayload(data, alias);
+  } catch {
+    return [];
+  }
+};
+
+// Keys owned by each serializer: present in its output = set, absent = cleared.
+const PROVIDER_KEY_MANAGED = [
+  'api-key', 'priority', 'prefix', 'base-url', 'websockets', 'proxy-url', 'headers', 'models',
+  'excluded-models', 'cloak'
+];
+const SIMPLE_KEY_MANAGED = ['api-key', 'priority', 'prefix', 'base-url', 'proxy-url', 'headers', 'models', 'excluded-models'];
+const OPENAI_PROVIDER_MANAGED = [
+  'name', 'base-url', 'api-key-entries', 'prefix', 'disabled', 'headers', 'models', 'priority', 'test-model'
+];
+const OPENAI_ENTRY_MANAGED = ['api-key', 'proxy-url', 'headers'];
 
 export const providersApi = {
   async getGeminiKeys(): Promise<GeminiKeyConfig[]> {
@@ -162,8 +238,11 @@ export const providersApi = {
     return list.map((item) => normalizeGeminiKeyConfig(item)).filter(Boolean) as GeminiKeyConfig[];
   },
 
-  saveGeminiKeys: (configs: GeminiKeyConfig[]) =>
-    apiClient.put('/gemini-api-key', configs.map((item) => serializeGeminiKey(item))),
+  async saveGeminiKeys(configs: GeminiKeyConfig[]) {
+    const raw = await fetchRawList('/gemini-api-key', 'gemini-api-key');
+    const sent = configs.map((item) => serializeGeminiKey(item));
+    await apiClient.put('/gemini-api-key', mergeSavedList(raw, sent, { managed: SIMPLE_KEY_MANAGED, identity: 'api-key' }));
+  },
 
   updateGeminiKey: (index: number, value: GeminiKeyConfig) =>
     apiClient.patch('/gemini-api-key', { index, value: serializeGeminiKey(value) }),
@@ -177,8 +256,11 @@ export const providersApi = {
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
-  saveCodexConfigs: (configs: ProviderKeyConfig[]) =>
-    apiClient.put('/codex-api-key', configs.map((item) => serializeProviderKey(item))),
+  async saveCodexConfigs(configs: ProviderKeyConfig[]) {
+    const raw = await fetchRawList('/codex-api-key', 'codex-api-key');
+    const sent = configs.map((item) => serializeProviderKey(item));
+    await apiClient.put('/codex-api-key', mergeSavedList(raw, sent, { managed: PROVIDER_KEY_MANAGED, identity: 'api-key' }));
+  },
 
   updateCodexConfig: (index: number, value: ProviderKeyConfig) =>
     apiClient.patch('/codex-api-key', { index, value: serializeProviderKey(value) }),
@@ -192,8 +274,11 @@ export const providersApi = {
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
-  saveClaudeConfigs: (configs: ProviderKeyConfig[]) =>
-    apiClient.put('/claude-api-key', configs.map((item) => serializeProviderKey(item))),
+  async saveClaudeConfigs(configs: ProviderKeyConfig[]) {
+    const raw = await fetchRawList('/claude-api-key', 'claude-api-key');
+    const sent = configs.map((item) => serializeProviderKey(item));
+    await apiClient.put('/claude-api-key', mergeSavedList(raw, sent, { managed: PROVIDER_KEY_MANAGED, identity: 'api-key' }));
+  },
 
   updateClaudeConfig: (index: number, value: ProviderKeyConfig) =>
     apiClient.patch('/claude-api-key', { index, value: serializeProviderKey(value) }),
@@ -207,8 +292,11 @@ export const providersApi = {
     return list.map((item) => normalizeProviderKeyConfig(item)).filter(Boolean) as ProviderKeyConfig[];
   },
 
-  saveVertexConfigs: (configs: ProviderKeyConfig[]) =>
-    apiClient.put('/vertex-api-key', configs.map((item) => serializeVertexKey(item))),
+  async saveVertexConfigs(configs: ProviderKeyConfig[]) {
+    const raw = await fetchRawList('/vertex-api-key', 'vertex-api-key');
+    const sent = configs.map((item) => serializeVertexKey(item));
+    await apiClient.put('/vertex-api-key', mergeSavedList(raw, sent, { managed: SIMPLE_KEY_MANAGED, identity: 'api-key' }));
+  },
 
   updateVertexConfig: (index: number, value: ProviderKeyConfig) =>
     apiClient.patch('/vertex-api-key', { index, value: serializeVertexKey(value) }),
@@ -222,8 +310,18 @@ export const providersApi = {
     return list.map((item) => normalizeOpenAIProvider(item)).filter(Boolean) as OpenAIProviderConfig[];
   },
 
-  saveOpenAIProviders: (providers: OpenAIProviderConfig[]) =>
-    apiClient.put('/openai-compatibility', providers.map((item) => serializeOpenAIProvider(item))),
+  async saveOpenAIProviders(providers: OpenAIProviderConfig[]) {
+    const raw = await fetchRawList('/openai-compatibility', 'openai-compatibility');
+    const sent = providers.map((item) => serializeOpenAIProvider(item));
+    await apiClient.put(
+      '/openai-compatibility',
+      mergeSavedList(raw, sent, {
+        managed: OPENAI_PROVIDER_MANAGED,
+        identity: 'name',
+        nest: { key: 'api-key-entries', managed: OPENAI_ENTRY_MANAGED, identity: 'api-key' }
+      })
+    );
+  },
 
   updateOpenAIProvider: (index: number, value: OpenAIProviderConfig) =>
     apiClient.patch('/openai-compatibility', { index, value: serializeOpenAIProvider(value) }),

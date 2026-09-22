@@ -302,6 +302,7 @@ export function AiProvidersOpenAIEditLayout() {
         baseUrl: initialData.baseUrl,
         headers: headersToEntries(initialData.headers),
         testModel: initialData.testModel,
+        disableCooling: initialData.disableCooling,
         modelEntries,
         apiKeyEntries: initialData.apiKeyEntries?.length
           ? initialData.apiKeyEntries
@@ -483,6 +484,9 @@ export function AiProvidersOpenAIEditLayout() {
       }
       const resolvedTestModel = testModel.trim();
       if (resolvedTestModel) payload.testModel = resolvedTestModel;
+      if (form.disableCooling !== undefined) {
+        payload.disableCooling = form.disableCooling;
+      }
       const models = entriesToModels(form.modelEntries);
       if (models.length) payload.models = models;
 

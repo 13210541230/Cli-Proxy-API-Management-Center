@@ -13,6 +13,7 @@ export interface OpenAIFormState {
   baseUrl: string;
   headers: HeaderEntry[];
   testModel?: string;
+  disableCooling?: boolean;
   modelEntries: ModelEntry[];
   apiKeyEntries: ApiKeyEntry[];
 }

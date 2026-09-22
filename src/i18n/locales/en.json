@@ -343,6 +343,8 @@
     "prefix_hint": "When set, call models as prefix/<model> to target this entry.",
     "priority_label": "Priority (Optional):",
     "priority_hint": "Higher values are preferred. Leave empty for default (0).",
+    "disable_cooling_label": "Disable cooling (disable-cooling)",
+    "disable_cooling_hint": "When on, this provider never enters cooldown; leaving it untouched keeps the file value.",
     "config_toggle_label": "Enabled",
     "config_disabled_badge": "Disabled",
     "codex_title": "Codex API Configuration",

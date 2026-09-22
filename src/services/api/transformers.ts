@@ -281,6 +281,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   if (models.length) result.models = models;
   if (priority !== undefined) result.priority = Number(priority);
   if (testModel) result.testModel = String(testModel);
+  const disableCooling = normalizeBoolean(provider['disable-cooling'] ?? provider.disableCooling);
+  if (disableCooling !== undefined) result.disableCooling = disableCooling;
   const authIndex = normalizeAuthIndex(
     provider['auth-index'] ?? provider.authIndex ?? provider['auth_index']
   );

@@ -7,6 +7,7 @@ import { HeaderInputList } from '@/components/ui/HeaderInputList';
 import { Input } from '@/components/ui/Input';
 import { ModelInputList } from '@/components/ui/ModelInputList';
 import { Select } from '@/components/ui/Select';
+import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
 import { SecondaryScreenShell } from '@/components/common/SecondaryScreenShell';
 import { useEdgeSwipeBack } from '@/hooks/useEdgeSwipeBack';
 import { useNotificationStore } from '@/stores';
@@ -552,6 +553,13 @@ export function AiProvidersOpenAIEditPage() {
                   priority: parsed !== undefined && Number.isFinite(parsed) ? parsed : undefined,
                 }));
               }}
+              disabled={saving || disableControls || isTestingKeys}
+            />
+            <ToggleSwitch
+              label={t('ai_providers.disable_cooling_label')}
+              labelPosition="left"
+              checked={form.disableCooling === true}
+              onChange={(value) => setForm((prev) => ({ ...prev, disableCooling: value }))}
               disabled={saving || disableControls || isTestingKeys}
             />
             <Input

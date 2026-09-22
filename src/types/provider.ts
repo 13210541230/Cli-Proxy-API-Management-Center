@@ -59,6 +59,7 @@ export interface OpenAIProviderConfig {
   models?: ModelAlias[];
   priority?: number;
   testModel?: string;
+  disableCooling?: boolean;
   authIndex?: string;
   [key: string]: unknown;
 }

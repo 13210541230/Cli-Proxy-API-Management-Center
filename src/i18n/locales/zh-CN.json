@@ -343,6 +343,8 @@
     "prefix_hint": "设置后可用 prefix/<model> 选择该条目。",
     "priority_label": "优先级 (可选):",
     "priority_hint": "数值越大优先级越高；留空表示默认（0）。",
+    "disable_cooling_label": "禁用冷却（disable-cooling）",
+    "disable_cooling_hint": "开启后此提供商不执行冷却；未操作则保持文件中的原值。",
     "config_toggle_label": "启用",
     "config_disabled_badge": "已停用",
     "codex_title": "Codex API 配置",
