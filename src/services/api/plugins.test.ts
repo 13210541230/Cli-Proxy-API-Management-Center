@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiClient } from './client';
-import { normalizePluginList, normalizePluginStoreList, pluginsApi } from './plugins';
+import {
+  nestPluginConfigKeys,
+  normalizePluginList,
+  normalizePluginStoreList,
+  pluginsApi,
+  readPluginConfigValue,
+} from './plugins';
 
 vi.mock('./client', () => ({
   apiClient: {
@@ -156,5 +162,38 @@ describe('pluginsApi', () => {
       { version: '1.2.3' },
       { timeout: 180_000 }
     );
+  });
+
+  it('nests dotted ConfigField keys when saving plugin config', async () => {
+    vi.mocked(apiClient.put).mockResolvedValue({});
+    await pluginsApi.putConfig('enterprise-access-audit', {
+      enabled: true,
+      'account_pool.enabled': true,
+      'account_pool.data_dir': 'pool-dir',
+    });
+    expect(apiClient.put).toHaveBeenCalledWith('/plugins/enterprise-access-audit/config', {
+      enabled: true,
+      account_pool: { enabled: true, data_dir: 'pool-dir' },
+    });
+  });
+
+  it('nests dotted keys without clobbering an existing nested block', () => {
+    expect(
+      nestPluginConfigKeys({
+        account_pool: { reserve_seconds: 7 },
+        'account_pool.enabled': true,
+      })
+    ).toEqual({ account_pool: { reserve_seconds: 7, enabled: true } });
+  });
+
+  it('reads config values from both flat and nested shapes', () => {
+    expect(readPluginConfigValue({ 'account_pool.enabled': true }, 'account_pool.enabled')).toBe(true);
+    expect(
+      readPluginConfigValue({ account_pool: { enabled: true } }, 'account_pool.enabled')
+    ).toBe(true);
+    expect(
+      readPluginConfigValue({ account_pool: { enabled: true } }, 'account_pool.data_dir')
+    ).toBeUndefined();
+    expect(readPluginConfigValue({ enabled: true }, 'enabled')).toBe(true);
   });
 });

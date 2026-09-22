@@ -69,6 +69,63 @@ const normalizeMenus = (value: unknown): ManagementPluginMenu[] =>
     ? value.map(normalizeMenu).filter((menu): menu is ManagementPluginMenu => Boolean(menu))
     : [];
 
+/**
+ * The plugin ConfigField names may be dotted paths (e.g. `account_pool.enabled`).
+ * CPA stores the plugin config as a YAML mapping, where a literal dotted key is
+ * NOT equivalent to a nested block, so the editor must write nested objects.
+ * Plain keys are preserved as-is; dotted keys are expanded into nested records.
+ */
+const setNestedConfigValue = (
+  target: RecordValue,
+  path: string[],
+  value: unknown
+): void => {
+  if (path.length === 1) {
+    const existing = target[path[0]];
+    target[path[0]] =
+      isRecord(existing) && isRecord(value) ? { ...existing, ...value } : value;
+    return;
+  }
+  const [head, ...rest] = path;
+  const existing = target[head];
+  const branch: RecordValue = isRecord(existing) ? { ...existing } : {};
+  target[head] = branch;
+  setNestedConfigValue(branch, rest, value);
+};
+
+export const nestPluginConfigKeys = (config: ManagementPluginConfig): ManagementPluginConfig => {
+  const out: RecordValue = {};
+  for (const [key, value] of Object.entries(config)) {
+    const segments = key.split('.');
+    if (segments.length < 2 || segments.some((segment) => segment.trim() === '')) {
+      const existing = out[key];
+      out[key] = isRecord(existing) && isRecord(value) ? { ...existing, ...value } : value;
+      continue;
+    }
+    setNestedConfigValue(out, segments, value);
+  }
+  return out;
+};
+
+/**
+ * Read a ConfigField value, tolerating both the legacy flat dotted key and the
+ * nested object shape written after this normalization.
+ */
+export const readPluginConfigValue = (
+  config: ManagementPluginConfig,
+  name: string
+): unknown => {
+  if (Object.prototype.hasOwnProperty.call(config, name)) return config[name];
+  const segments = name.split('.').filter(Boolean);
+  if (segments.length < 2) return undefined;
+  let cursor: unknown = config;
+  for (const segment of segments) {
+    if (!isRecord(cursor)) return undefined;
+    cursor = cursor[segment];
+  }
+  return cursor;
+};
+
 const normalizeMetadata = (value: unknown): ManagementPluginMetadata | null => {
   if (!isRecord(value)) return null;
   const metadata: ManagementPluginMetadata = {
@@ -247,7 +304,7 @@ export const pluginsApi = {
   },
 
   putConfig: (id: string, config: ManagementPluginConfig) =>
-    apiClient.put(`/plugins/${encodeURIComponent(id)}/config`, config),
+    apiClient.put(`/plugins/${encodeURIComponent(id)}/config`, nestPluginConfigKeys(config)),
 
   patchConfig: (id: string, patch: ManagementPluginConfig) =>
     apiClient.patch(`/plugins/${encodeURIComponent(id)}/config`, patch),

@@ -16,7 +16,7 @@ import {
   IconSettings,
   IconTrash2,
 } from '@/components/ui/icons';
-import { pluginsApi } from '@/services/api/plugins';
+import { pluginsApi, readPluginConfigValue } from '@/services/api/plugins';
 import { useAuthStore, usePluginStore } from '@/stores';
 import type {
   ManagementPluginConfig,
@@ -697,7 +697,7 @@ export function PluginsPage() {
                 <PluginConfigFieldInput
                   key={field.name}
                   field={field}
-                  value={config[field.name]}
+                  value={readPluginConfigValue(config, field.name)}
                   onChange={(value) =>
                     setConfig((current) => ({ ...current, [field.name]: value }))
                   }
