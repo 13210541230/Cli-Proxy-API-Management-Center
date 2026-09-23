@@ -49,6 +49,7 @@ describe('plugin resource host helpers', () => {
     expect(isPluginAPIRequestAllowed('PUT', '/v0/management/enterprise-access-audit/policy', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/enterprise/key-bindings/metadata', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/auth-files', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('GET', '/v0/management/auth-credentials', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/auth-files/models?name=codex.json', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/model-definitions/claude', 'enterprise-access-audit')).toBe(true);
     expect(isPluginAPIRequestAllowed('GET', '/v0/management/plugin-host/models', 'enterprise-access-audit')).toBe(true);

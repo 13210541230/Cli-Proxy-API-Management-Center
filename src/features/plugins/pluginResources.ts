@@ -23,6 +23,7 @@ const enterpriseAuditSharedPaths = new Set([
   '/v0/management/enterprise/key-bindings/metadata',
   '/v0/management/auth-files',
   '/v0/management/auth-files/models',
+  '/v0/management/auth-credentials',
   PLUGIN_HOST_MODELS_PATH,
 ]);
 
