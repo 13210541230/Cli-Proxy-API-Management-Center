@@ -359,6 +359,7 @@ export type MonitoringEventRow = {
   modelEvidence?: string;
   turnStateClass?: string;
   turnStateEvidence?: string;
+  turnStateLength?: number;
   reasoningEffort?: string;
   ttftMs?: number | null;
   tokensPerSecond?: number | null;
@@ -1452,6 +1453,11 @@ const buildFailureRows = (rows: MonitoringEventRow[]) =>
     .sort((left, right) => right.timestampMs - left.timestampMs)
     .slice(0, 8);
 
+const parseTurnStateLength = (evidence?: string): number | undefined => {
+  const match = /(?:^|;)length=(\d+)/.exec(evidence || '');
+  return match ? Number(match[1]) : undefined;
+};
+
 const buildEventRows = (
   details: UsageDetailWithEndpoint[],
   authMetaMap: Map<string, MonitoringAuthMeta>,
@@ -1572,6 +1578,9 @@ const buildEventRows = (
         modelEvidence: readString(detail.model_evidence ?? detail.modelEvidence),
         turnStateClass: readString(detail.turn_state_class ?? detail.turnStateClass),
         turnStateEvidence: readString(detail.turn_state_evidence ?? detail.turnStateEvidence),
+        turnStateLength: parseTurnStateLength(
+          readString(detail.turn_state_evidence ?? detail.turnStateEvidence)
+        ),
         reasoningEffort,
         endpoint,
         endpointMethod,

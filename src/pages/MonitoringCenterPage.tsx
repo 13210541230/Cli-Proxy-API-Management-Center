@@ -4655,6 +4655,22 @@ export function MonitoringCenterPage() {
                               t('monitoring.upstream_model_unknown', { defaultValue: '未声明' })}
                           </small>
                         )}
+                        {row.turnStateLength ? (
+                          <small
+                            className={styles.monoCell}
+                            title={
+                              row.turnStateEvidence
+                                ? `${t('monitoring.turn_state_length_title', {
+                                    defaultValue: 'X-Codex-Turn-State 字节长度',
+                                  })} · ${row.turnStateEvidence}`
+                                : t('monitoring.turn_state_length_title', {
+                                    defaultValue: 'X-Codex-Turn-State 字节长度',
+                                  })
+                            }
+                          >
+                            TS {row.turnStateLength}
+                          </small>
+                        ) : null}
                         {row.turnStateClass === 'missing' || row.turnStateClass === 'suspected' ? (
                           <small title={row.turnStateEvidence || undefined}>
                             <span className={styles.modelMismatchBadge}>

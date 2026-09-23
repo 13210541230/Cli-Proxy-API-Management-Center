@@ -1605,6 +1605,7 @@
     "upstream_model_mismatch_badge": "不一致",
     "turn_state_suspected": "疑似降智",
     "turn_state_missing": "疑似降智·無票",
+    "turn_state_length_title": "X-Codex-Turn-State 位元組長度",
     "no_upstream_model_mismatches": "目前範圍內未發現上游模型不一致。",
     "model_pricing_desc": "直接在監控頁維護模型單價，帳號、模型與即時日誌花費會立即聯動更新。",
     "price_storage_hint": "單價設定會優先寫入 SQLite；舊版瀏覽器本機定價會自動遷移。",

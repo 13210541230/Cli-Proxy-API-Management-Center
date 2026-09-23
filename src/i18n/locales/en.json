@@ -1706,6 +1706,7 @@
     "upstream_model_mismatch_badge": "Mismatch",
     "turn_state_suspected": "Suspected downgrade",
     "turn_state_missing": "Suspected downgrade · no state",
+    "turn_state_length_title": "X-Codex-Turn-State byte length",
     "no_upstream_model_mismatches": "No upstream model mismatches found in the current scope.",
     "model_pricing_desc": "Maintain model pricing directly on the monitoring page and update account, model, and live-log spend instantly.",
     "price_storage_hint": "Pricing is saved to SQLite when available; legacy browser-local pricing migrates automatically.",
