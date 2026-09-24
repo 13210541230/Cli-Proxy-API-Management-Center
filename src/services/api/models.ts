@@ -6,24 +6,10 @@ import axios from 'axios';
 import { normalizeModelList } from '@/utils/models';
 import { normalizeApiBase } from '@/utils/connection';
 import { apiCallApi, getApiCallErrorMessage } from './apiCall';
-import { apiClient } from './client';
 
 const DEFAULT_CLAUDE_BASE_URL = 'https://api.anthropic.com';
 const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com';
 const DEFAULT_ANTHROPIC_VERSION = '2023-06-01';
-const STATIC_MODEL_CHANNELS = [
-  'claude',
-  'gemini',
-  'gemini-interactions',
-  'vertex',
-  'aistudio',
-  'codex',
-  'kimi',
-  'antigravity',
-  'xai',
-  'devin',
-  'meta',
-] as const;
 const CLAUDE_MODELS_IN_FLIGHT = new Map<string, Promise<ReturnType<typeof normalizeModelList>>>();
 const GEMINI_MODELS_IN_FLIGHT = new Map<string, Promise<ReturnType<typeof normalizeModelList>>>();
 
@@ -97,18 +83,6 @@ export const modelsApi = {
   /**
    * Fetch available models from /v1/models endpoint (for system info page)
    */
-  async fetchStaticModels() {
-    const responses = await Promise.allSettled(
-      STATIC_MODEL_CHANNELS.map((channel) =>
-        apiClient.get<{ models?: unknown[] }>(`/model-definitions/${channel}`),
-      ),
-    );
-    const entries = responses.flatMap((result) =>
-      result.status === 'fulfilled' && Array.isArray(result.value.models) ? result.value.models : [],
-    );
-    return normalizeModelList(entries, { dedupe: true });
-  },
-
   async fetchModels(baseUrl: string, apiKey?: string, headers: Record<string, string> = {}) {
     const endpoint = buildV1ModelsEndpoint(baseUrl);
     if (!endpoint) {

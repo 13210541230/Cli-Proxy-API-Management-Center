@@ -37,16 +37,16 @@ const loadPluginHostModels = async () => {
   const apiBase = useAuthStore.getState().apiBase.trim();
   if (!apiBase) throw new Error('管理中心尚未连接 CPA');
 
-  let primaryKey = useConfigStore.getState().config?.apiKeys?.find((key) => key.trim())?.trim();
-  if (!primaryKey) {
+  let apiKeys = useConfigStore.getState().config?.apiKeys?.map((key) => key.trim()).filter(Boolean) ?? [];
+  if (!apiKeys.length) {
     try {
-      primaryKey = (await apiKeysApi.list()).find((key) => key.trim())?.trim();
+      apiKeys = (await apiKeysApi.list()).map((key) => key.trim()).filter(Boolean);
     } catch {
-      primaryKey = '';
+      apiKeys = [];
     }
   }
 
-  const models = await useModelsStore.getState().fetchModels(apiBase, primaryKey || undefined);
+  const models = await useModelsStore.getState().fetchModelsWithApiKeys(apiBase, apiKeys);
   return { models: models.map((model) => ({ id: model.name, alias: model.alias })) };
 };
 

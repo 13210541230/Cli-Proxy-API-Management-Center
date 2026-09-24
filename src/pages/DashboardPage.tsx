@@ -118,7 +118,7 @@ export function DashboardPage() {
 
   const models = useModelsStore((state) => state.models);
   const modelsLoading = useModelsStore((state) => state.loading);
-  const fetchModelsFromStore = useModelsStore((state) => state.fetchModels);
+  const fetchModelsFromStore = useModelsStore((state) => state.fetchModelsWithApiKeys);
 
   const [stats, setStats] = useState<{
     apiKeys: number | null;
@@ -216,8 +216,7 @@ export function DashboardPage() {
 
     try {
       const apiKeys = await resolveApiKeysForModels();
-      const primaryKey = apiKeys[0];
-      await fetchModelsFromStore(apiBase, primaryKey);
+      await fetchModelsFromStore(apiBase, apiKeys);
     } catch {
       // Ignore model fetch errors on dashboard
     }

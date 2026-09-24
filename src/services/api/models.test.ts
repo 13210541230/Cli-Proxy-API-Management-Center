@@ -1,33 +1,35 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./client', () => ({
-  apiClient: {
+vi.mock('axios', () => ({
+  default: {
+    create: vi.fn(() => ({
+      interceptors: {
+        request: { use: vi.fn() },
+        response: { use: vi.fn() },
+      },
+    })),
     get: vi.fn(),
   },
 }));
 
-import { apiClient } from './client';
+import axios from 'axios';
 import { modelsApi } from './models';
 
-describe('modelsApi.fetchStaticModels', () => {
+describe('modelsApi.fetchModels', () => {
   beforeEach(() => {
-    vi.mocked(apiClient.get).mockReset();
+    vi.mocked(axios.get).mockReset();
   });
 
-  it('aggregates static model definitions across provider channels', async () => {
-    vi.mocked(apiClient.get).mockImplementation(async (url) => {
-      if (url.endsWith('/codex')) {
-        return { models: [{ id: 'gpt-5' }, { id: 'shared-model' }] } as never;
-      }
-      if (url.endsWith('/claude')) {
-        return { models: [{ id: 'claude-sonnet' }, { id: 'shared-model' }] } as never;
-      }
-      return { models: [] } as never;
+  it('fetches the live model list with the selected API key', async () => {
+    vi.mocked(axios.get).mockResolvedValue({
+      data: { data: [{ id: 'gpt-5' }] },
+    } as never);
+
+    const models = await modelsApi.fetchModels('http://127.0.0.1:8317', 'client-key');
+
+    expect(models.map((model) => model.name)).toEqual(['gpt-5']);
+    expect(axios.get).toHaveBeenCalledWith('http://127.0.0.1:8317/v1/models', {
+      headers: { Authorization: 'Bearer client-key' },
     });
-
-    const models = await modelsApi.fetchStaticModels();
-
-    expect(models.map((model) => model.name)).toEqual(['claude-sonnet', 'shared-model', 'gpt-5']);
-    expect(apiClient.get).toHaveBeenCalledTimes(11);
   });
 });

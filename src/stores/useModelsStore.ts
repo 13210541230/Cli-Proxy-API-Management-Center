@@ -3,8 +3,10 @@
  */
 
 import { create } from 'zustand';
+import { quotaPauseApi } from '@/services/api/quotaPause';
 import { modelsApi } from '@/services/api/models';
 import { CACHE_EXPIRY_MS } from '@/utils/constants';
+import { quotaKeyHash } from '@/utils/apiKeyHash';
 import type { ModelInfo } from '@/utils/models';
 
 interface ModelsCache {
@@ -21,6 +23,7 @@ interface ModelsState {
   cache: ModelsCache | null;
 
   fetchModels: (apiBase: string, apiKey?: string, forceRefresh?: boolean) => Promise<ModelInfo[]>;
+  fetchModelsWithApiKeys: (apiBase: string, apiKeys: string[], forceRefresh?: boolean) => Promise<ModelInfo[]>;
   clearCache: () => void;
   isCacheValid: (apiBase: string, apiKey?: string) => boolean;
 }
@@ -55,28 +58,6 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
 
       return list;
     } catch (error: unknown) {
-      const status =
-        error && typeof error === 'object' && 'response' in error
-          ? Number((error as { response?: { status?: unknown } }).response?.status)
-          : 0;
-      if (status === 429) {
-        try {
-          const fallback = await modelsApi.fetchStaticModels();
-          if (fallback.length > 0) {
-            const now = Date.now();
-            set({
-              models: fallback,
-              loading: false,
-              error: null,
-              cache: { data: fallback, timestamp: now, apiBase, apiKey: apiKeyScope }
-            });
-            return fallback;
-          }
-        } catch {
-          // Preserve the original rate-limit error when the static catalog is unavailable.
-        }
-      }
-
       const message =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch models';
       set({
@@ -86,6 +67,49 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
       });
       throw error;
     }
+  },
+
+  fetchModelsWithApiKeys: async (apiBase, apiKeys, forceRefresh = false) => {
+    const uniqueKeys = Array.from(new Set(apiKeys.map((key) => key.trim()).filter(Boolean)));
+    let pausedHashes = new Set<string>();
+    try {
+      const response = await quotaPauseApi.listPaused();
+      pausedHashes = new Set(
+        (response.entries ?? [])
+          .map((entry) => String(entry.key_hash ?? '').trim().toLowerCase().slice(0, 8))
+          .filter(Boolean),
+      );
+    } catch {
+      // If the optional pause projection is unavailable, try the configured keys in order.
+    }
+
+    const activeKeys = uniqueKeys.filter((key) => !pausedHashes.has(quotaKeyHash(key)));
+    const orderedKeys = activeKeys.length > 0 ? activeKeys : uniqueKeys;
+    if (orderedKeys.length === 0) {
+      return get().fetchModels(apiBase, undefined, forceRefresh);
+    }
+
+    let lastError: unknown;
+    for (const apiKey of orderedKeys) {
+      try {
+        return await get().fetchModels(apiBase, apiKey, forceRefresh);
+      } catch (error: unknown) {
+        lastError = error;
+        const status =
+          error && typeof error === 'object'
+            ? Number(
+                (error as { response?: { status?: unknown }; status?: unknown }).response?.status ??
+                  (error as { status?: unknown }).status ??
+                  0,
+              )
+            : 0;
+        if (![401, 403, 429].includes(status)) {
+          throw error;
+        }
+      }
+    }
+
+    throw lastError instanceof Error ? lastError : new Error('No valid API key could fetch models');
   },
 
   clearCache: () => {
