@@ -1831,6 +1831,25 @@
       "validation_blocked_short": "待修復",
       "quick_jump": "快速跳轉",
       "sections": {
+        "advanced": {
+          "title": "進階與實驗",
+          "description": "請求標頭偽裝、簽章快取、外掛來源等不常修改的設定"
+        },
+        "headers": {
+          "title": "Header 預設值",
+          "description": "Claude 與 Codex OAuth 請求在客戶端缺少 Header 時使用的預設值",
+          "claude_title": "Claude Header Defaults",
+          "codex_title": "Codex Header Defaults",
+          "user_agent": "User-Agent",
+          "package_version": "Package Version",
+          "runtime_version": "Runtime Version",
+          "os": "OS",
+          "arch": "Arch",
+          "timeout": "Timeout",
+          "stabilize_device": "穩定設備指紋",
+          "stabilize_device_desc": "固定 OS/Arch，並按憑證/API Key 穩定軟體指紋",
+          "beta_features": "Beta Features"
+        },
         "server": {
           "title": "伺服器設定",
           "description": "基本伺服器設定",
@@ -1920,6 +1939,7 @@
           "devin_sensitive_words_label": "敏感詞（devin.sensitive-words）",
           "devin_sensitive_words_placeholder": "敏感短語",
           "devin_sensitive_words_hint": "每項填寫一個詞或短語。請謹慎設定：命中內容會導致整行系統提示詞被刪除；儲存時移除空項",
+          "signature_title": "簽章驗證",
           "antigravity_signature_cache": "啟用 Antigravity 簽名快取",
           "antigravity_signature_cache_desc": "優先使用並校驗快取的 thinking block 簽名",
           "antigravity_signature_strict": "嚴格校驗旁路簽名",

@@ -1951,6 +1951,25 @@
       "validation_blocked_short": "待修复",
       "quick_jump": "快速跳转",
       "sections": {
+        "advanced": {
+          "title": "高级与实验",
+          "description": "请求头伪装、签名缓存、插件源等不常修改的设置"
+        },
+        "headers": {
+          "title": "Header 默认值",
+          "description": "Claude 与 Codex OAuth 请求在客户端缺少 Header 时使用的默认值",
+          "claude_title": "Claude Header Defaults",
+          "codex_title": "Codex Header Defaults",
+          "user_agent": "User-Agent",
+          "package_version": "Package Version",
+          "runtime_version": "Runtime Version",
+          "os": "OS",
+          "arch": "Arch",
+          "timeout": "Timeout",
+          "stabilize_device": "稳定设备指纹",
+          "stabilize_device_desc": "固定 OS/Arch，并按凭据/API Key 稳定软件指纹",
+          "beta_features": "Beta Features"
+        },
         "server": {
           "title": "服务器配置",
           "description": "基础服务器设置",
@@ -2040,6 +2059,7 @@
           "devin_sensitive_words_label": "敏感词（devin.sensitive-words）",
           "devin_sensitive_words_placeholder": "敏感短语",
           "devin_sensitive_words_hint": "每项填写一个词或短语。请谨慎配置：命中内容会导致整行系统提示词被删除；保存时移除空项",
+          "signature_title": "签名校验",
           "antigravity_signature_cache": "启用 Antigravity 签名缓存",
           "antigravity_signature_cache_desc": "优先使用并校验缓存的 thinking block 签名",
           "antigravity_signature_strict": "严格校验旁路签名",

@@ -1802,6 +1802,25 @@
       "validation_blocked_short": "Есть ошибки",
       "quick_jump": "Быстрый переход",
       "sections": {
+        "advanced": {
+          "title": "Дополнительно и эксперименты",
+          "description": "Подмена заголовков, кэш подписей, источники плагинов и другие редко изменяемые настройки"
+        },
+        "headers": {
+          "title": "Заголовки по умолчанию",
+          "description": "Заголовки по умолчанию для OAuth-запросов Claude и Codex, когда клиент их не отправил",
+          "claude_title": "Claude Header Defaults",
+          "codex_title": "Codex Header Defaults",
+          "user_agent": "User-Agent",
+          "package_version": "Package Version",
+          "runtime_version": "Runtime Version",
+          "os": "OS",
+          "arch": "Arch",
+          "timeout": "Timeout",
+          "stabilize_device": "Стабилизировать профиль устройства",
+          "stabilize_device_desc": "Фиксировать OS/Arch и стабилизировать программный отпечаток для учётных данных/API-ключа",
+          "beta_features": "Beta Features"
+        },
         "server": {
           "title": "Настройки сервера",
           "description": "Базовые параметры сервера",
@@ -1891,6 +1910,7 @@
           "devin_sensitive_words_label": "Стоп-слова (devin.sensitive-words)",
           "devin_sensitive_words_placeholder": "чувствительная фраза",
           "devin_sensitive_words_hint": "Одно слово или фраза в строке. Настраивайте осторожно: при совпадении вся строка системного промпта удаляется; пустые значения удаляются при сохранении",
+          "signature_title": "Проверка подписей",
           "antigravity_signature_cache": "Включить кэш подписей Antigravity",
           "antigravity_signature_cache_desc": "Предпочитать и проверять кэшированные подписи thinking-блоков",
           "antigravity_signature_strict": "Строгая проверка bypass-подписи",
