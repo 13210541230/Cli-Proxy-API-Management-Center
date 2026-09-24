@@ -55,6 +55,28 @@ export const useModelsStore = create<ModelsState>((set, get) => ({
 
       return list;
     } catch (error: unknown) {
+      const status =
+        error && typeof error === 'object' && 'response' in error
+          ? Number((error as { response?: { status?: unknown } }).response?.status)
+          : 0;
+      if (status === 429) {
+        try {
+          const fallback = await modelsApi.fetchStaticModels();
+          if (fallback.length > 0) {
+            const now = Date.now();
+            set({
+              models: fallback,
+              loading: false,
+              error: null,
+              cache: { data: fallback, timestamp: now, apiBase, apiKey: apiKeyScope }
+            });
+            return fallback;
+          }
+        } catch {
+          // Preserve the original rate-limit error when the static catalog is unavailable.
+        }
+      }
+
       const message =
         error instanceof Error ? error.message : typeof error === 'string' ? error : 'Failed to fetch models';
       set({
