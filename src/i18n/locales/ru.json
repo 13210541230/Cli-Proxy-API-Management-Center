@@ -145,7 +145,8 @@
     "config_management": "Панель конфигурации",
     "logs": "Просмотр логов",
     "system_info": "Информация системы",
-    "plugins": "Центр плагинов"
+    "plugins": "Центр плагинов",
+    "quick_start": "Быстрый старт"
   },
   "dashboard": {
     "title": "Панель управления",
@@ -1824,7 +1825,9 @@
           "disable_panel_desc": "Отключить встроенную веб-панель управления",
           "secret_key": "Ключ управления",
           "secret_key_placeholder": "Задайте ключ управления",
-          "panel_repo": "Репозиторий панели"
+          "panel_repo": "Репозиторий панели",
+          "disable_auto_update_panel": "Отключить автообновление панели",
+          "disable_auto_update_panel_desc": "Скачивать панель при первом отсутствии, но не обновлять её автоматически с GitHub"
         },
         "auth": {
           "title": "Настройки аутентификации",
@@ -1845,7 +1848,53 @@
           "logging_to_file_desc": "Сохранять журналы в файлы",
           "logs_max_size": "Максимальный размер файла журнала (МБ)",
           "redis_usage_queue_retention": "Хранение очереди использования (сек)",
-          "redis_usage_queue_retention_hint": "По умолчанию CPA использует 60 секунд, максимум 3600 секунд. Оставьте пустым для значения по умолчанию. Держите Usage Service запущенным постоянно."
+          "redis_usage_queue_retention_hint": "По умолчанию CPA использует 60 секунд, максимум 3600 секунд. Оставьте пустым для значения по умолчанию. Держите Usage Service запущенным постоянно.",
+          "plugins_enabled": "Включить систему плагинов",
+          "plugins_enabled_desc": "Включает загрузку стандартных dynamic-library плагинов; отдельные экземпляры управляются на странице плагинов",
+          "plugin_store_sources": "Сторонние источники плагинов",
+          "plugin_store_sources_desc": "Добавляет registry-источники магазина плагинов; встроенный официальный источник всегда сохраняется",
+          "plugin_store_sources_label": "URL registry источника плагинов (plugins.store-sources)",
+          "plugin_store_sources_placeholder": "https://example.com/cliproxy-plugins/registry.json",
+          "plugin_store_sources_hint": "Один URL registry.json в строке. Пустые строки отфильтровываются при сохранении",
+          "plugin_store_auth": "Правила авторизации магазина плагинов",
+          "plugin_store_auth_desc": "Настраивает заголовки авторизации для приватных registry, метаданных GitHub Release или скачивания артефактов",
+          "plugin_store_auth_hint": "Указывайте только имена переменных окружения, не реальные token. Backend читает значения из своей среды выполнения.",
+          "store_auth_empty": "Правила авторизации не настроены. Публичным источникам плагинов они не нужны.",
+          "store_auth_rule": "Правило авторизации",
+          "store_auth_add": "Добавить правило",
+          "store_auth_match": "Совпадающий URL-префикс",
+          "store_auth_type": "Тип авторизации",
+          "store_auth_apply_to": "Применять к",
+          "store_auth_apply_to_hint": "Если ничего не выбрано, правило применяется ко всем типам запросов.",
+          "store_auth_apply_registry": "Registry",
+          "store_auth_apply_metadata": "Metadata",
+          "store_auth_apply_artifact": "Artifact",
+          "store_auth_type_none": "Нет",
+          "store_auth_type_bearer": "Bearer",
+          "store_auth_type_basic": "Basic",
+          "store_auth_type_header": "Свой Header",
+          "store_auth_type_github_token": "GitHub token",
+          "store_auth_token_env": "Переменная token",
+          "store_auth_username_env": "Переменная username",
+          "store_auth_password_env": "Переменная password",
+          "store_auth_header_name": "Имя Header",
+          "store_auth_header_value_env": "Переменная значения Header",
+          "store_auth_allow_insecure": "Разрешить небезопасные HTTP URL",
+          "error_logs_max_files": "Файлов журнала ошибок",
+          "antigravity_sensitive_words": "Обфускация стоп-слов",
+          "antigravity_sensitive_words_desc": "Вставляет символы нулевой ширины в совпадающие слова системных инструкций Antigravity, затрудняя точное распознавание ключевых слов на стороне сервиса",
+          "antigravity_sensitive_words_label": "Стоп-слова (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_placeholder": "proxy",
+          "antigravity_sensitive_words_hint": "Одно слово или фраза в строке. Регистр не учитывается; пустые значения удаляются, а значения короче 2 символов игнорируются backend",
+          "devin_sensitive_words": "Стоп-слова системного промпта Devin",
+          "devin_sensitive_words_desc": "Обрабатываются только системные промпты Devin: строка с настроенным словом удаляется целиком, затем оставшийся промпт обфусцируется. Обычные сообщения и аргументы инструментов не изменяются",
+          "devin_sensitive_words_label": "Стоп-слова (devin.sensitive-words)",
+          "devin_sensitive_words_placeholder": "чувствительная фраза",
+          "devin_sensitive_words_hint": "Одно слово или фраза в строке. Настраивайте осторожно: при совпадении вся строка системного промпта удаляется; пустые значения удаляются при сохранении",
+          "antigravity_signature_cache": "Включить кэш подписей Antigravity",
+          "antigravity_signature_cache_desc": "Предпочитать и проверять кэшированные подписи thinking-блоков",
+          "antigravity_signature_strict": "Строгая проверка bypass-подписи",
+          "antigravity_signature_strict_desc": "Применяется только при отключённом кэше подписей; проверяет полное дерево Claude protobuf"
         },
         "network": {
           "title": "Сетевые настройки",
@@ -1864,7 +1913,22 @@
           "force_model_prefix_desc": "Запросы к моделям без префикса используют только учётные данные без префикса",
           "session_affinity": "Маршрутизация с привязкой к сессии",
           "ws_auth": "Аутентификация WebSocket",
-          "ws_auth_desc": "Включить аутентификацию WebSocket (/v1/ws)"
+          "ws_auth_desc": "Включить аутентификацию WebSocket (/v1/ws)",
+          "auth_auto_refresh_workers": "Workers автообновления auth",
+          "auth_auto_refresh_workers_hint": "Положительное целое число задаёт число workers; 0, отрицательное целое число или пустое поле использует значение по умолчанию (16)",
+          "disable_image_generation": "Отключить генерацию изображений",
+          "disable_image_generation_hint": "false включает; true отключает везде; chat отключает инъекцию на не-image endpoints; passthrough сохраняет список инструментов клиента без инъекции",
+          "disable_image_generation_false": "false (включено)",
+          "disable_image_generation_true": "true (отключено везде)",
+          "disable_image_generation_chat": "chat (только отключить chat-инъекцию)",
+          "disable_image_generation_passthrough": "passthrough (сохранить список инструментов клиента)",
+          "gpt_image_2_base_model": "Базовая модель GPT Image 2",
+          "gpt_image_2_base_model_hint": "Основная модель для проксирования gpt-image-2 image-запросов; если пусто или неверно, backend использует значение по умолчанию",
+          "strategy_weighted_round_robin": "Взвешенный круговой алгоритм",
+          "passthrough_headers": "Передавать upstream-заголовки",
+          "passthrough_headers_desc": "Передавать отфильтрованные upstream-заголовки ответа downstream-клиентам",
+          "disable_cooling": "Отключить cooldown",
+          "disable_cooling_desc": "Глобально отключить окна охлаждения auth/model после ошибок"
         },
         "quota": {
           "title": "Резерв по квоте",
@@ -1963,7 +2027,21 @@
         "value_raw_json": "Raw JSON-фрагмент, например true, 123, \"high\" или {\"type\":\"object\"}",
         "value_default": "Значение",
         "boolean_true": "true",
-        "boolean_false": "false"
+        "boolean_false": "false",
+        "advanced": "Дополнительно",
+        "hide_advanced": "Скрыть дополнительно",
+        "from_protocol": "Исходный протокол (from-protocol)",
+        "headers": "Совпадения заголовков запроса",
+        "header_name": "Имя заголовка",
+        "header_value": "Значение заголовка",
+        "add_header": "Добавить заголовок",
+        "match": "Обязательные совпадения (match)",
+        "notMatch": "Запрещённые совпадения (not-match)",
+        "exist": "Обязательные пути (exist)",
+        "notExist": "Запрещённые пути (not-exist)",
+        "condition_path": "Путь условия",
+        "condition_value": "Значение условия",
+        "add_condition": "Добавить условие"
       },
       "validation": {
         "validation_blocked": "Исправьте ошибки валидации перед сохранением",
@@ -1972,7 +2050,8 @@
         "retention_seconds_range": "Введите целое число от 0 до 3600",
         "payload_invalid_number": "Введите корректное число",
         "payload_invalid_boolean": "Выберите true или false",
-        "payload_invalid_json": "Введите корректный JSON"
+        "payload_invalid_json": "Введите корректный JSON",
+        "integer": "Введите целое число"
       },
       "common": {
         "edit": "Изменить",
@@ -2202,5 +2281,294 @@
     "build_date": "Время сборки",
     "version": "Версия интерфейса управления",
     "author": "Автор"
+  },
+  "providersPage": {
+    "header": {
+      "title": "AI Провайдеры",
+      "activeResources": "{{active}}/{{total}} активных",
+      "providerFamilies": "{{count}} семейств",
+      "updatedAt": "Обновлено {{time}}"
+    },
+    "actions": {
+      "refresh": "Обновить",
+      "syncing": "Синхронизация",
+      "new": "Создать",
+      "edit": "Изменить",
+      "view": "Просмотр",
+      "delete": "Удалить",
+      "cancel": "Отмена",
+      "save": "Сохранить",
+      "create": "Создать",
+      "enable": "Включить",
+      "disable": "Отключить"
+    },
+    "categories": {
+      "title": "Провайдеры",
+      "quickFill": "Быстрое заполнение",
+      "activeCount": "{{active}}/{{total}} активных"
+    },
+    "providerNames": {
+      "meta": "Muse (Meta)",
+      "gemini": "Gemini",
+      "interactions": "Interactions API",
+      "codex": "Codex",
+      "xai": "xAI",
+      "claude": "Claude",
+      "vertex": "Vertex",
+      "openaiCompatibility": "OpenAI-совместимый",
+      "apikeyFun": "APIKEY.FUN",
+      "fennoAI": "FennoAI",
+      "qiniuCloud": "Qiniu Cloud",
+      "kimi": "Kimi"
+    },
+    "table": {
+      "key": "Ключ",
+      "baseUrl": "Base URL",
+      "prefix": "Префикс",
+      "models": "Модели/Заголовки",
+      "status": "Статус",
+      "actions": "Действия",
+      "metrics": {
+        "models": "Модели",
+        "keys": "Ключи",
+        "headers": "Заголовки"
+      },
+      "websocketsTag": "WebSockets",
+      "cloakTag": "Cloak",
+      "cliProfileTag": "CLI-профиль",
+      "empty": "Нет ресурсов, нажмите \"Создать\".",
+      "filterPlaceholder": "Поиск по ключам, URL, префиксам…",
+      "description": "Управление ресурсами {{route}}"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
+      "detailHint": "{{provider}} сохраняется в соответствующие конфигурации API key по протоколам; здесь они управляются вместе.",
+      "registerLink": "Зарегистрироваться",
+      "registerNow": "Зарегистрироваться сейчас",
+      "kimiPromo": "Новые пользователи получают API-квоту в размере 10% от первого успешного пополнения, максимум ¥1000. Предложение действует до 30 сентября.",
+      "dashboardLink": "Панель управления",
+      "emptyRegisterHint": "Конфигурации пока нет.",
+      "apiKeyHint": "Этот ключ записывается только в выбранную группу/протокол.",
+      "usageCheck": "Проверить квоту",
+      "usageChecking": "Проверка",
+      "usageRemaining": "Остаток: {{amount}} {{unit}}",
+      "usageBreakdown": "Использовано {{used}} / Лимит {{limit}}",
+      "usageStatus": "Статус: {{status}}",
+      "usageInvalid": "Недействительный ключ",
+      "usageEmpty": "Endpoint не вернул данные квоты.",
+      "usageApiKeyRequired": "Требуется API key",
+      "aggregationConflict": "Этот объединённый провайдер содержит несколько серверных конфигураций или ключей OpenAI. Чтобы избежать потери данных, измените исходную конфигурацию.",
+      "partialMutationWarning": "Операция завершилась ошибкой, но один или несколько протоколов могли обновиться. Последняя конфигурация загружена повторно; проверьте её перед повторной попыткой.",
+      "groupedKeysTitle": "Групповые ключи",
+      "groupedKeysHint": "Ключи платформы могут привязываться к группе при создании. Каждый групповой ключ здесь управляет одним протоколом, а модели загружаются только из этого протокола.",
+      "groupedKey": "Групповой ключ #{{index}}",
+      "addGroupedKey": "Добавить групповой ключ",
+      "removeGroupedKey": "Удалить групповой ключ",
+      "protocol": "Группа/протокол",
+      "protocolHint": "Выберите группу/протокол для этого ключа.",
+      "protocolEndpoint": "Текущий endpoint протокола",
+      "urlMode": "{{provider}} URL",
+      "urlHint": "Все URL используют одинаковые правила API. При сохранении записывается только endpoint текущего группового протокола.",
+      "urlOptions": {
+        "standard": "Обычный URL",
+        "direct": "Прямой URL",
+        "domestic": "Маршрут для материкового Китая",
+        "overseas": "Зарубежный маршрут",
+        "mainlandChina": "Материковый Китай (рекомендуется)",
+        "global": "Глобальный"
+      },
+      "urlOptionDescriptions": {
+        "domestic": "Для пользователей и нагрузок в материковом Китае; обычно дает меньшую задержку в сетях материкового Китая.",
+        "overseas": "Для зарубежных развертываний, трансграничного доступа или задач, которым нужны зарубежные модели.",
+        "mainlandChinaRecommended": "Рекомендуется для пользователей и нагрузок в сетях материкового Китая.",
+        "global": "Для пользователей и нагрузок во всех остальных регионах."
+      },
+      "modelsTitle": "Настройки моделей по протоколам",
+      "modelsHint": "Настраивайте allowlist моделей и алиасы отдельно для маршрутов Codex API, Anthropic, Gemini и OpenAI-compatible.",
+      "protocolModels": {
+        "codex": "Модели Codex API",
+        "anthropic": "Модели Anthropic",
+        "gemini": "Модели Gemini",
+        "openai": "Модели OpenAI-compatible"
+      },
+      "protocolModelHints": {
+        "codex": "Записывается в models конфигурации Codex API. Можно загрузить из /v1/models и задать алиасы.",
+        "anthropic": "Записывается в models конфигурации Anthropic. Можно загрузить из /v1/models и задать алиасы.",
+        "gemini": "Записывается в models конфигурации Gemini. Можно загрузить из /v1beta/models и задать алиасы.",
+        "openai": "Записывается в models конфигурации OpenAI-compatible. Можно загрузить из /models и задать алиасы."
+      },
+      "validation": {
+        "keyRequired": "Введите API key для каждого группового ключа.",
+        "protocolDuplicate": "Для каждого протокола можно добавить только один групповой ключ."
+      },
+      "openaiEntries": "Ключей OpenAI-compatible",
+      "codexEntries": "Ключей Codex API",
+      "anthropicEntries": "Ключей Anthropic",
+      "geminiEntries": "Ключей Gemini",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI-compatible",
+        "gemini": "Gemini",
+        "codexResponses": "Codex API (Responses)"
+      }
+    },
+    "status": {
+      "active": "Активен",
+      "disabled": "Отключён",
+      "notSet": "Не задано",
+      "none": "Нет",
+      "notConfigured": "Не настроено",
+      "defaultSuffix": "(по умолчанию)"
+    },
+    "detail": {
+      "title": "Подробности",
+      "metadataTitle": "Метаданные",
+      "fields": {
+        "identifier": "Идентификатор",
+        "baseUrl": "Base URL",
+        "proxyUrl": "Proxy URL",
+        "prefix": "Префикс",
+        "models": "Моделей",
+        "headers": "Заголовков",
+        "authIndex": "Auth Index",
+        "excludedModels": "Исключённых моделей",
+        "apiKeyEntries": "API-ключей"
+      }
+    },
+    "form": {
+      "createEyebrow": "Создать",
+      "editEyebrow": "Изменить",
+      "name": "Название",
+      "apiKey": "API-ключ",
+      "apiKeyCreatePlaceholder": "Введите API-ключ",
+      "apiKeyEditPlaceholder": "Оставьте пустым, чтобы не менять",
+      "baseUrl": "Base URL",
+      "baseUrlRequiredHint": "Обязательно для этого провайдера",
+      "proxyUrl": "Proxy URL",
+      "prefix": "Префикс",
+      "priority": "Приоритет",
+      "weight": "Вес планирования",
+      "weightHint": "По умолчанию 1 · ≤ 0 исключает запись · максимум 1 000 000",
+      "disabled": "Отключить эту запись",
+      "disabledHint": "Отключённые записи не используются шлюзом",
+      "websockets": "Включить WebSockets",
+      "testModel": "Тестовая модель",
+      "testModelClaudeHint": "Используется только для проверки соединения; не сохраняется",
+      "testModelAutoWith": "Авто · {{name}}",
+      "testModelAutoEmpty": "Авто (модели ещё не добавлены)",
+      "testModelCustom": "{{name}} (своя)",
+      "modelsSection": "Пользовательские модели",
+      "addModel": "Добавить модель",
+      "headersSection": "Заголовки запроса",
+      "addHeader": "Добавить заголовок",
+      "excludedSection": "Исключённые модели",
+      "excludedDisabledNote": "«*» означает, что провайдер отключён целиком — используйте переключатель «Отключено» выше.",
+      "cloakSection": "Настройки Cloak",
+      "cloakMode": "Режим",
+      "cloakStrict": "Строгий режим",
+      "cloakSensitiveWords": "Стоп-слова (по одному в строке)",
+      "apiKeyEntriesSection": "API-ключи",
+      "apiKeyEntry": "Ключ #{{index}}",
+      "addApiKeyEntry": "Добавить ключ",
+      "showApiKey": "Показать ключ API",
+      "hideApiKey": "Скрыть ключ API",
+      "disableCooling": "Отключить cooldown",
+      "disableCoolingHint": "Отключает окна охлаждения после ошибок только для этой записи",
+      "modelImage": "Разрешить image endpoints",
+      "modelImageHint": "Разрешить модель для /v1/images/generations и /v1/images/edits",
+      "showAllEntries": "Показать все ({{count}})",
+      "showFewerEntries": "Показать меньше",
+      "proxyBadge": "Прокси",
+      "modelBadgeImage": "Image",
+      "modelBadgeThinking": "Thinking",
+      "thinkingConfig": "Допустимые уровни thinking",
+      "thinkingExistingHint": "Текущая серверная конфигурация сохранится до изменения выбора, после чего будет заменена выбранными стандартными уровнями.",
+      "thinkingLevels": {
+        "none": "Отключить thinking",
+        "minimal": "Минимальный",
+        "low": "Низкий",
+        "medium": "Средний",
+        "high": "Высокий",
+        "xhigh": "Очень высокий",
+        "max": "Максимальный",
+        "auto": "Автоматический"
+      },
+      "cloakCacheUserId": "Кэшировать user_id",
+      "cloakCacheUserIdHint": "Переиспользовать Claude cloak user_id для каждого API-ключа",
+      "fingerprintProfile": "Отпечаток запроса",
+      "fingerprintProfileDefault": "По умолчанию (управляет клиент)",
+      "fingerprintProfileClaudeCodeCli": "Claude Code CLI",
+      "fingerprintProfileHint": "По умолчанию сохраняются prompt и заголовки клиента; можно включить отпечаток запросов Claude Code CLI.",
+      "validation": {
+        "nameRequired": "Название обязательно",
+        "apiKeyRequired": "Нужен хотя бы один API-ключ",
+        "baseUrlRequired": "Base URL обязателен",
+        "weightInteger": "Вес планирования должен быть целым числом",
+        "weightMax": "Вес планирования не может превышать {{max}}"
+      }
+    },
+    "delete": {
+      "title": "Удалить ресурс",
+      "confirm": "Удалить {{name}}? Действие необратимо."
+    },
+    "toast": {
+      "created": "Создано",
+      "updated": "Обновлено",
+      "deleted": "Удалено",
+      "enabled": "Включено",
+      "disabled": "Отключено",
+      "toggleFailed": "Не удалось обновить статус"
+    },
+    "unsavedChanges": {
+      "title": "Отменить несохранённые изменения?",
+      "message": "В форме есть несохранённые изменения. При закрытии они будут потеряны.",
+      "discard": "Отменить изменения",
+      "keepEditing": "Продолжить"
+    },
+    "connectivity": {
+      "test": "Проверить",
+      "testAll": "Проверить все",
+      "success": "Доступно",
+      "baseUrlRequired": "Base URL обязателен",
+      "endpointInvalid": "Некорректный адрес",
+      "apiKeyRequired": "API-ключ обязателен",
+      "modelRequired": "Нужна тестовая модель",
+      "timeout": "Таймаут после {{seconds}} с",
+      "requestFailed": "Запрос не выполнен"
+    },
+    "discovery": {
+      "openButton": "Получить с конечной точки",
+      "searchPlaceholder": "Поиск моделей",
+      "reload": "Обновить",
+      "loading": "Загрузка моделей…",
+      "empty": "Конечная точка не вернула моделей",
+      "notLoaded": "Нажмите Обновить, чтобы загрузить модели",
+      "selectAll": "Выбрать все",
+      "clearAll": "Снять выбор",
+      "selectedCount": "{{selected}} / {{total}}",
+      "alreadyAdded": "Уже добавлено",
+      "close": "Закрыть",
+      "apply": "Применить ({{count}})"
+    },
+    "toolbar": {
+      "sortBy": "Сортировка",
+      "sort": {
+        "name": "Имя",
+        "priority": "Приоритет",
+        "recentSuccess": "Недавние успехи",
+        "directionAsc": "По возрастанию",
+        "directionDesc": "По убыванию"
+      },
+      "filter": {
+        "allModels": "Все модели",
+        "selectedModels": "{{selected}}/{{total}} моделей",
+        "selectAll": "Выбрать все",
+        "clear": "Очистить",
+        "empty": "Модели ещё не настроены"
+      }
+    },
+    "modelCatalog": {
+      "notLoaded": "Не загружено"
+    }
   }
 }

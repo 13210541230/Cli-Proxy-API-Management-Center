@@ -89,4 +89,29 @@ describe('providersApi PUT preservation merge', () => {
     expect(item['base-url']).toBe('http://b2');
     expect(item['request-retry']).toBe(7); // matched by name, unmodeled field survives
   });
+
+  it('preserves unmodeled model fields while applying workbench model edits', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({
+      'gemini-api-key': [
+        {
+          'api-key': 'key',
+          models: [{ name: 'gemini-test', alias: 'old', providerSpecific: { flag: true } }]
+        }
+      ]
+    });
+    vi.mocked(apiClient.put).mockResolvedValue({});
+
+    await providersApi.saveGeminiKeys([
+      {
+        apiKey: 'key',
+        models: [{ name: 'gemini-test', alias: 'new', thinking: { level: 'high' }, image: true }]
+      }
+    ]);
+
+    const models = putPayload()[0].models as Json[];
+    expect(models[0].alias).toBe('new');
+    expect(models[0].image).toBe(true);
+    expect(models[0].thinking).toEqual({ level: 'high' });
+    expect(models[0].providerSpecific).toEqual({ flag: true });
+  });
 });

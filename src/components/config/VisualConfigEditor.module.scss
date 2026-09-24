@@ -785,3 +785,104 @@
     padding: 14px;
   }
 }
+
+.stringListInput {
+  min-height: 86px;
+  resize: vertical;
+}
+
+.pluginAuthList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pluginAuthRule {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+}
+
+.pluginAuthHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-primary);
+}
+
+.pluginAuthApplyTo {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pluginAuthOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+
+  label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-secondary);
+    font-size: 13px;
+  }
+}
+
+.pluginAuthOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.payloadModelEditorStack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payloadAdvanced {
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-primary) 88%, transparent);
+
+  summary {
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+  }
+}
+
+.payloadAdvancedContent {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-top: 14px;
+}
+
+.payloadAdvancedGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.payloadAdvancedRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+
+  @include mobile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

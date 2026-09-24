@@ -100,7 +100,53 @@ export const buildClaudeMessagesEndpoint = (baseUrl: string): string => {
   return `${trimmed}/v1/messages`;
 };
 
+const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com';
+
+const normalizeUpstreamBaseUrl = (baseUrl: string, fallback = '') =>
+  normalizeOpenAIBaseUrl(baseUrl) || fallback;
+
+export const buildCodexResponsesEndpoint = (baseUrl: string): string => {
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl);
+  if (!trimmed) return '';
+  if (/\/v1\/responses$/i.test(trimmed)) return trimmed;
+  if (/\/v1\/models$/i.test(trimmed)) return trimmed.replace(/\/models$/i, '/responses');
+  if (/\/v1$/i.test(trimmed)) return `${trimmed}/responses`;
+  return `${trimmed}/v1/responses`;
+};
+
+export const INTERACTIONS_API_REVISION = '2026-05-20';
+
+export const buildInteractionsProbePayload = (model: string) => ({ model, input: 'Hi' });
+
+export const buildInteractionsEndpoint = (baseUrl: string): string => {
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl, DEFAULT_GEMINI_BASE_URL);
+  if (!trimmed) return '';
+  if (/\/v1beta\/interactions$/i.test(trimmed)) return trimmed;
+  let root = trimmed.replace(/\/+$/g, '').replace(/\/v1beta\/models$/i, '');
+  if (/\/v1beta$/i.test(root)) return `${root}/interactions`;
+  root = root.replace(/\/v1beta(?:\/.*)?$/i, '');
+  return `${root}/v1beta/interactions`;
+};
+
+export const buildGeminiGenerateContentEndpoint = (baseUrl: string, model: string): string => {
+  const normalizedModel = String(model || '').trim().replace(/^\/+/, '').replace(/:generateContent$/i, '');
+  if (!normalizedModel) return '';
+  const resource = /^(models|tunedModels)\//i.test(normalizedModel)
+    ? normalizedModel.split('/').map(encodeURIComponent).join('/')
+    : `models/${encodeURIComponent(normalizedModel)}`;
+  const trimmed = normalizeUpstreamBaseUrl(baseUrl, DEFAULT_GEMINI_BASE_URL);
+  if (!trimmed) return '';
+  if (/:generateContent$/i.test(trimmed)) return trimmed;
+  let root = trimmed.replace(/\/+$/g, '');
+  if (/\/v1beta\/models$/i.test(root)) root = root.replace(/\/models$/i, '');
+  else if (!/\/v1beta$/i.test(root)) root = `${root.replace(/\/v1beta(?:\/.*)?$/i, '')}/v1beta`;
+  return `${root}/${resource}:generateContent`;
+};
+
 export type ProviderRecentUsageMap = Map<string, Map<string, RecentRequestUsageEntry>>;
+
+export const getProviderUsageKey = (provider: string): string =>
+  provider === 'interactions' ? 'gemini-interactions' : provider;
 
 const EMPTY_RECENT_USAGE_ENTRY: RecentRequestUsageEntry = {
   success: 0,

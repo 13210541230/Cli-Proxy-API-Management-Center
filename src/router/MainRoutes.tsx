@@ -7,6 +7,11 @@ const DashboardPage = lazy(() =>
 const AiProvidersPage = lazy(() =>
   import('@/pages/AiProvidersPage').then(({ AiProvidersPage }) => ({ default: AiProvidersPage }))
 );
+const ProvidersWorkbenchPage = lazy(() =>
+  import('@/features/providers/ProvidersWorkbenchPage').then(({ ProvidersWorkbenchPage }) => ({
+    default: ProvidersWorkbenchPage,
+  }))
+);
 const AiProvidersAmpcodeEditPage = lazy(() =>
   import('@/pages/AiProvidersAmpcodeEditPage').then(({ AiProvidersAmpcodeEditPage }) => ({
     default: AiProvidersAmpcodeEditPage,
@@ -150,7 +155,9 @@ const mainRoutes = [
     ],
   },
   { path: '/ai-providers/ampcode', element: <AiProvidersAmpcodeEditPage /> },
-  { path: '/ai-providers', element: <AiProvidersPage /> },
+  { path: '/ai-providers/legacy', element: <AiProvidersPage /> },
+  { path: '/ai-providers', element: <ProvidersWorkbenchPage /> },
+  { path: '/quick-start', element: <ProvidersWorkbenchPage fixedBrand="apikeyFun" /> },
   { path: '/ai-providers/*', element: <AiProvidersPage /> },
   { path: '/auth-files', element: <AuthFilesPage /> },
   { path: '/auth-files/oauth-excluded', element: <AuthFilesOAuthExcludedEditPage /> },

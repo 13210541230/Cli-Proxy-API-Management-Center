@@ -75,6 +75,10 @@ const normalizeModelAliases = (models: unknown): ModelAlias[] => {
       if (testModel) {
         entry.testModel = String(testModel);
       }
+      const image = normalizeBoolean(item.image);
+      if (image !== undefined) entry.image = image;
+      const thinking = item.thinking;
+      if (isRecord(thinking)) entry.thinking = thinking;
       return entry;
     })
     .filter(Boolean) as ModelAlias[];
@@ -138,6 +142,8 @@ const normalizeApiKeyEntry = (entry: unknown): ApiKeyEntry | null => {
     proxyUrl: proxyUrl ? String(proxyUrl) : undefined,
     headers
   };
+  const weight = record ? normalizeNumber(record.weight) : undefined;
+  if (weight !== undefined) result.weight = weight;
   if (authIndex) result.authIndex = authIndex;
   return result;
 };
@@ -157,6 +163,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
       config.priority = parsed;
     }
   }
+  const weight = normalizeNumber(record?.weight);
+  if (weight !== undefined) config.weight = weight;
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl : undefined;
@@ -176,6 +184,12 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
       record?.excluded_models
   );
   if (excludedModels.length) config.excludedModels = excludedModels;
+  const disableCooling = normalizeBoolean(record?.['disable-cooling'] ?? record?.disableCooling);
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
+  const fingerprintProfile = normalizeString(
+    record?.['fingerprint-profile'] ?? record?.fingerprintProfile
+  );
+  if (fingerprintProfile) config.fingerprintProfile = fingerprintProfile;
   const authIndex = normalizeAuthIndex(
     record?.['auth-index'] ?? record?.authIndex ?? record?.['auth_index']
   );
@@ -200,6 +214,8 @@ const normalizeProviderKeyConfig = (item: unknown): ProviderKeyConfig | null => 
     if (sensitiveWords.length) {
       cloak.sensitiveWords = sensitiveWords;
     }
+    const cacheUserId = normalizeBoolean(cloakRaw['cache-user-id'] ?? cloakRaw.cacheUserId);
+    if (cacheUserId !== undefined) cloak.cacheUserId = cacheUserId;
     if (Object.keys(cloak).length) {
       config.cloak = cloak;
     }
@@ -226,6 +242,10 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
       config.priority = parsed;
     }
   }
+  const weight = normalizeNumber(record?.weight);
+  if (weight !== undefined) config.weight = weight;
+  const disableCooling = normalizeBoolean(record?.['disable-cooling'] ?? record?.disableCooling);
+  if (disableCooling !== undefined) config.disableCooling = disableCooling;
   const prefix = normalizePrefix(record?.prefix ?? record?.['prefix']);
   if (prefix) config.prefix = prefix;
   const baseUrl = record ? record['base-url'] ?? record.baseUrl ?? record['base_url'] : undefined;
@@ -245,7 +265,10 @@ const normalizeGeminiKeyConfig = (item: unknown): GeminiKeyConfig | null => {
   return config;
 };
 
-const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null => {
+const normalizeOpenAIProvider = (
+  provider: unknown,
+  sourceIndex?: number
+): OpenAIProviderConfig | null => {
   if (!isRecord(provider)) return null;
   const name = provider.name || provider.id;
   const baseUrl = provider['base-url'] ?? provider.baseUrl;
@@ -270,7 +293,8 @@ const normalizeOpenAIProvider = (provider: unknown): OpenAIProviderConfig | null
   const result: OpenAIProviderConfig = {
     name: String(name),
     baseUrl: String(baseUrl),
-    apiKeyEntries
+    apiKeyEntries,
+    sourceIndex
   };
 
   const disabled = normalizeBoolean(provider.disabled ?? provider['disabled']);
@@ -482,9 +506,30 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
       .filter(Boolean) as GeminiKeyConfig[];
   }
 
+  const interactionsList = raw['interactions-api-key'] ?? raw.interactionsApiKey ?? raw.interactionsApiKeys;
+  if (Array.isArray(interactionsList)) {
+    config.interactionsApiKeys = interactionsList
+      .map((item) => normalizeGeminiKeyConfig(item))
+      .filter(Boolean) as GeminiKeyConfig[];
+  }
+
   const codexList = raw['codex-api-key'] ?? raw.codexApiKey ?? raw.codexApiKeys;
   if (Array.isArray(codexList)) {
     config.codexApiKeys = codexList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
+  const metaList = raw['meta-api-key'] ?? raw.metaApiKey ?? raw.metaApiKeys;
+  if (Array.isArray(metaList)) {
+    config.metaApiKeys = metaList
+      .map((item) => normalizeProviderKeyConfig(item))
+      .filter(Boolean) as ProviderKeyConfig[];
+  }
+
+  const xaiList = raw['xai-api-key'] ?? raw.xaiApiKey ?? raw.xaiApiKeys;
+  if (Array.isArray(xaiList)) {
+    config.xaiApiKeys = xaiList
       .map((item) => normalizeProviderKeyConfig(item))
       .filter(Boolean) as ProviderKeyConfig[];
   }
@@ -506,7 +551,7 @@ export const normalizeConfigResponse = (raw: unknown): Config => {
   const openaiList = raw['openai-compatibility'] ?? raw.openaiCompatibility ?? raw.openAICompatibility;
   if (Array.isArray(openaiList)) {
     config.openaiCompatibility = openaiList
-      .map((item) => normalizeOpenAIProvider(item))
+      .map((item, index) => normalizeOpenAIProvider(item, index))
       .filter(Boolean) as OpenAIProviderConfig[];
   }
 

@@ -30,6 +30,7 @@ interface SelectProps {
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
   fullWidth?: boolean;
+  size?: 'sm' | 'md';
   id?: string;
   searchable?: boolean;
   searchPlaceholder?: string;
@@ -93,6 +94,7 @@ export function Select({
   ariaLabelledBy,
   ariaDescribedBy,
   fullWidth = true,
+  size = 'md',
   id,
   searchable = false,
   searchPlaceholder = 'Search...',
@@ -357,7 +359,7 @@ export function Select({
         <button
           id={selectId}
           type="button"
-          className={[styles.trigger, triggerClassName].filter(Boolean).join(' ')}
+          className={[styles.trigger, size === 'sm' ? styles.triggerSmall : '', triggerClassName].filter(Boolean).join(' ')}
           onClick={disabled ? undefined : () => setOpen((prev) => {
             if (!prev) {
               setSearchQuery('');

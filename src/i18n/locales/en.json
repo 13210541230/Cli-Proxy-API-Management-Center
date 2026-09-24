@@ -151,7 +151,8 @@
     "quota_paused": "Paused Keys",
     "my_usage": "My Usage",
     "alert_config": "Alert Configuration",
-    "plugins": "Plugin Center"
+    "plugins": "Plugin Center",
+    "quick_start": "Quick Start"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -1971,7 +1972,9 @@
           "disable_panel_desc": "Disable the built-in web control panel",
           "secret_key": "Management Key",
           "secret_key_placeholder": "Set management key",
-          "panel_repo": "Panel Repository"
+          "panel_repo": "Panel Repository",
+          "disable_auto_update_panel": "Disable Panel Auto Updates",
+          "disable_auto_update_panel_desc": "Download the panel when first missing, but never auto-update it from GitHub"
         },
         "auth": {
           "title": "Authentication Configuration",
@@ -1992,7 +1995,53 @@
           "logging_to_file_desc": "Save logs to files",
           "logs_max_size": "Log File Size Limit (MB)",
           "redis_usage_queue_retention": "Usage Queue Retention (seconds)",
-          "redis_usage_queue_retention_hint": "CPA defaults to 60 seconds and allows up to 3600 seconds. Leave empty to use the default. Keep Usage Service running continuously."
+          "redis_usage_queue_retention_hint": "CPA defaults to 60 seconds and allows up to 3600 seconds. Leave empty to use the default. Keep Usage Service running continuously.",
+          "plugins_enabled": "Enable Plugin System",
+          "plugins_enabled_desc": "Enable standard dynamic-library plugin loading; individual plugin instances are still managed on the Plugins page",
+          "plugin_store_sources": "Third-party Plugin Sources",
+          "plugin_store_sources_desc": "Append plugin-store registry sources; the built-in official source is always kept",
+          "plugin_store_sources_label": "Plugin source registry URL (plugins.store-sources)",
+          "plugin_store_sources_placeholder": "https://example.com/cliproxy-plugins/registry.json",
+          "plugin_store_sources_hint": "One registry.json URL per row. Empty rows are filtered on save",
+          "plugin_store_auth": "Plugin Store Auth Rules",
+          "plugin_store_auth_desc": "Configure auth headers for private registries, GitHub Release metadata, or artifact downloads",
+          "plugin_store_auth_hint": "Enter environment variable names only, not actual tokens. The backend reads the values from its runtime environment.",
+          "store_auth_empty": "No auth rules are configured. Public plugin sources do not need one.",
+          "store_auth_rule": "Auth rule",
+          "store_auth_add": "Add auth rule",
+          "store_auth_match": "Matching URL prefix",
+          "store_auth_type": "Auth type",
+          "store_auth_apply_to": "Apply to",
+          "store_auth_apply_to_hint": "When nothing is selected, the rule applies to all request types.",
+          "store_auth_apply_registry": "Registry",
+          "store_auth_apply_metadata": "Metadata",
+          "store_auth_apply_artifact": "Artifact",
+          "store_auth_type_none": "None",
+          "store_auth_type_bearer": "Bearer",
+          "store_auth_type_basic": "Basic",
+          "store_auth_type_header": "Custom header",
+          "store_auth_type_github_token": "GitHub token",
+          "store_auth_token_env": "Token env var",
+          "store_auth_username_env": "Username env var",
+          "store_auth_password_env": "Password env var",
+          "store_auth_header_name": "Header name",
+          "store_auth_header_value_env": "Header value env var",
+          "store_auth_allow_insecure": "Allow insecure HTTP URLs",
+          "error_logs_max_files": "Retained Error Log Files",
+          "antigravity_sensitive_words": "Sensitive Word Obfuscation",
+          "antigravity_sensitive_words_desc": "Insert zero-width characters into matching words in Antigravity system instructions to reduce exact keyword matching upstream",
+          "antigravity_sensitive_words_label": "Sensitive words (antigravity.sensitive-words)",
+          "antigravity_sensitive_words_placeholder": "proxy",
+          "antigravity_sensitive_words_hint": "One word or phrase per row. Matching is case-insensitive; empty entries are removed and entries shorter than 2 characters are ignored by the backend",
+          "devin_sensitive_words": "Devin System Prompt Sensitive Words",
+          "devin_sensitive_words_desc": "In Devin system prompts only, a line containing a configured word is removed in full; the remaining system prompt is then obfuscated. Regular messages and tool arguments are not changed",
+          "devin_sensitive_words_label": "Sensitive words (devin.sensitive-words)",
+          "devin_sensitive_words_placeholder": "sensitive phrase",
+          "devin_sensitive_words_hint": "One word or phrase per row. Configure carefully: matching content causes the entire system-prompt line to be deleted; empty entries are removed when saved",
+          "antigravity_signature_cache": "Enable Antigravity Signature Cache",
+          "antigravity_signature_cache_desc": "Prefer and validate cached thinking-block signatures",
+          "antigravity_signature_strict": "Strict Bypass Signature Validation",
+          "antigravity_signature_strict_desc": "Only applies when the signature cache is disabled; validates the full Claude protobuf tree"
         },
         "network": {
           "title": "Network Configuration",
@@ -2011,7 +2060,22 @@
           "force_model_prefix_desc": "Unprefixed model requests only use credentials without prefix",
           "session_affinity": "Session Affinity Routing",
           "ws_auth": "WebSocket Authentication",
-          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)"
+          "ws_auth_desc": "Enable WebSocket authentication (/v1/ws)",
+          "auth_auto_refresh_workers": "Auth Auto-refresh Workers",
+          "auth_auto_refresh_workers_hint": "A positive integer overrides the worker count; 0, a negative integer, or an empty field uses the default (16)",
+          "disable_image_generation": "Disable Image Generation",
+          "disable_image_generation_hint": "false enables it; true disables all image generation; chat disables non-image endpoint injection; passthrough preserves the client tool list without injecting one",
+          "disable_image_generation_false": "false (enabled)",
+          "disable_image_generation_true": "true (disabled everywhere)",
+          "disable_image_generation_chat": "chat (disable chat injection only)",
+          "disable_image_generation_passthrough": "passthrough (preserve the client tool list)",
+          "gpt_image_2_base_model": "GPT Image 2 Base Model",
+          "gpt_image_2_base_model_hint": "Mainline model used when proxying gpt-image-2 image requests; backend uses its default when empty or invalid",
+          "strategy_weighted_round_robin": "Weighted Round Robin",
+          "passthrough_headers": "Pass Through Upstream Headers",
+          "passthrough_headers_desc": "Forward filtered upstream response headers to downstream clients",
+          "disable_cooling": "Disable Cooling",
+          "disable_cooling_desc": "Globally disable auth/model cooldown windows after failures"
         },
         "quota": {
           "title": "Quota Fallback",
@@ -2110,7 +2174,21 @@
         "value_raw_json": "Raw JSON fragment, e.g. true, 123, \"high\", or {\"type\":\"object\"}",
         "value_default": "Value",
         "boolean_true": "true",
-        "boolean_false": "false"
+        "boolean_false": "false",
+        "advanced": "Advanced",
+        "hide_advanced": "Hide Advanced",
+        "from_protocol": "Source Protocol (from-protocol)",
+        "headers": "Request Header Matches",
+        "header_name": "Header Name",
+        "header_value": "Header Value",
+        "add_header": "Add Header",
+        "match": "Required Matches (match)",
+        "notMatch": "Forbidden Matches (not-match)",
+        "exist": "Required Paths (exist)",
+        "notExist": "Forbidden Paths (not-exist)",
+        "condition_path": "Match Path",
+        "condition_value": "Match Value",
+        "add_condition": "Add Condition"
       },
       "validation": {
         "validation_blocked": "Fix validation errors before saving",
@@ -2119,7 +2197,8 @@
         "retention_seconds_range": "Enter an integer between 0 and 3600",
         "payload_invalid_number": "Enter a valid number",
         "payload_invalid_boolean": "Choose true or false",
-        "payload_invalid_json": "Enter valid JSON"
+        "payload_invalid_json": "Enter valid JSON",
+        "integer": "Enter a whole number"
       },
       "common": {
         "edit": "Edit",
@@ -2424,5 +2503,294 @@
   "enterpriseKeys": {
     "email": "Email",
     "emailPlaceholder": "Email (optional)"
+  },
+  "providersPage": {
+    "header": {
+      "title": "AI Providers",
+      "activeResources": "{{active}}/{{total}} active resources",
+      "providerFamilies": "{{count}} provider families",
+      "updatedAt": "Updated {{time}}"
+    },
+    "actions": {
+      "refresh": "Refresh",
+      "syncing": "Syncing",
+      "new": "New",
+      "edit": "Edit",
+      "view": "View",
+      "delete": "Delete",
+      "cancel": "Cancel",
+      "save": "Save",
+      "create": "Create",
+      "enable": "Enable",
+      "disable": "Disable"
+    },
+    "categories": {
+      "title": "Providers",
+      "quickFill": "Quick Fill",
+      "activeCount": "{{active}}/{{total}} active"
+    },
+    "providerNames": {
+      "meta": "Muse (Meta)",
+      "gemini": "Gemini",
+      "interactions": "Interactions API",
+      "codex": "Codex",
+      "xai": "xAI",
+      "claude": "Claude",
+      "vertex": "Vertex",
+      "openaiCompatibility": "OpenAI Compatible",
+      "apikeyFun": "APIKEY.FUN",
+      "fennoAI": "FennoAI",
+      "qiniuCloud": "Qiniu Cloud",
+      "kimi": "Kimi"
+    },
+    "table": {
+      "key": "Key",
+      "baseUrl": "Base URL",
+      "prefix": "Prefix",
+      "models": "Models/Headers",
+      "status": "Status",
+      "actions": "Actions",
+      "metrics": {
+        "models": "Models",
+        "keys": "Keys",
+        "headers": "Headers"
+      },
+      "websocketsTag": "WebSockets",
+      "cloakTag": "Cloak",
+      "cliProfileTag": "CLI Profile",
+      "empty": "No resources yet, click \"New\" to add.",
+      "filterPlaceholder": "Search keys, URLs, prefixes…",
+      "description": "Manage resources under {{route}}"
+    },
+    "sponsor": {
+      "protocolSummary": "Anthropic / OpenAI / Gemini / Codex API (Responses)",
+      "detailHint": "{{provider}} is persisted into the matching API key configs by protocol; this view manages them together.",
+      "registerLink": "Register here",
+      "registerNow": "Register now",
+      "kimiPromo": "New users get API credit worth 10% of their first successful top-up, up to ¥1000. Offer ends September 30.",
+      "dashboardLink": "Dashboard",
+      "emptyRegisterHint": "No configuration yet.",
+      "apiKeyHint": "This key is only written to the selected group/protocol config.",
+      "usageCheck": "Check usage",
+      "usageChecking": "Checking",
+      "usageRemaining": "Remaining: {{amount}} {{unit}}",
+      "usageBreakdown": "Used {{used}} / Limit {{limit}}",
+      "usageStatus": "Status: {{status}}",
+      "usageInvalid": "Invalid key",
+      "usageEmpty": "The endpoint returned no usage data.",
+      "usageApiKeyRequired": "API key is required",
+      "aggregationConflict": "This grouped provider contains multiple backend configs or OpenAI keys. Edit it in the source configuration to avoid data loss.",
+      "partialMutationWarning": "The operation failed after one or more protocols may have been updated. The latest configuration was reloaded; review it before retrying.",
+      "groupedKeysTitle": "Grouped keys",
+      "groupedKeysHint": "Platform keys may be bound to a group when created. Each grouped key here manages one protocol, and model discovery only uses that protocol.",
+      "groupedKey": "Grouped key #{{index}}",
+      "addGroupedKey": "Add grouped key",
+      "removeGroupedKey": "Remove grouped key",
+      "protocol": "Group/protocol",
+      "protocolHint": "Select the group/protocol for this key.",
+      "protocolEndpoint": "Current protocol endpoint",
+      "urlMode": "{{provider}} URL",
+      "urlHint": "All URLs use the same API conventions. Saving writes only the endpoint for the current grouped protocol.",
+      "urlOptions": {
+        "standard": "Standard URL",
+        "direct": "Direct URL",
+        "domestic": "China mainland route",
+        "overseas": "Overseas route",
+        "mainlandChina": "Mainland China (recommended)",
+        "global": "Global"
+      },
+      "urlOptionDescriptions": {
+        "domestic": "For users and workloads in mainland China; usually lower latency in mainland networks.",
+        "overseas": "For overseas deployments, cross-border access, or workloads that need overseas models.",
+        "mainlandChinaRecommended": "Recommended for users and workloads on mainland China networks.",
+        "global": "For users and workloads in all other regions."
+      },
+      "modelsTitle": "Protocol model settings",
+      "modelsHint": "Configure model allowlists or aliases separately for Codex API, Anthropic, Gemini, and OpenAI-compatible routes.",
+      "protocolModels": {
+        "codex": "Codex API models",
+        "anthropic": "Anthropic models",
+        "gemini": "Gemini models",
+        "openai": "OpenAI-compatible models"
+      },
+      "protocolModelHints": {
+        "codex": "Writes to the Codex API config models. Fetch from /v1/models and set aliases if needed.",
+        "anthropic": "Writes to the Anthropic config models. Fetch from /v1/models and set aliases if needed.",
+        "gemini": "Writes to the Gemini config models. Fetch from /v1beta/models and set aliases if needed.",
+        "openai": "Writes to the OpenAI-compatible config models. Fetch from /models and set aliases if needed."
+      },
+      "validation": {
+        "keyRequired": "Enter an API key for every grouped key.",
+        "protocolDuplicate": "Each protocol can only have one grouped key."
+      },
+      "openaiEntries": "OpenAI-compatible keys",
+      "codexEntries": "Codex API keys",
+      "anthropicEntries": "Anthropic keys",
+      "geminiEntries": "Gemini keys",
+      "protocols": {
+        "anthropic": "Anthropic",
+        "openai": "OpenAI Compatible",
+        "gemini": "Gemini",
+        "codexResponses": "Codex API (Responses)"
+      }
+    },
+    "status": {
+      "active": "Active",
+      "disabled": "Disabled",
+      "notSet": "Not set",
+      "none": "None",
+      "notConfigured": "Not configured",
+      "defaultSuffix": "(default)"
+    },
+    "detail": {
+      "title": "Details",
+      "metadataTitle": "Metadata",
+      "fields": {
+        "identifier": "Identifier",
+        "baseUrl": "Base URL",
+        "proxyUrl": "Proxy URL",
+        "prefix": "Prefix",
+        "models": "Models",
+        "headers": "Headers",
+        "authIndex": "Auth Index",
+        "excludedModels": "Excluded models",
+        "apiKeyEntries": "API key entries"
+      }
+    },
+    "form": {
+      "createEyebrow": "New",
+      "editEyebrow": "Edit",
+      "name": "Name",
+      "apiKey": "API key",
+      "apiKeyCreatePlaceholder": "Enter API key",
+      "apiKeyEditPlaceholder": "Leave empty to keep unchanged",
+      "baseUrl": "Base URL",
+      "baseUrlRequiredHint": "Required for this provider",
+      "proxyUrl": "Proxy URL",
+      "prefix": "Prefix",
+      "priority": "Priority",
+      "weight": "Scheduling weight",
+      "weightHint": "Default 1 · ≤ 0 is excluded · maximum 1,000,000",
+      "disabled": "Disable this entry",
+      "disabledHint": "Disabled entries won't be used by the gateway",
+      "websockets": "Enable WebSockets",
+      "testModel": "Test model",
+      "testModelClaudeHint": "Used for connectivity testing only; not saved",
+      "testModelAutoWith": "Auto · {{name}}",
+      "testModelAutoEmpty": "Auto (no models added yet)",
+      "testModelCustom": "{{name}} (custom)",
+      "modelsSection": "Custom models",
+      "addModel": "Add model",
+      "headersSection": "Request headers",
+      "addHeader": "Add header",
+      "excludedSection": "Excluded models",
+      "excludedDisabledNote": "“*” means the whole provider is disabled — use the Disabled switch above instead.",
+      "cloakSection": "Cloak settings",
+      "cloakMode": "Mode",
+      "cloakStrict": "Strict mode",
+      "cloakSensitiveWords": "Sensitive words (one per line)",
+      "apiKeyEntriesSection": "API key entries",
+      "apiKeyEntry": "Key #{{index}}",
+      "addApiKeyEntry": "Add key entry",
+      "showApiKey": "Show API key",
+      "hideApiKey": "Hide API key",
+      "disableCooling": "Disable cooling",
+      "disableCoolingHint": "Disable failure cooldown windows only for this credential or provider",
+      "modelImage": "Allow image endpoints",
+      "modelImageHint": "Allow this model on /v1/images/generations and /v1/images/edits",
+      "showAllEntries": "Show all ({{count}})",
+      "showFewerEntries": "Show fewer",
+      "proxyBadge": "Proxy",
+      "modelBadgeImage": "Image",
+      "modelBadgeThinking": "Thinking",
+      "thinkingConfig": "Allowed thinking levels",
+      "thinkingExistingHint": "The current backend config remains unchanged until you change a selection; then it will be replaced by the selected standard levels.",
+      "thinkingLevels": {
+        "none": "Disable thinking",
+        "minimal": "Minimal",
+        "low": "Low",
+        "medium": "Medium",
+        "high": "High",
+        "xhigh": "Extra high",
+        "max": "Maximum",
+        "auto": "Automatic"
+      },
+      "cloakCacheUserId": "Cache user_id",
+      "cloakCacheUserIdHint": "Reuse the Claude cloak user_id per API key",
+      "fingerprintProfile": "Request fingerprint",
+      "fingerprintProfileDefault": "Default (caller-owned)",
+      "fingerprintProfileClaudeCodeCli": "Claude Code CLI",
+      "fingerprintProfileHint": "Keep the caller's prompt and headers by default, or opt in to the Claude Code CLI request fingerprint.",
+      "validation": {
+        "nameRequired": "Name is required",
+        "apiKeyRequired": "At least one API key is required",
+        "baseUrlRequired": "Base URL is required",
+        "weightInteger": "Scheduling weight must be an integer",
+        "weightMax": "Scheduling weight cannot exceed {{max}}"
+      }
+    },
+    "delete": {
+      "title": "Delete resource",
+      "confirm": "Delete {{name}}? This action cannot be undone."
+    },
+    "toast": {
+      "created": "Created",
+      "updated": "Updated",
+      "deleted": "Deleted",
+      "enabled": "Enabled",
+      "disabled": "Disabled",
+      "toggleFailed": "Failed to update status"
+    },
+    "unsavedChanges": {
+      "title": "Discard unsaved changes?",
+      "message": "You have unsaved edits in this form. Closing will discard them.",
+      "discard": "Discard changes",
+      "keepEditing": "Keep editing"
+    },
+    "connectivity": {
+      "test": "Test",
+      "testAll": "Test all",
+      "success": "Reachable",
+      "baseUrlRequired": "Base URL is required",
+      "endpointInvalid": "Endpoint URL is invalid",
+      "apiKeyRequired": "API key is required",
+      "modelRequired": "Test model is required",
+      "timeout": "Timed out after {{seconds}}s",
+      "requestFailed": "Request failed"
+    },
+    "discovery": {
+      "openButton": "Fetch from endpoint",
+      "searchPlaceholder": "Search models",
+      "reload": "Reload",
+      "loading": "Loading models…",
+      "empty": "No models returned by the endpoint",
+      "notLoaded": "Click Reload to fetch models",
+      "selectAll": "Select all",
+      "clearAll": "Clear selection",
+      "selectedCount": "{{selected}} / {{total}}",
+      "alreadyAdded": "Already added",
+      "close": "Close",
+      "apply": "Apply ({{count}})"
+    },
+    "toolbar": {
+      "sortBy": "Sort by",
+      "sort": {
+        "name": "Name",
+        "priority": "Priority",
+        "recentSuccess": "Recent success",
+        "directionAsc": "Ascending",
+        "directionDesc": "Descending"
+      },
+      "filter": {
+        "allModels": "All models",
+        "selectedModels": "{{selected}}/{{total}} models",
+        "selectAll": "Select all",
+        "clear": "Clear",
+        "empty": "No models configured yet"
+      }
+    },
+    "modelCatalog": {
+      "notLoaded": "Not loaded"
+    }
   }
 }

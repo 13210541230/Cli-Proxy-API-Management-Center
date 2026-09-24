@@ -50,6 +50,8 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
           if (model.testModel) {
             payload['test-model'] = model.testModel;
           }
+          if (model.image) payload.image = true;
+          if (model.thinking) payload.thinking = model.thinking;
           return payload;
         })
         .filter(Boolean)
@@ -58,6 +60,7 @@ const serializeModelAliases = (models?: ModelAlias[]) =>
 const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
   const payload: Record<string, unknown> = { 'api-key': entry.apiKey };
   if (entry.proxyUrl) payload['proxy-url'] = entry.proxyUrl;
+  if (entry.weight !== undefined) payload.weight = entry.weight;
   const headers = serializeHeaders(entry.headers);
   if (headers) payload.headers = headers;
   return payload;
@@ -66,6 +69,7 @@ const serializeApiKeyEntry = (entry: ApiKeyEntry) => {
 const serializeProviderKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.websockets !== undefined) payload.websockets = config.websockets;
@@ -77,6 +81,7 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
   if (config.excludedModels && config.excludedModels.length) {
     payload['excluded-models'] = config.excludedModels;
   }
+  if (config.disableCooling) payload['disable-cooling'] = true;
   if (config.cloak) {
     const cloakPayload: Record<string, unknown> = {};
     const mode = config.cloak.mode?.trim();
@@ -85,10 +90,12 @@ const serializeProviderKey = (config: ProviderKeyConfig) => {
     if (config.cloak.sensitiveWords && config.cloak.sensitiveWords.length) {
       cloakPayload['sensitive-words'] = config.cloak.sensitiveWords;
     }
+    if (config.cloak.cacheUserId) cloakPayload['cache-user-id'] = true;
     if (Object.keys(cloakPayload).length) {
       payload.cloak = cloakPayload;
     }
   }
+  if (config.fingerprintProfile?.trim()) payload['fingerprint-profile'] = config.fingerprintProfile.trim();
   return payload;
 };
 
@@ -99,7 +106,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
           const name = typeof model?.name === 'string' ? model.name.trim() : '';
           const alias = typeof model?.alias === 'string' ? model.alias.trim() : '';
           if (!name || !alias) return null;
-          return { name, alias };
+          return { name, alias, ...(model.thinking ? { thinking: model.thinking } : {}) };
         })
         .filter(Boolean)
     : undefined;
@@ -107,6 +114,7 @@ const serializeVertexModelAliases = (models?: ModelAlias[]) =>
 const serializeVertexKey = (config: ProviderKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
@@ -123,6 +131,8 @@ const serializeVertexKey = (config: ProviderKeyConfig) => {
 const serializeGeminiKey = (config: GeminiKeyConfig) => {
   const payload: Record<string, unknown> = { 'api-key': config.apiKey };
   if (config.priority !== undefined) payload.priority = config.priority;
+  if (config.weight !== undefined) payload.weight = config.weight;
+  if (config.disableCooling) payload['disable-cooling'] = true;
   if (config.prefix?.trim()) payload.prefix = config.prefix.trim();
   if (config.baseUrl) payload['base-url'] = config.baseUrl;
   if (config.proxyUrl) payload['proxy-url'] = config.proxyUrl;
@@ -190,6 +200,13 @@ const mergeSavedList = (
         identity: spec.nest.identity
       });
     }
+    if (Array.isArray(sent.models)) {
+      const rawModels = isRecord(base) && Array.isArray(base.models) ? base.models : [];
+      merged.models = mergeSavedList(rawModels, (sent.models as unknown[]).filter(isRecord), {
+        managed: ['name', 'alias', 'priority', 'test-model', 'image', 'thinking'],
+        identity: 'name'
+      });
+    }
     return merged;
   };
   if (raws.length === sentList.length) {
@@ -220,14 +237,39 @@ const fetchRawList = async (path: string, alias: string): Promise<unknown[]> => 
   }
 };
 
+const getProviderKeyConfigs = async <T>(
+  path: string,
+  alias: string,
+  normalize: (item: unknown) => T | null
+): Promise<T[]> => {
+  const data = await apiClient.get(path);
+  return extractArrayPayload(data, alias).map(normalize).filter((item): item is T => item !== null);
+};
+
+const saveProviderKeyConfigs = async <T>(
+  path: string,
+  alias: string,
+  configs: T[],
+  serialize: (config: T) => Record<string, unknown>,
+  managed: string[]
+) => {
+  const raw = await fetchRawList(path, alias);
+  const sent = configs.map(serialize);
+  await apiClient.put(path, mergeSavedList(raw, sent, { managed, identity: 'api-key' }));
+};
+
 // Keys owned by each serializer: present in its output = set, absent = cleared.
 const PROVIDER_KEY_MANAGED = [
-  'api-key', 'priority', 'prefix', 'base-url', 'websockets', 'proxy-url', 'headers', 'models',
-  'excluded-models', 'cloak'
+  'api-key', 'priority', 'weight', 'prefix', 'base-url', 'websockets', 'proxy-url', 'headers', 'models',
+  'excluded-models', 'disable-cooling', 'cloak', 'fingerprint-profile'
 ];
-const SIMPLE_KEY_MANAGED = ['api-key', 'priority', 'prefix', 'base-url', 'proxy-url', 'headers', 'models', 'excluded-models'];
+const SIMPLE_KEY_MANAGED = [
+  'api-key', 'priority', 'weight', 'prefix', 'base-url', 'proxy-url', 'headers', 'models',
+  'excluded-models', 'disable-cooling'
+];
 const OPENAI_PROVIDER_MANAGED = [
-  'name', 'base-url', 'api-key-entries', 'prefix', 'disabled', 'headers', 'models', 'priority', 'test-model'
+  'name', 'base-url', 'api-key-entries', 'prefix', 'disabled', 'headers', 'models', 'priority',
+  'test-model', 'disable-cooling'
 ];
 const OPENAI_ENTRY_MANAGED = ['api-key', 'proxy-url', 'headers'];
 
@@ -250,6 +292,15 @@ export const providersApi = {
   deleteGeminiKey: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/gemini-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
+  getInteractionsKeys: () =>
+    getProviderKeyConfigs('/interactions-api-key', 'interactions-api-key', normalizeGeminiKeyConfig),
+  saveInteractionsKeys: (configs: GeminiKeyConfig[]) =>
+    saveProviderKeyConfigs('/interactions-api-key', 'interactions-api-key', configs, serializeGeminiKey, SIMPLE_KEY_MANAGED),
+  updateInteractionsKey: (index: number, value: GeminiKeyConfig) =>
+    apiClient.patch('/interactions-api-key', { index, value: serializeGeminiKey(value) }),
+  deleteInteractionsKey: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/interactions-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
   async getCodexConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/codex-api-key');
     const list = extractArrayPayload(data, 'codex-api-key');
@@ -267,6 +318,24 @@ export const providersApi = {
 
   deleteCodexConfig: (apiKey: string, baseUrl?: string) =>
     apiClient.delete(`/codex-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  getMetaConfigs: () =>
+    getProviderKeyConfigs('/meta-api-key', 'meta-api-key', normalizeProviderKeyConfig),
+  saveMetaConfigs: (configs: ProviderKeyConfig[]) =>
+    saveProviderKeyConfigs('/meta-api-key', 'meta-api-key', configs, serializeProviderKey, PROVIDER_KEY_MANAGED),
+  updateMetaConfig: (index: number, value: ProviderKeyConfig) =>
+    apiClient.patch('/meta-api-key', { index, value: serializeProviderKey(value) }),
+  deleteMetaConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/meta-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
+
+  getXAIConfigs: () =>
+    getProviderKeyConfigs('/xai-api-key', 'xai-api-key', normalizeProviderKeyConfig),
+  saveXAIConfigs: (configs: ProviderKeyConfig[]) =>
+    saveProviderKeyConfigs('/xai-api-key', 'xai-api-key', configs, serializeProviderKey, PROVIDER_KEY_MANAGED),
+  updateXAIConfig: (index: number, value: ProviderKeyConfig) =>
+    apiClient.patch('/xai-api-key', { index, value: serializeProviderKey(value) }),
+  deleteXAIConfig: (apiKey: string, baseUrl?: string) =>
+    apiClient.delete(`/xai-api-key${buildProviderDeleteQuery(apiKey, baseUrl)}`),
 
   async getClaudeConfigs(): Promise<ProviderKeyConfig[]> {
     const data = await apiClient.get('/claude-api-key');
@@ -307,7 +376,7 @@ export const providersApi = {
   async getOpenAIProviders(): Promise<OpenAIProviderConfig[]> {
     const data = await apiClient.get('/openai-compatibility');
     const list = extractArrayPayload(data, 'openai-compatibility');
-    return list.map((item) => normalizeOpenAIProvider(item)).filter(Boolean) as OpenAIProviderConfig[];
+    return list.map((item, index) => normalizeOpenAIProvider(item, index)).filter(Boolean) as OpenAIProviderConfig[];
   },
 
   async saveOpenAIProviders(providers: OpenAIProviderConfig[]) {

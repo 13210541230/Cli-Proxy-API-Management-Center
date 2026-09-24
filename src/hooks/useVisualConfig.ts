@@ -2,9 +2,12 @@ import { useCallback, useMemo, useReducer } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
   PayloadFilterRule,
+  PayloadHeaderEntry,
+  PayloadModelEntry,
   PayloadParamEntry,
   PayloadParamValueType,
   PayloadRule,
+  PluginStoreAuthRule,
   VisualConfigValues,
   VisualConfigValidationErrors,
   PayloadParamValidationErrorCode,
@@ -104,6 +107,37 @@ function shouldWriteManagedField(
   return docHas(doc, path) || dirtyFields.has(dirtyKey);
 }
 
+function setManagedBooleanInDoc(
+  doc: YamlDocument,
+  path: YamlPath,
+  value: boolean,
+  dirtyFields: Set<string>,
+  dirtyKey: string
+): void {
+  if (!shouldWriteManagedField(doc, path, dirtyFields, dirtyKey)) return;
+  if (dirtyFields.has(dirtyKey)) {
+    doc.setIn(path, value);
+    return;
+  }
+  setBooleanInDoc(doc, path, value);
+}
+
+function setDisableImageGenerationInDoc(
+  doc: YamlDocument,
+  path: YamlPath,
+  value: VisualConfigValues['disableImageGeneration']
+): void {
+  if (value === 'chat' || value === 'passthrough') {
+    doc.setIn(path, value);
+    return;
+  }
+  if (value === 'true') {
+    doc.setIn(path, true);
+    return;
+  }
+  if (docHas(doc, path)) doc.setIn(path, false);
+}
+
 function setStringInDoc(doc: YamlDocument, path: YamlPath, value: unknown): void {
   const safe = typeof value === 'string' ? value : '';
   const trimmed = safe.trim();
@@ -144,6 +178,12 @@ function getNonNegativeIntegerError(value: string): 'non_negative_integer' | und
   return Number(trimmed) >= 0 ? undefined : 'non_negative_integer';
 }
 
+function getIntegerError(value: string): 'integer' | undefined {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  return /^-?\d+$/.test(trimmed) && Number.isSafeInteger(Number(trimmed)) ? undefined : 'integer';
+}
+
 function getPortError(value: string): 'port_range' | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
@@ -152,9 +192,7 @@ function getPortError(value: string): 'port_range' | undefined {
   return parsed >= 1 && parsed <= 65535 ? undefined : 'port_range';
 }
 
-function getRedisUsageQueueRetentionError(
-  value: string
-): 'retention_seconds_range' | undefined {
+function getRedisUsageQueueRetentionError(value: string): 'retention_seconds_range' | undefined {
   const trimmed = value.trim();
   if (!trimmed) return undefined;
   if (!/^\d+$/.test(trimmed)) return 'retention_seconds_range';
@@ -167,6 +205,7 @@ export function getVisualConfigValidationErrors(
 ): VisualConfigValidationErrors {
   return {
     port: getPortError(values.port),
+    errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
     redisUsageQueueRetentionSeconds: getRedisUsageQueueRetentionError(
       values.redisUsageQueueRetentionSeconds
@@ -174,6 +213,7 @@ export function getVisualConfigValidationErrors(
     requestRetry: getNonNegativeIntegerError(values.requestRetry),
     maxRetryCredentials: getNonNegativeIntegerError(values.maxRetryCredentials),
     maxRetryInterval: getNonNegativeIntegerError(values.maxRetryInterval),
+    authAutoRefreshWorkers: getIntegerError(values.authAutoRefreshWorkers),
     'streaming.keepaliveSeconds': getNonNegativeIntegerError(values.streaming.keepaliveSeconds),
     'streaming.bootstrapRetries': getNonNegativeIntegerError(values.streaming.bootstrapRetries),
     'streaming.nonstreamKeepaliveInterval': getNonNegativeIntegerError(
@@ -234,9 +274,68 @@ function arePayloadModelEntriesEqual(
     const a = left[i];
     const b = right[i];
     if (!a || !b) return false;
-    if (a.id !== b.id || a.name !== b.name || a.protocol !== b.protocol) return false;
+    if (
+      a.id !== b.id ||
+      a.name !== b.name ||
+      a.protocol !== b.protocol ||
+      a.fromProtocol !== b.fromProtocol
+    ) {
+      return false;
+    }
+    if (!arePayloadHeaderEntriesEqual(a.headers, b.headers)) return false;
+    if (!arePayloadParamEntriesEqual(a.match ?? [], b.match ?? [])) return false;
+    if (!arePayloadParamEntriesEqual(a.notMatch ?? [], b.notMatch ?? [])) return false;
+    if (!areStringArraysEqual(a.exist, b.exist) || !areStringArraysEqual(a.notExist, b.notExist)) {
+      return false;
+    }
   }
   return true;
+}
+
+function arePayloadHeaderEntriesEqual(
+  left: PayloadHeaderEntry[] | undefined,
+  right: PayloadHeaderEntry[] | undefined
+): boolean {
+  const leftEntries = left ?? [];
+  const rightEntries = right ?? [];
+  if (leftEntries.length !== rightEntries.length) return false;
+  return leftEntries.every((entry, index) => {
+    const other = rightEntries[index];
+    return Boolean(
+      other && entry.id === other.id && entry.name === other.name && entry.value === other.value
+    );
+  });
+}
+
+function areStringArraysEqual(left: string[] | undefined, right: string[] | undefined): boolean {
+  const leftItems = left ?? [];
+  const rightItems = right ?? [];
+  return (
+    leftItems.length === rightItems.length &&
+    leftItems.every((item, index) => item === rightItems[index])
+  );
+}
+
+function arePluginStoreAuthRulesEqual(
+  left: PluginStoreAuthRule[],
+  right: PluginStoreAuthRule[]
+): boolean {
+  if (left.length !== right.length) return false;
+  return left.every((rule, index) => {
+    const other = right[index];
+    return Boolean(
+      other &&
+      rule.match === other.match &&
+      rule.type === other.type &&
+      areStringArraysEqual(rule.applyTo, other.applyTo) &&
+      rule.tokenEnv === other.tokenEnv &&
+      rule.usernameEnv === other.usernameEnv &&
+      rule.passwordEnv === other.passwordEnv &&
+      rule.headerName === other.headerName &&
+      rule.headerValueEnv === other.headerValueEnv &&
+      rule.allowInsecure === other.allowInsecure
+    );
+  });
 }
 
 function arePayloadParamEntriesEqual(
@@ -327,6 +426,147 @@ function parsePayloadProtocol(raw: unknown): string | undefined {
   return raw.trim() ? raw : undefined;
 }
 
+function parseStringList(raw: unknown): string[] {
+  return Array.isArray(raw) ? raw.map((item) => String(item ?? '').trim()).filter(Boolean) : [];
+}
+
+function parsePayloadHeaders(raw: unknown, idPrefix: string): PayloadHeaderEntry[] {
+  const record = asRecord(raw);
+  if (!record) return [];
+
+  return Object.entries(record).map(([name, value], index) => ({
+    id: `${idPrefix}-header-${index}`,
+    name,
+    value: String(value ?? ''),
+  }));
+}
+
+function parsePayloadConditions(raw: unknown, idPrefix: string): PayloadParamEntry[] {
+  if (!Array.isArray(raw)) return [];
+
+  const entries: PayloadParamEntry[] = [];
+  raw.forEach((item, itemIndex) => {
+    const record = asRecord(item);
+    if (!record) {
+      if (typeof item === 'string') {
+        entries.push({
+          id: `${idPrefix}-condition-${itemIndex}-0`,
+          path: item,
+          valueType: 'string',
+          value: '',
+        });
+      }
+      return;
+    }
+
+    Object.entries(record).forEach(([path, value], valueIndex) => {
+      const parsedValue = parsePayloadParamValue(value);
+      entries.push({
+        id: `${idPrefix}-condition-${itemIndex}-${valueIndex}`,
+        path,
+        valueType: parsedValue.valueType,
+        value: parsedValue.value,
+      });
+    });
+  });
+
+  return entries;
+}
+
+function parsePayloadModelEntries(raw: unknown, idPrefix: string): PayloadModelEntry[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw.map((model, modelIndex) => {
+    const modelRecord = asRecord(model);
+    const nameRaw =
+      typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
+    const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
+    const modelId = `${idPrefix}-${modelIndex}`;
+
+    return {
+      id: modelId,
+      name,
+      protocol: parsePayloadProtocol(modelRecord?.protocol),
+      fromProtocol: parsePayloadProtocol(modelRecord?.['from-protocol']),
+      headers: parsePayloadHeaders(modelRecord?.headers, modelId),
+      match: parsePayloadConditions(modelRecord?.match, `${modelId}-match`),
+      notMatch: parsePayloadConditions(modelRecord?.['not-match'], `${modelId}-not-match`),
+      exist: parseStringList(modelRecord?.exist),
+      notExist: parseStringList(modelRecord?.['not-exist']),
+    };
+  });
+}
+
+const PLUGIN_STORE_AUTH_TYPES = ['none', 'bearer', 'basic', 'header', 'github-token'] as const;
+const PLUGIN_STORE_AUTH_APPLY_TO = ['registry', 'metadata', 'artifact'] as const;
+
+function parsePluginStoreAuthRules(raw: unknown): PluginStoreAuthRule[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item, index): PluginStoreAuthRule | null => {
+      const record = asRecord(item);
+      if (!record) return null;
+      const type = String(record.type ?? '')
+        .trim()
+        .toLowerCase();
+      const rule: PluginStoreAuthRule = {
+        id: `plugin-store-auth-${index}`,
+        match: typeof record.match === 'string' ? record.match : '',
+        applyTo: parseStringList(record['apply-to'] ?? record.apply_to).filter(
+          (value): value is PluginStoreAuthRule['applyTo'][number] =>
+            PLUGIN_STORE_AUTH_APPLY_TO.includes(
+              value as (typeof PLUGIN_STORE_AUTH_APPLY_TO)[number]
+            )
+        ),
+        type: PLUGIN_STORE_AUTH_TYPES.includes(type as (typeof PLUGIN_STORE_AUTH_TYPES)[number])
+          ? (type as PluginStoreAuthRule['type'])
+          : 'none',
+        tokenEnv: typeof record['token-env'] === 'string' ? record['token-env'] : '',
+        usernameEnv: typeof record['username-env'] === 'string' ? record['username-env'] : '',
+        passwordEnv: typeof record['password-env'] === 'string' ? record['password-env'] : '',
+        headerName: typeof record['header-name'] === 'string' ? record['header-name'] : '',
+        headerValueEnv:
+          typeof record['header-value-env'] === 'string' ? record['header-value-env'] : '',
+        allowInsecure: Boolean(record['allow-insecure'] ?? record.allow_insecure),
+      };
+      return rule.match.trim() ||
+        rule.type !== 'none' ||
+        rule.applyTo.length > 0 ||
+        rule.tokenEnv.trim() ||
+        rule.usernameEnv.trim() ||
+        rule.passwordEnv.trim() ||
+        rule.headerName.trim() ||
+        rule.headerValueEnv.trim() ||
+        rule.allowInsecure
+        ? rule
+        : null;
+    })
+    .filter((rule): rule is PluginStoreAuthRule => Boolean(rule));
+}
+
+function parseRoutingStrategy(raw: unknown): VisualConfigValues['routingStrategy'] {
+  const normalized = String(raw ?? '')
+    .trim()
+    .toLowerCase();
+  if (['weighted-round-robin', 'weightedroundrobin', 'wrr'].includes(normalized)) {
+    return 'weighted-round-robin';
+  }
+  return normalized === 'fill-first' ? 'fill-first' : 'round-robin';
+}
+
+function parseDisableImageGenerationMode(
+  raw: unknown
+): VisualConfigValues['disableImageGeneration'] {
+  if (raw === true) return 'true';
+  if (typeof raw === 'string') {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === 'true' || normalized === 'chat' || normalized === 'passthrough') {
+      return normalized;
+    }
+  }
+  return 'false';
+}
+
 function deleteLegacyApiKeysProvider(doc: YamlDocument): void {
   if (docHas(doc, ['auth', 'providers', 'config-api-key', 'api-key-entries'])) {
     doc.deleteIn(['auth', 'providers', 'config-api-key', 'api-key-entries']);
@@ -345,20 +585,7 @@ function parsePayloadRules(rules: unknown): PayloadRule[] {
   return rules.map((rule, index) => {
     const record = asRecord(rule) ?? {};
 
-    const modelsRaw = record.models;
-    const models = Array.isArray(modelsRaw)
-      ? modelsRaw.map((model, modelIndex) => {
-          const modelRecord = asRecord(model);
-          const nameRaw =
-            typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
-          const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
-          return {
-            id: `model-${index}-${modelIndex}`,
-            name,
-            protocol: parsePayloadProtocol(modelRecord?.protocol),
-          };
-        })
-      : [];
+    const models = parsePayloadModelEntries(record.models, `model-${index}`);
 
     const paramsRecord = asRecord(record.params);
     const params = paramsRecord
@@ -383,20 +610,7 @@ function parsePayloadFilterRules(rules: unknown): PayloadFilterRule[] {
   return rules.map((rule, index) => {
     const record = asRecord(rule) ?? {};
 
-    const modelsRaw = record.models;
-    const models = Array.isArray(modelsRaw)
-      ? modelsRaw.map((model, modelIndex) => {
-          const modelRecord = asRecord(model);
-          const nameRaw =
-            typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
-          const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
-          return {
-            id: `filter-model-${index}-${modelIndex}`,
-            name,
-            protocol: parsePayloadProtocol(modelRecord?.protocol),
-          };
-        })
-      : [];
+    const models = parsePayloadModelEntries(record.models, `filter-model-${index}`);
 
     const paramsRaw = record.params;
     const params = Array.isArray(paramsRaw) ? paramsRaw.map(String) : [];
@@ -411,20 +625,7 @@ function parseRawPayloadRules(rules: unknown): PayloadRule[] {
   return rules.map((rule, index) => {
     const record = asRecord(rule) ?? {};
 
-    const modelsRaw = record.models;
-    const models = Array.isArray(modelsRaw)
-      ? modelsRaw.map((model, modelIndex) => {
-          const modelRecord = asRecord(model);
-          const nameRaw =
-            typeof model === 'string' ? model : (modelRecord?.name ?? modelRecord?.id ?? '');
-          const name = typeof nameRaw === 'string' ? nameRaw : String(nameRaw ?? '');
-          return {
-            id: `raw-model-${index}-${modelIndex}`,
-            name,
-            protocol: parsePayloadProtocol(modelRecord?.protocol),
-          };
-        })
-      : [];
+    const models = parsePayloadModelEntries(record.models, `raw-model-${index}`);
 
     const paramsRecord = asRecord(record.params);
     const params = paramsRecord
@@ -440,16 +641,80 @@ function parseRawPayloadRules(rules: unknown): PayloadRule[] {
   });
 }
 
+function serializePayloadParamValue(param: PayloadParamEntry): unknown {
+  if (param.valueType === 'number') {
+    const num = Number(param.value);
+    return Number.isFinite(num) ? num : param.value;
+  }
+  if (param.valueType === 'boolean') return param.value === 'true';
+  if (param.valueType === 'json') {
+    try {
+      return JSON.parse(param.value);
+    } catch {
+      return param.value;
+    }
+  }
+  return param.value;
+}
+
+function serializePayloadConditions(
+  conditions?: PayloadParamEntry[]
+): Array<Record<string, unknown>> {
+  return (conditions ?? [])
+    .filter((condition) => condition.path.trim())
+    .map((condition) => ({ [condition.path.trim()]: serializePayloadParamValue(condition) }));
+}
+
+function serializePayloadModelEntries(models: PayloadModelEntry[]): Array<Record<string, unknown>> {
+  return (models ?? [])
+    .filter((model) => model.name.trim())
+    .map((model) => {
+      const output: Record<string, unknown> = { name: model.name.trim() };
+      if (model.protocol) output.protocol = model.protocol;
+      if (model.fromProtocol) output['from-protocol'] = model.fromProtocol;
+      const headers = Object.fromEntries(
+        (model.headers ?? [])
+          .filter((header) => header.name.trim())
+          .map((header) => [header.name.trim(), header.value])
+      );
+      if (Object.keys(headers).length) output.headers = headers;
+      const match = serializePayloadConditions(model.match);
+      const notMatch = serializePayloadConditions(model.notMatch);
+      if (match.length) output.match = match;
+      if (notMatch.length) output['not-match'] = notMatch;
+      const exist = parseStringList(model.exist);
+      const notExist = parseStringList(model.notExist);
+      if (exist.length) output.exist = exist;
+      if (notExist.length) output['not-exist'] = notExist;
+      return output;
+    });
+}
+
+function serializePluginStoreAuthForYaml(
+  rules: PluginStoreAuthRule[]
+): Array<Record<string, unknown>> {
+  return rules
+    .map((rule) => {
+      const match = rule.match.trim();
+      if (!match) return null;
+      const item: Record<string, unknown> = { match, type: rule.type };
+      const applyTo = parseStringList(rule.applyTo);
+      if (applyTo.length) item['apply-to'] = applyTo;
+      if (rule.tokenEnv.trim()) item['token-env'] = rule.tokenEnv.trim();
+      if (rule.usernameEnv.trim()) item['username-env'] = rule.usernameEnv.trim();
+      if (rule.passwordEnv.trim()) item['password-env'] = rule.passwordEnv.trim();
+      if (rule.headerName.trim()) item['header-name'] = rule.headerName.trim();
+      if (rule.headerValueEnv.trim()) item['header-value-env'] = rule.headerValueEnv.trim();
+      if (rule.allowInsecure) item['allow-insecure'] = true;
+      return item;
+    })
+    .filter((rule): rule is Record<string, unknown> => Boolean(rule));
+}
+
 function serializePayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
   return rules
     .map((rule) => {
-      const models = (rule.models || [])
-        .filter((m) => m.name?.trim())
-        .map((m) => {
-          const obj: Record<string, unknown> = { name: m.name.trim() };
-          if (m.protocol) obj.protocol = m.protocol;
-          return obj;
-        });
+      const models = serializePayloadModelEntries(rule.models);
 
       const params: Record<string, unknown> = {};
       for (const param of rule.params || []) {
@@ -480,13 +745,7 @@ function serializePayloadFilterRulesForYaml(
 ): Array<Record<string, unknown>> {
   return rules
     .map((rule) => {
-      const models = (rule.models || [])
-        .filter((m) => m.name?.trim())
-        .map((m) => {
-          const obj: Record<string, unknown> = { name: m.name.trim() };
-          if (m.protocol) obj.protocol = m.protocol;
-          return obj;
-        });
+      const models = serializePayloadModelEntries(rule.models);
 
       const params = (Array.isArray(rule.params) ? rule.params : [])
         .map((path) => String(path).trim())
@@ -500,13 +759,7 @@ function serializePayloadFilterRulesForYaml(
 function serializeRawPayloadRulesForYaml(rules: PayloadRule[]): Array<Record<string, unknown>> {
   return rules
     .map((rule) => {
-      const models = (rule.models || [])
-        .filter((m) => m.name?.trim())
-        .map((m) => {
-          const obj: Record<string, unknown> = { name: m.name.trim() };
-          if (m.protocol) obj.protocol = m.protocol;
-          return obj;
-        });
+      const models = serializePayloadModelEntries(rule.models);
 
       const params: Record<string, unknown> = {};
       for (const param of rule.params || []) {
@@ -603,6 +856,12 @@ function getNextDirtyFields(
       nextValues.rmDisableControlPanel === baselineValues.rmDisableControlPanel
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'rmDisableAutoUpdatePanel')) {
+    updateDirty(
+      'rmDisableAutoUpdatePanel',
+      nextValues.rmDisableAutoUpdatePanel === baselineValues.rmDisableAutoUpdatePanel
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'rmPanelRepo')) {
     updateDirty('rmPanelRepo', nextValues.rmPanelRepo === baselineValues.rmPanelRepo);
   }
@@ -611,6 +870,21 @@ function getNextDirtyFields(
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'apiKeysText')) {
     updateDirty('apiKeysText', nextValues.apiKeysText === baselineValues.apiKeysText);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'pluginsEnabled')) {
+    updateDirty('pluginsEnabled', nextValues.pluginsEnabled === baselineValues.pluginsEnabled);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'pluginStoreSources')) {
+    updateDirty(
+      'pluginStoreSources',
+      areStringArraysEqual(nextValues.pluginStoreSources, baselineValues.pluginStoreSources)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'pluginStoreAuth')) {
+    updateDirty(
+      'pluginStoreAuth',
+      arePluginStoreAuthRulesEqual(nextValues.pluginStoreAuth, baselineValues.pluginStoreAuth)
+    );
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'debug')) {
     updateDirty('debug', nextValues.debug === baselineValues.debug);
@@ -633,11 +907,16 @@ function getNextDirtyFields(
       nextValues.logsMaxTotalSizeMb === baselineValues.logsMaxTotalSizeMb
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'errorLogsMaxFiles')) {
+    updateDirty(
+      'errorLogsMaxFiles',
+      nextValues.errorLogsMaxFiles === baselineValues.errorLogsMaxFiles
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'redisUsageQueueRetentionSeconds')) {
     updateDirty(
       'redisUsageQueueRetentionSeconds',
-      nextValues.redisUsageQueueRetentionSeconds ===
-        baselineValues.redisUsageQueueRetentionSeconds
+      nextValues.redisUsageQueueRetentionSeconds === baselineValues.redisUsageQueueRetentionSeconds
     );
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'proxyUrl')) {
@@ -664,8 +943,85 @@ function getNextDirtyFields(
       nextValues.maxRetryInterval === baselineValues.maxRetryInterval
     );
   }
+  if (Object.prototype.hasOwnProperty.call(patch, 'authAutoRefreshWorkers')) {
+    updateDirty(
+      'authAutoRefreshWorkers',
+      nextValues.authAutoRefreshWorkers === baselineValues.authAutoRefreshWorkers
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'passthroughHeaders')) {
+    updateDirty(
+      'passthroughHeaders',
+      nextValues.passthroughHeaders === baselineValues.passthroughHeaders
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'disableCooling')) {
+    updateDirty('disableCooling', nextValues.disableCooling === baselineValues.disableCooling);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'disableImageGeneration')) {
+    updateDirty(
+      'disableImageGeneration',
+      nextValues.disableImageGeneration === baselineValues.disableImageGeneration
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'gptImage2BaseModel')) {
+    updateDirty(
+      'gptImage2BaseModel',
+      nextValues.gptImage2BaseModel === baselineValues.gptImage2BaseModel
+    );
+  }
   if (Object.prototype.hasOwnProperty.call(patch, 'wsAuth')) {
     updateDirty('wsAuth', nextValues.wsAuth === baselineValues.wsAuth);
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'antigravitySensitiveWords')) {
+    updateDirty(
+      'antigravitySensitiveWords',
+      areStringArraysEqual(
+        nextValues.antigravitySensitiveWords,
+        baselineValues.antigravitySensitiveWords
+      )
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'devinSensitiveWords')) {
+    updateDirty(
+      'devinSensitiveWords',
+      areStringArraysEqual(nextValues.devinSensitiveWords, baselineValues.devinSensitiveWords)
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'antigravitySignatureCacheEnabled')) {
+    updateDirty(
+      'antigravitySignatureCacheEnabled',
+      nextValues.antigravitySignatureCacheEnabled ===
+        baselineValues.antigravitySignatureCacheEnabled
+    );
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'antigravitySignatureBypassStrict')) {
+    updateDirty(
+      'antigravitySignatureBypassStrict',
+      nextValues.antigravitySignatureBypassStrict ===
+        baselineValues.antigravitySignatureBypassStrict
+    );
+  }
+  for (const key of [
+    'claudeHeaderUserAgent',
+    'claudeHeaderPackageVersion',
+    'claudeHeaderRuntimeVersion',
+    'claudeHeaderOs',
+    'claudeHeaderArch',
+    'claudeHeaderTimeout',
+    'codexHeaderUserAgent',
+    'codexHeaderBetaFeatures',
+  ] as const) {
+    if (Object.prototype.hasOwnProperty.call(patch, key)) {
+      updateDirty(key, nextValues[key] === baselineValues[key]);
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, 'claudeHeaderStabilizeDeviceProfile')) {
+    updateDirty(
+      'claudeHeaderStabilizeDeviceProfile',
+      nextValues.claudeHeaderStabilizeDeviceProfile ===
+        baselineValues.claudeHeaderStabilizeDeviceProfile
+    );
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'quotaSwitchProject')) {
     updateDirty(
@@ -833,10 +1189,15 @@ export function useVisualConfig() {
       const parsed = asRecord(parsedRaw) ?? {};
       const tls = asRecord(parsed.tls);
       const remoteManagement = asRecord(parsed['remote-management']);
+      const plugins = asRecord(parsed.plugins);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
       const payload = asRecord(parsed.payload);
       const streaming = asRecord(parsed.streaming);
+      const antigravity = asRecord(parsed.antigravity);
+      const devin = asRecord(parsed.devin);
+      const claudeHeaders = asRecord(parsed['claude-header-defaults']);
+      const codexHeaders = asRecord(parsed['codex-header-defaults']);
 
       const newValues: VisualConfigValues = {
         host: typeof parsed.host === 'string' ? parsed.host : '',
@@ -852,6 +1213,7 @@ export function useVisualConfig() {
             ? remoteManagement['secret-key']
             : '',
         rmDisableControlPanel: Boolean(remoteManagement?.['disable-control-panel']),
+        rmDisableAutoUpdatePanel: Boolean(remoteManagement?.['disable-auto-update-panel']),
         rmPanelRepo:
           typeof remoteManagement?.['panel-github-repository'] === 'string'
             ? remoteManagement['panel-github-repository']
@@ -861,6 +1223,9 @@ export function useVisualConfig() {
 
         authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
         apiKeysText: resolveApiKeysText(parsed),
+        pluginsEnabled: Boolean(plugins?.enabled),
+        pluginStoreSources: parseStringList(plugins?.['store-sources']),
+        pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
 
         debug: Boolean(parsed.debug),
         commercialMode: Boolean(parsed['commercial-mode']),
@@ -869,6 +1234,7 @@ export function useVisualConfig() {
         ),
         loggingToFile: Boolean(parsed['logging-to-file']),
         logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
+        errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
         redisUsageQueueRetentionSeconds: String(
           parsed['redis-usage-queue-retention-seconds'] ??
             parsed.redisUsageQueueRetentionSeconds ??
@@ -880,17 +1246,23 @@ export function useVisualConfig() {
         requestRetry: String(parsed['request-retry'] ?? ''),
         maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
         maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
+        authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
+        passthroughHeaders: Boolean(parsed['passthrough-headers']),
+        disableCooling: Boolean(parsed['disable-cooling']),
+        disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
+        gptImage2BaseModel:
+          typeof parsed['gpt-image-2-base-model'] === 'string'
+            ? parsed['gpt-image-2-base-model']
+            : '',
         wsAuth: Boolean(parsed['ws-auth']),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
         quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
 
-        routingStrategy: routing?.strategy === 'fill-first' ? 'fill-first' : 'round-robin',
+        routingStrategy: parseRoutingStrategy(routing?.strategy),
         routingSessionAffinity: Boolean(
-          routing?.['session-affinity'] ??
-            routing?.sessionAffinity ??
-            routing?.['sessionAffinity']
+          routing?.['session-affinity'] ?? routing?.sessionAffinity ?? routing?.['sessionAffinity']
         ),
         routingSessionAffinityTTL:
           typeof routing?.['session-affinity-ttl'] === 'string'
@@ -906,6 +1278,30 @@ export function useVisualConfig() {
         payloadOverrideRules: parsePayloadRules(payload?.override),
         payloadOverrideRawRules: parseRawPayloadRules(payload?.['override-raw']),
         payloadFilterRules: parsePayloadFilterRules(payload?.filter),
+        antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
+        devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
+        antigravitySignatureCacheEnabled: Boolean(
+          parsed['antigravity-signature-cache-enabled'] ?? true
+        ),
+        antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
+        claudeHeaderUserAgent:
+          typeof claudeHeaders?.['user-agent'] === 'string' ? claudeHeaders['user-agent'] : '',
+        claudeHeaderPackageVersion:
+          typeof claudeHeaders?.['package-version'] === 'string'
+            ? claudeHeaders['package-version']
+            : '',
+        claudeHeaderRuntimeVersion:
+          typeof claudeHeaders?.['runtime-version'] === 'string'
+            ? claudeHeaders['runtime-version']
+            : '',
+        claudeHeaderOs: typeof claudeHeaders?.os === 'string' ? claudeHeaders.os : '',
+        claudeHeaderArch: typeof claudeHeaders?.arch === 'string' ? claudeHeaders.arch : '',
+        claudeHeaderTimeout: String(claudeHeaders?.timeout ?? ''),
+        claudeHeaderStabilizeDeviceProfile: Boolean(claudeHeaders?.['stabilize-device-profile']),
+        codexHeaderUserAgent:
+          typeof codexHeaders?.['user-agent'] === 'string' ? codexHeaders['user-agent'] : '',
+        codexHeaderBetaFeatures:
+          typeof codexHeaders?.['beta-features'] === 'string' ? codexHeaders['beta-features'] : '',
 
         streaming: {
           keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
@@ -954,7 +1350,9 @@ export function useVisualConfig() {
           values.rmAllowRemote ||
           values.rmSecretKey.trim() ||
           values.rmDisableControlPanel ||
-          values.rmPanelRepo.trim()
+          values.rmDisableAutoUpdatePanel ||
+          values.rmPanelRepo.trim() ||
+          dirtyFields.has('rmDisableAutoUpdatePanel')
         ) {
           ensureMapInDoc(doc, ['remote-management']);
           setBooleanInDoc(doc, ['remote-management', 'allow-remote'], values.rmAllowRemote);
@@ -963,6 +1361,13 @@ export function useVisualConfig() {
             doc,
             ['remote-management', 'disable-control-panel'],
             values.rmDisableControlPanel
+          );
+          setManagedBooleanInDoc(
+            doc,
+            ['remote-management', 'disable-auto-update-panel'],
+            values.rmDisableAutoUpdatePanel,
+            dirtyFields,
+            'rmDisableAutoUpdatePanel'
           );
           setStringInDoc(doc, ['remote-management', 'panel-github-repository'], values.rmPanelRepo);
           if (docHas(doc, ['remote-management', 'panel-repo'])) {
@@ -983,12 +1388,50 @@ export function useVisualConfig() {
         }
         deleteLegacyApiKeysProvider(doc);
 
+        if (
+          docHas(doc, ['plugins']) ||
+          values.pluginsEnabled ||
+          values.pluginStoreSources.length > 0 ||
+          values.pluginStoreAuth.length > 0 ||
+          dirtyFields.has('pluginsEnabled') ||
+          dirtyFields.has('pluginStoreSources') ||
+          dirtyFields.has('pluginStoreAuth')
+        ) {
+          ensureMapInDoc(doc, ['plugins']);
+          setManagedBooleanInDoc(
+            doc,
+            ['plugins', 'enabled'],
+            values.pluginsEnabled,
+            dirtyFields,
+            'pluginsEnabled'
+          );
+          if (dirtyFields.has('pluginStoreSources')) {
+            if (values.pluginStoreSources.length) {
+              doc.setIn(['plugins', 'store-sources'], values.pluginStoreSources);
+            } else if (docHas(doc, ['plugins', 'store-sources'])) {
+              doc.deleteIn(['plugins', 'store-sources']);
+            }
+          }
+          if (dirtyFields.has('pluginStoreAuth')) {
+            const storeAuth = serializePluginStoreAuthForYaml(values.pluginStoreAuth);
+            if (storeAuth.length) doc.setIn(['plugins', 'store-auth'], storeAuth);
+            else if (docHas(doc, ['plugins', 'store-auth']))
+              doc.deleteIn(['plugins', 'store-auth']);
+          }
+          deleteIfMapEmpty(doc, ['plugins']);
+        }
+
         setBooleanInDoc(doc, ['debug'], values.debug);
 
         setBooleanInDoc(doc, ['commercial-mode'], values.commercialMode);
         setBooleanInDoc(doc, ['usage-statistics-enabled'], values.usageStatisticsEnabled);
         setBooleanInDoc(doc, ['logging-to-file'], values.loggingToFile);
         setIntFromStringInDoc(doc, ['logs-max-total-size-mb'], values.logsMaxTotalSizeMb);
+        if (
+          shouldWriteManagedField(doc, ['error-logs-max-files'], dirtyFields, 'errorLogsMaxFiles')
+        ) {
+          setIntFromStringInDoc(doc, ['error-logs-max-files'], values.errorLogsMaxFiles);
+        }
         if (
           shouldWriteManagedField(
             doc,
@@ -1009,7 +1452,154 @@ export function useVisualConfig() {
         setIntFromStringInDoc(doc, ['request-retry'], values.requestRetry);
         setIntFromStringInDoc(doc, ['max-retry-credentials'], values.maxRetryCredentials);
         setIntFromStringInDoc(doc, ['max-retry-interval'], values.maxRetryInterval);
+        if (
+          shouldWriteManagedField(
+            doc,
+            ['auth-auto-refresh-workers'],
+            dirtyFields,
+            'authAutoRefreshWorkers'
+          )
+        ) {
+          setIntFromStringInDoc(doc, ['auth-auto-refresh-workers'], values.authAutoRefreshWorkers);
+        }
+        setManagedBooleanInDoc(
+          doc,
+          ['passthrough-headers'],
+          values.passthroughHeaders,
+          dirtyFields,
+          'passthroughHeaders'
+        );
+        setManagedBooleanInDoc(
+          doc,
+          ['disable-cooling'],
+          values.disableCooling,
+          dirtyFields,
+          'disableCooling'
+        );
+        if (
+          shouldWriteManagedField(
+            doc,
+            ['disable-image-generation'],
+            dirtyFields,
+            'disableImageGeneration'
+          )
+        ) {
+          setDisableImageGenerationInDoc(
+            doc,
+            ['disable-image-generation'],
+            values.disableImageGeneration
+          );
+        }
+        if (
+          shouldWriteManagedField(
+            doc,
+            ['gpt-image-2-base-model'],
+            dirtyFields,
+            'gptImage2BaseModel'
+          )
+        ) {
+          setStringInDoc(doc, ['gpt-image-2-base-model'], values.gptImage2BaseModel);
+        }
         setBooleanInDoc(doc, ['ws-auth'], values.wsAuth);
+
+        if (
+          docHas(doc, ['antigravity']) ||
+          values.antigravitySensitiveWords.length > 0 ||
+          dirtyFields.has('antigravitySensitiveWords')
+        ) {
+          ensureMapInDoc(doc, ['antigravity']);
+          if (dirtyFields.has('antigravitySensitiveWords')) {
+            if (values.antigravitySensitiveWords.length) {
+              doc.setIn(['antigravity', 'sensitive-words'], values.antigravitySensitiveWords);
+            } else if (docHas(doc, ['antigravity', 'sensitive-words'])) {
+              doc.deleteIn(['antigravity', 'sensitive-words']);
+            }
+          }
+          deleteIfMapEmpty(doc, ['antigravity']);
+        }
+        if (
+          docHas(doc, ['devin']) ||
+          values.devinSensitiveWords.length > 0 ||
+          dirtyFields.has('devinSensitiveWords')
+        ) {
+          ensureMapInDoc(doc, ['devin']);
+          if (dirtyFields.has('devinSensitiveWords')) {
+            if (values.devinSensitiveWords.length) {
+              doc.setIn(['devin', 'sensitive-words'], values.devinSensitiveWords);
+            } else if (docHas(doc, ['devin', 'sensitive-words'])) {
+              doc.deleteIn(['devin', 'sensitive-words']);
+            }
+          }
+          deleteIfMapEmpty(doc, ['devin']);
+        }
+        setManagedBooleanInDoc(
+          doc,
+          ['antigravity-signature-cache-enabled'],
+          values.antigravitySignatureCacheEnabled,
+          dirtyFields,
+          'antigravitySignatureCacheEnabled'
+        );
+        setManagedBooleanInDoc(
+          doc,
+          ['antigravity-signature-bypass-strict'],
+          values.antigravitySignatureBypassStrict,
+          dirtyFields,
+          'antigravitySignatureBypassStrict'
+        );
+
+        const claudeHeaderValues: Array<[keyof VisualConfigValues, string[]]> = [
+          ['claudeHeaderUserAgent', ['claude-header-defaults', 'user-agent']],
+          ['claudeHeaderPackageVersion', ['claude-header-defaults', 'package-version']],
+          ['claudeHeaderRuntimeVersion', ['claude-header-defaults', 'runtime-version']],
+          ['claudeHeaderOs', ['claude-header-defaults', 'os']],
+          ['claudeHeaderArch', ['claude-header-defaults', 'arch']],
+          ['claudeHeaderTimeout', ['claude-header-defaults', 'timeout']],
+        ];
+        const claudeHeaderTouched =
+          claudeHeaderValues.some(([key, path]) =>
+            shouldWriteManagedField(doc, path, dirtyFields, key)
+          ) ||
+          shouldWriteManagedField(
+            doc,
+            ['claude-header-defaults', 'stabilize-device-profile'],
+            dirtyFields,
+            'claudeHeaderStabilizeDeviceProfile'
+          );
+        if (docHas(doc, ['claude-header-defaults']) || claudeHeaderTouched) {
+          ensureMapInDoc(doc, ['claude-header-defaults']);
+          for (const [key, path] of claudeHeaderValues) {
+            if (!shouldWriteManagedField(doc, path, dirtyFields, key)) continue;
+            const value = values[key];
+            if (key === 'claudeHeaderTimeout') setIntFromStringInDoc(doc, path, value);
+            else setStringInDoc(doc, path, value);
+          }
+          setManagedBooleanInDoc(
+            doc,
+            ['claude-header-defaults', 'stabilize-device-profile'],
+            values.claudeHeaderStabilizeDeviceProfile,
+            dirtyFields,
+            'claudeHeaderStabilizeDeviceProfile'
+          );
+          deleteIfMapEmpty(doc, ['claude-header-defaults']);
+        }
+        const codexHeaderValues: Array<[keyof VisualConfigValues, string[]]> = [
+          ['codexHeaderUserAgent', ['codex-header-defaults', 'user-agent']],
+          ['codexHeaderBetaFeatures', ['codex-header-defaults', 'beta-features']],
+        ];
+        if (
+          docHas(doc, ['codex-header-defaults']) ||
+          codexHeaderValues.some(([key, path]) =>
+            shouldWriteManagedField(doc, path, dirtyFields, key)
+          )
+        ) {
+          ensureMapInDoc(doc, ['codex-header-defaults']);
+          for (const [key, path] of codexHeaderValues) {
+            if (shouldWriteManagedField(doc, path, dirtyFields, key)) {
+              setStringInDoc(doc, path, values[key]);
+            }
+          }
+          deleteIfMapEmpty(doc, ['codex-header-defaults']);
+        }
 
         if (
           docHas(doc, ['quota-exceeded']) ||
@@ -1032,10 +1622,7 @@ export function useVisualConfig() {
           doc.setIn(['quota-exceeded', 'switch-project'], values.quotaSwitchProject);
           doc.setIn(['quota-exceeded', 'switch-preview-model'], values.quotaSwitchPreviewModel);
           if (writeQuotaAntigravityCredits) {
-            doc.setIn(
-              ['quota-exceeded', 'antigravity-credits'],
-              values.quotaAntigravityCredits
-            );
+            doc.setIn(['quota-exceeded', 'antigravity-credits'], values.quotaAntigravityCredits);
           }
           deleteIfMapEmpty(doc, ['quota-exceeded']);
         }

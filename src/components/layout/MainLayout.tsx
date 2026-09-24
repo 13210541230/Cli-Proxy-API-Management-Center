@@ -41,6 +41,7 @@ import { LANGUAGE_LABEL_KEYS, LANGUAGE_ORDER } from '@/utils/constants';
 import { isSupportedLanguage } from '@/utils/language';
 import type { Theme } from '@/types';
 import { collectPluginResourceEntries } from '@/features/plugins/pluginResources';
+import { hasApiKeyFunConfig } from '@/features/providers/sponsor';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
@@ -415,6 +416,9 @@ export function MainLayout() {
     { path: '/config', label: t('nav.config_management'), icon: sidebarIcons.config },
     { path: '/enterprise-keys', label: t('nav.enterprise_keys'), icon: sidebarIcons.config },
     { path: '/ai-providers', label: t('nav.ai_providers'), icon: sidebarIcons.aiProviders },
+    ...(!hasApiKeyFunConfig(config)
+      ? [{ path: '/quick-start', label: t('nav.quick_start'), icon: sidebarIcons.aiProviders }]
+      : []),
     { path: '/auth-files', label: t('nav.auth_files'), icon: sidebarIcons.authFiles },
     { path: '/oauth', label: t('nav.oauth', { defaultValue: 'OAuth' }), icon: sidebarIcons.oauth },
 	{ path: '/quota', label: t('nav.quota_management'), icon: sidebarIcons.quota },

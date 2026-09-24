@@ -12,6 +12,7 @@ import {
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageTransitionLayer } from '@/components/common/PageTransitionLayer';
+import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { ToggleSwitch } from '@/components/ui/ToggleSwitch';
@@ -32,11 +33,15 @@ import type {
   PayloadFilterRule,
   PayloadParamValidationErrorCode,
   PayloadRule,
+  PluginStoreAuthApplyTo,
+  PluginStoreAuthRule,
+  PluginStoreAuthType,
   VisualConfigFieldPath,
   VisualConfigValidationErrorCode,
   VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
+import { makeClientId } from '@/types/visualConfig';
 import { PayloadFilterRulesEditor, PayloadRulesEditor } from './VisualConfigEditorBlocks';
 import styles from './VisualConfigEditor.module.scss';
 
@@ -47,6 +52,7 @@ type VisualSectionId =
   | 'auth'
   | 'system'
   | 'network'
+  | 'advanced'
   | 'quota'
   | 'streaming'
   | 'payload';
@@ -166,6 +172,210 @@ function FieldShell({
   );
 }
 
+function StringListInput({
+  label,
+  hint,
+  placeholder,
+  value,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  placeholder?: string;
+  value: string[];
+  disabled: boolean;
+  onChange: (value: string[]) => void;
+}) {
+  return (
+    <FieldShell label={label} hint={hint}>
+      <textarea
+        className={`input ${styles.stringListInput}`}
+        rows={3}
+        value={value.join('\n')}
+        placeholder={placeholder}
+        disabled={disabled}
+        onChange={(event) =>
+          onChange(
+            event.target.value
+              .split('\n')
+              .map((item) => item.trim())
+              .filter(Boolean)
+          )
+        }
+      />
+    </FieldShell>
+  );
+}
+
+function PluginStoreAuthEditor({
+  value,
+  disabled,
+  onChange,
+}: {
+  value: PluginStoreAuthRule[];
+  disabled: boolean;
+  onChange: (value: PluginStoreAuthRule[]) => void;
+}) {
+  const { t } = useTranslation();
+  const updateRule = (id: string, patch: Partial<PluginStoreAuthRule>) =>
+    onChange(value.map((rule) => (rule.id === id ? { ...rule, ...patch } : rule)));
+  const applyToOptions: PluginStoreAuthApplyTo[] = ['registry', 'metadata', 'artifact'];
+  const authTypes: PluginStoreAuthType[] = ['bearer', 'github-token', 'basic', 'header', 'none'];
+
+  return (
+    <div className={styles.pluginAuthList}>
+      {value.map((rule, index) => (
+        <div key={rule.id} className={styles.pluginAuthRule}>
+          <div className={styles.pluginAuthHeader}>
+            <strong>
+              {rule.match ||
+                `${t('config_management.visual.sections.system.store_auth_rule')} ${index + 1}`}
+            </strong>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={disabled}
+              onClick={() => onChange(value.filter((item) => item.id !== rule.id))}
+            >
+              {t('config_management.visual.common.delete')}
+            </Button>
+          </div>
+          <SectionGrid>
+            <Input
+              label={t('config_management.visual.sections.system.store_auth_match')}
+              value={rule.match}
+              placeholder="https://example.com/private/"
+              disabled={disabled}
+              onChange={(event) => updateRule(rule.id, { match: event.target.value })}
+            />
+            <FieldShell label={t('config_management.visual.sections.system.store_auth_type')}>
+              <Select
+                value={rule.type}
+                options={authTypes.map((type) => ({
+                  value: type,
+                  label: t(
+                    `config_management.visual.sections.system.store_auth_type_${type.replace('-', '_')}`
+                  ),
+                }))}
+                disabled={disabled}
+                onChange={(type) => updateRule(rule.id, { type: type as PluginStoreAuthType })}
+              />
+            </FieldShell>
+          </SectionGrid>
+          <div className={styles.pluginAuthApplyTo}>
+            <span className={styles.fieldLabel}>
+              {t('config_management.visual.sections.system.store_auth_apply_to')}
+            </span>
+            <div className={styles.pluginAuthOptions}>
+              {applyToOptions.map((kind) => (
+                <label key={kind}>
+                  <input
+                    type="checkbox"
+                    checked={rule.applyTo.includes(kind)}
+                    disabled={disabled}
+                    onChange={() =>
+                      updateRule(rule.id, {
+                        applyTo: rule.applyTo.includes(kind)
+                          ? rule.applyTo.filter((item) => item !== kind)
+                          : [...rule.applyTo, kind],
+                      })
+                    }
+                  />
+                  {t(`config_management.visual.sections.system.store_auth_apply_${kind}`)}
+                </label>
+              ))}
+            </div>
+            <div className={styles.fieldHint}>
+              {t('config_management.visual.sections.system.store_auth_apply_to_hint')}
+            </div>
+          </div>
+          {rule.type === 'bearer' || rule.type === 'github-token' ? (
+            <Input
+              label={t('config_management.visual.sections.system.store_auth_token_env')}
+              value={rule.tokenEnv}
+              placeholder="CLIPROXY_PLUGIN_STORE_TOKEN"
+              disabled={disabled}
+              onChange={(event) => updateRule(rule.id, { tokenEnv: event.target.value })}
+            />
+          ) : null}
+          {rule.type === 'basic' ? (
+            <SectionGrid>
+              <Input
+                label={t('config_management.visual.sections.system.store_auth_username_env')}
+                value={rule.usernameEnv}
+                disabled={disabled}
+                onChange={(event) => updateRule(rule.id, { usernameEnv: event.target.value })}
+              />
+              <Input
+                label={t('config_management.visual.sections.system.store_auth_password_env')}
+                value={rule.passwordEnv}
+                disabled={disabled}
+                onChange={(event) => updateRule(rule.id, { passwordEnv: event.target.value })}
+              />
+            </SectionGrid>
+          ) : null}
+          {rule.type === 'header' ? (
+            <SectionGrid>
+              <Input
+                label={t('config_management.visual.sections.system.store_auth_header_name')}
+                value={rule.headerName}
+                placeholder="X-Plugin-Token"
+                disabled={disabled}
+                onChange={(event) => updateRule(rule.id, { headerName: event.target.value })}
+              />
+              <Input
+                label={t('config_management.visual.sections.system.store_auth_header_value_env')}
+                value={rule.headerValueEnv}
+                disabled={disabled}
+                onChange={(event) => updateRule(rule.id, { headerValueEnv: event.target.value })}
+              />
+            </SectionGrid>
+          ) : null}
+          <label className={styles.pluginAuthOption}>
+            <input
+              type="checkbox"
+              checked={rule.allowInsecure}
+              disabled={disabled}
+              onChange={(event) => updateRule(rule.id, { allowInsecure: event.target.checked })}
+            />
+            {t('config_management.visual.sections.system.store_auth_allow_insecure')}
+          </label>
+        </div>
+      ))}
+      {value.length === 0 ? (
+        <p className={styles.fieldHint}>
+          {t('config_management.visual.sections.system.store_auth_empty')}
+        </p>
+      ) : null}
+      <Button
+        variant="secondary"
+        size="sm"
+        disabled={disabled}
+        onClick={() =>
+          onChange([
+            ...value,
+            {
+              id: makeClientId(),
+              match: '',
+              applyTo: [],
+              type: 'bearer',
+              tokenEnv: '',
+              usernameEnv: '',
+              passwordEnv: '',
+              headerName: '',
+              headerValueEnv: '',
+              allowInsecure: false,
+            },
+          ])
+        }
+      >
+        {t('config_management.visual.sections.system.store_auth_add')}
+      </Button>
+    </div>
+  );
+}
+
 export function VisualConfigEditor({
   values,
   validationErrors,
@@ -206,6 +416,7 @@ export function VisualConfigEditor({
 
   const portError = getValidationMessage(t, validationErrors?.port);
   const logsMaxSizeError = getValidationMessage(t, validationErrors?.logsMaxTotalSizeMb);
+  const errorLogsMaxFilesError = getValidationMessage(t, validationErrors?.errorLogsMaxFiles);
   const redisUsageQueueRetentionError = getValidationMessage(
     t,
     validationErrors?.redisUsageQueueRetentionSeconds
@@ -213,6 +424,10 @@ export function VisualConfigEditor({
   const requestRetryError = getValidationMessage(t, validationErrors?.requestRetry);
   const maxRetryCredentialsError = getValidationMessage(t, validationErrors?.maxRetryCredentials);
   const maxRetryIntervalError = getValidationMessage(t, validationErrors?.maxRetryInterval);
+  const authAutoRefreshWorkersError = getValidationMessage(
+    t,
+    validationErrors?.authAutoRefreshWorkers
+  );
   const keepaliveError = getValidationMessage(t, validationErrors?.['streaming.keepaliveSeconds']);
   const bootstrapRetriesError = getValidationMessage(
     t,
@@ -285,14 +500,30 @@ export function VisualConfigEditor({
         title: t('config_management.visual.sections.system.title'),
         description: t('config_management.visual.sections.system.description'),
         icon: IconDiamond,
-        errorCount: countErrors(['logsMaxTotalSizeMb', 'redisUsageQueueRetentionSeconds']),
+        errorCount: countErrors([
+          'logsMaxTotalSizeMb',
+          'errorLogsMaxFiles',
+          'redisUsageQueueRetentionSeconds',
+        ]),
       },
       {
         id: 'network',
         title: t('config_management.visual.sections.network.title'),
         description: t('config_management.visual.sections.network.description'),
         icon: IconTrendingUp,
-        errorCount: countErrors(['requestRetry', 'maxRetryCredentials', 'maxRetryInterval']),
+        errorCount: countErrors([
+          'requestRetry',
+          'maxRetryCredentials',
+          'maxRetryInterval',
+          'authAutoRefreshWorkers',
+        ]),
+      },
+      {
+        id: 'advanced',
+        title: t('config_management.visual.sections.advanced.title'),
+        description: t('config_management.visual.sections.advanced.description'),
+        icon: IconShield,
+        errorCount: 0,
       },
       {
         id: 'quota',
@@ -430,7 +661,8 @@ export function VisualConfigEditor({
         220
       );
       const maxHeight = Math.max(window.innerHeight - top - viewportPadding, 160);
-      const isVisible = workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
+      const isVisible =
+        workspaceRect.bottom > stickyTop + 24 && anchorRect.top < window.innerHeight;
 
       floatingElement.style.transform = `translate3d(${left}px, ${top}px, 0)`;
       floatingElement.style.width = `${width}px`;
@@ -650,6 +882,15 @@ export function VisualConfigEditor({
                 disabled={disabled}
                 onChange={(rmDisableControlPanel) => onChange({ rmDisableControlPanel })}
               />
+              <ToggleRow
+                title={t('config_management.visual.sections.remote.disable_auto_update_panel')}
+                description={t(
+                  'config_management.visual.sections.remote.disable_auto_update_panel_desc'
+                )}
+                checked={values.rmDisableAutoUpdatePanel}
+                disabled={disabled}
+                onChange={(rmDisableAutoUpdatePanel) => onChange({ rmDisableAutoUpdatePanel })}
+              />
               <SectionGrid>
                 <Input
                   label={t('config_management.visual.sections.remote.secret_key')}
@@ -737,7 +978,46 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(loggingToFile) => onChange({ loggingToFile })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.plugins_enabled')}
+                  description={t('config_management.visual.sections.system.plugins_enabled_desc')}
+                  checked={values.pluginsEnabled}
+                  disabled={disabled}
+                  onChange={(pluginsEnabled) => onChange({ pluginsEnabled })}
+                />
               </SectionGrid>
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.plugin_store_sources')}
+                description={t(
+                  'config_management.visual.sections.system.plugin_store_sources_desc'
+                )}
+              >
+                <StringListInput
+                  label={t('config_management.visual.sections.system.plugin_store_sources_label')}
+                  placeholder={t(
+                    'config_management.visual.sections.system.plugin_store_sources_placeholder'
+                  )}
+                  hint={t('config_management.visual.sections.system.plugin_store_sources_hint')}
+                  value={values.pluginStoreSources}
+                  disabled={disabled}
+                  onChange={(pluginStoreSources) => onChange({ pluginStoreSources })}
+                />
+              </SectionSubsection>
+
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.plugin_store_auth')}
+                description={t('config_management.visual.sections.system.plugin_store_auth_desc')}
+              >
+                <div className={styles.fieldHint}>
+                  {t('config_management.visual.sections.system.plugin_store_auth_hint')}
+                </div>
+                <PluginStoreAuthEditor
+                  value={values.pluginStoreAuth}
+                  disabled={disabled}
+                  onChange={(pluginStoreAuth) => onChange({ pluginStoreAuth })}
+                />
+              </SectionSubsection>
 
               <SectionGrid>
                 <Input
@@ -750,15 +1030,23 @@ export function VisualConfigEditor({
                   error={logsMaxSizeError}
                 />
                 <Input
+                  label={t('config_management.visual.sections.system.error_logs_max_files')}
+                  type="number"
+                  min="0"
+                  placeholder="10"
+                  value={values.errorLogsMaxFiles}
+                  onChange={(e) => onChange({ errorLogsMaxFiles: e.target.value })}
+                  disabled={disabled}
+                  error={errorLogsMaxFilesError}
+                />
+                <Input
                   label={t('config_management.visual.sections.system.redis_usage_queue_retention')}
                   type="number"
                   min="0"
                   max="3600"
                   placeholder="60"
                   value={values.redisUsageQueueRetentionSeconds}
-                  onChange={(e) =>
-                    onChange({ redisUsageQueueRetentionSeconds: e.target.value })
-                  }
+                  onChange={(e) => onChange({ redisUsageQueueRetentionSeconds: e.target.value })}
                   disabled={disabled}
                   hint={t(
                     'config_management.visual.sections.system.redis_usage_queue_retention_hint'
@@ -815,6 +1103,18 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   error={maxRetryIntervalError}
                 />
+                <Input
+                  label={t('config_management.visual.sections.network.auth_auto_refresh_workers')}
+                  type="number"
+                  placeholder="16"
+                  value={values.authAutoRefreshWorkers}
+                  onChange={(e) => onChange({ authAutoRefreshWorkers: e.target.value })}
+                  disabled={disabled}
+                  hint={t(
+                    'config_management.visual.sections.network.auth_auto_refresh_workers_hint'
+                  )}
+                  error={authAutoRefreshWorkersError}
+                />
                 <FieldShell
                   label={t('config_management.visual.sections.network.routing_strategy')}
                   labelId={routingStrategyLabelId}
@@ -827,6 +1127,12 @@ export function VisualConfigEditor({
                       {
                         value: 'round-robin',
                         label: t('config_management.visual.sections.network.strategy_round_robin'),
+                      },
+                      {
+                        value: 'weighted-round-robin',
+                        label: t(
+                          'config_management.visual.sections.network.strategy_weighted_round_robin'
+                        ),
                       },
                       {
                         value: 'fill-first',
@@ -850,6 +1156,37 @@ export function VisualConfigEditor({
                   value={values.routingSessionAffinityTTL}
                   onChange={(e) => onChange({ routingSessionAffinityTTL: e.target.value })}
                   disabled={disabled}
+                />
+                <FieldShell
+                  label={t('config_management.visual.sections.network.disable_image_generation')}
+                  hint={t(
+                    'config_management.visual.sections.network.disable_image_generation_hint'
+                  )}
+                >
+                  <Select
+                    value={values.disableImageGeneration}
+                    options={(['false', 'true', 'chat', 'passthrough'] as const).map((mode) => ({
+                      value: mode,
+                      label: t(
+                        `config_management.visual.sections.network.disable_image_generation_${mode}`
+                      ),
+                    }))}
+                    disabled={disabled}
+                    onChange={(disableImageGeneration) =>
+                      onChange({
+                        disableImageGeneration:
+                          disableImageGeneration as VisualConfigValues['disableImageGeneration'],
+                      })
+                    }
+                  />
+                </FieldShell>
+                <Input
+                  label={t('config_management.visual.sections.network.gpt_image_2_base_model')}
+                  placeholder="gpt-image-2-mainline"
+                  value={values.gptImage2BaseModel}
+                  onChange={(e) => onChange({ gptImage2BaseModel: e.target.value })}
+                  disabled={disabled}
+                  hint={t('config_management.visual.sections.network.gpt_image_2_base_model_hint')}
                 />
               </SectionGrid>
 
@@ -876,7 +1213,173 @@ export function VisualConfigEditor({
                   disabled={disabled}
                   onChange={(wsAuth) => onChange({ wsAuth })}
                 />
+                <ToggleRow
+                  title={t('config_management.visual.sections.network.passthrough_headers')}
+                  description={t(
+                    'config_management.visual.sections.network.passthrough_headers_desc'
+                  )}
+                  checked={values.passthroughHeaders}
+                  disabled={disabled}
+                  onChange={(passthroughHeaders) => onChange({ passthroughHeaders })}
+                />
+                <ToggleRow
+                  title={t('config_management.visual.sections.network.disable_cooling')}
+                  description={t('config_management.visual.sections.network.disable_cooling_desc')}
+                  checked={values.disableCooling}
+                  disabled={disabled}
+                  onChange={(disableCooling) => onChange({ disableCooling })}
+                />
               </SectionGrid>
+            </SectionStack>
+          </ConfigSection>
+
+          <ConfigSection
+            id="advanced"
+            ref={(node) => {
+              sectionRefs.current.advanced = node;
+            }}
+            icon={<IconShield size={16} />}
+            title={t('config_management.visual.sections.advanced.title')}
+            description={t('config_management.visual.sections.advanced.description')}
+          >
+            <SectionStack>
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.antigravity_sensitive_words')}
+                description={t(
+                  'config_management.visual.sections.system.antigravity_sensitive_words_desc'
+                )}
+              >
+                <StringListInput
+                  label={t(
+                    'config_management.visual.sections.system.antigravity_sensitive_words_label'
+                  )}
+                  placeholder={t(
+                    'config_management.visual.sections.system.antigravity_sensitive_words_placeholder'
+                  )}
+                  hint={t(
+                    'config_management.visual.sections.system.antigravity_sensitive_words_hint'
+                  )}
+                  value={values.antigravitySensitiveWords}
+                  disabled={disabled}
+                  onChange={(antigravitySensitiveWords) => onChange({ antigravitySensitiveWords })}
+                />
+              </SectionSubsection>
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.devin_sensitive_words')}
+                description={t(
+                  'config_management.visual.sections.system.devin_sensitive_words_desc'
+                )}
+              >
+                <StringListInput
+                  label={t('config_management.visual.sections.system.devin_sensitive_words_label')}
+                  placeholder={t(
+                    'config_management.visual.sections.system.devin_sensitive_words_placeholder'
+                  )}
+                  hint={t('config_management.visual.sections.system.devin_sensitive_words_hint')}
+                  value={values.devinSensitiveWords}
+                  disabled={disabled}
+                  onChange={(devinSensitiveWords) => onChange({ devinSensitiveWords })}
+                />
+              </SectionSubsection>
+              <SectionSubsection
+                title={t('config_management.visual.sections.system.signature_title')}
+              >
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.antigravity_signature_cache')}
+                  description={t(
+                    'config_management.visual.sections.system.antigravity_signature_cache_desc'
+                  )}
+                  checked={values.antigravitySignatureCacheEnabled}
+                  disabled={disabled}
+                  onChange={(antigravitySignatureCacheEnabled) =>
+                    onChange({ antigravitySignatureCacheEnabled })
+                  }
+                />
+                <ToggleRow
+                  title={t('config_management.visual.sections.system.antigravity_signature_strict')}
+                  description={t(
+                    'config_management.visual.sections.system.antigravity_signature_strict_desc'
+                  )}
+                  checked={values.antigravitySignatureBypassStrict}
+                  disabled={disabled}
+                  onChange={(antigravitySignatureBypassStrict) =>
+                    onChange({ antigravitySignatureBypassStrict })
+                  }
+                />
+              </SectionSubsection>
+              <SectionSubsection
+                title={t('config_management.visual.sections.headers.claude_title')}
+                description={t('config_management.visual.sections.headers.description')}
+              >
+                <SectionGrid>
+                  <Input
+                    label={t('config_management.visual.sections.headers.user_agent')}
+                    value={values.claudeHeaderUserAgent}
+                    disabled={disabled}
+                    onChange={(event) => onChange({ claudeHeaderUserAgent: event.target.value })}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.headers.package_version')}
+                    value={values.claudeHeaderPackageVersion}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      onChange({ claudeHeaderPackageVersion: event.target.value })
+                    }
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.headers.runtime_version')}
+                    value={values.claudeHeaderRuntimeVersion}
+                    disabled={disabled}
+                    onChange={(event) =>
+                      onChange({ claudeHeaderRuntimeVersion: event.target.value })
+                    }
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.headers.os')}
+                    value={values.claudeHeaderOs}
+                    disabled={disabled}
+                    onChange={(event) => onChange({ claudeHeaderOs: event.target.value })}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.headers.arch')}
+                    value={values.claudeHeaderArch}
+                    disabled={disabled}
+                    onChange={(event) => onChange({ claudeHeaderArch: event.target.value })}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.headers.timeout')}
+                    type="number"
+                    value={values.claudeHeaderTimeout}
+                    disabled={disabled}
+                    onChange={(event) => onChange({ claudeHeaderTimeout: event.target.value })}
+                  />
+                </SectionGrid>
+                <ToggleRow
+                  title={t('config_management.visual.sections.headers.stabilize_device')}
+                  description={t('config_management.visual.sections.headers.stabilize_device_desc')}
+                  checked={values.claudeHeaderStabilizeDeviceProfile}
+                  disabled={disabled}
+                  onChange={(claudeHeaderStabilizeDeviceProfile) =>
+                    onChange({ claudeHeaderStabilizeDeviceProfile })
+                  }
+                />
+              </SectionSubsection>
+              <SectionSubsection title={t('config_management.visual.sections.headers.codex_title')}>
+                <SectionGrid>
+                  <Input
+                    label={t('config_management.visual.sections.headers.user_agent')}
+                    value={values.codexHeaderUserAgent}
+                    disabled={disabled}
+                    onChange={(event) => onChange({ codexHeaderUserAgent: event.target.value })}
+                  />
+                  <Input
+                    label={t('config_management.visual.sections.headers.beta_features')}
+                    value={values.codexHeaderBetaFeatures}
+                    disabled={disabled}
+                    onChange={(event) => onChange({ codexHeaderBetaFeatures: event.target.value })}
+                  />
+                </SectionGrid>
+              </SectionSubsection>
             </SectionStack>
           </ConfigSection>
 
@@ -906,9 +1409,7 @@ export function VisualConfigEditor({
               />
               <ToggleRow
                 title={t('config_management.visual.sections.quota.antigravity_credits')}
-                description={t(
-                  'config_management.visual.sections.quota.antigravity_credits_desc'
-                )}
+                description={t('config_management.visual.sections.quota.antigravity_credits_desc')}
                 checked={values.quotaAntigravityCredits}
                 disabled={disabled}
                 onChange={(quotaAntigravityCredits) => onChange({ quotaAntigravityCredits })}

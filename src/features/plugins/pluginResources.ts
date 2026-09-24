@@ -28,6 +28,7 @@ const enterpriseAuditSharedPaths = new Set([
 ]);
 
 const enterpriseAuditModelDefinitionPath = /^\/v0\/management\/model-definitions\/(?:claude|gemini|gemini-interactions|vertex|aistudio|codex|kimi|antigravity|xai|grok)$/;
+const enterpriseAuditSelfConfigPath = '/v0/management/plugins/enterprise-access-audit/config';
 
 export const isPluginAPIRequestAllowed = (method: string, path: string, pluginID: string): boolean => {
   const normalizedPluginID = pluginID.trim().replace(/^\/+|\/+$/g, '');
@@ -35,6 +36,11 @@ export const isPluginAPIRequestAllowed = (method: string, path: string, pluginID
   const pathname = pluginRequestPathname(normalizedPath);
   const normalizedMethod = method.trim().toUpperCase();
   if (!normalizedPluginID || !normalizedPath || !pathname) return false;
+  if (normalizedPluginID === 'enterprise-access-audit' &&
+    (normalizedMethod === 'GET' || normalizedMethod === 'PUT') &&
+    pathname === enterpriseAuditSelfConfigPath) {
+    return true;
+  }
   const prefix = `/v0/management/${normalizedPluginID}`;
   if (['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(normalizedMethod) &&
     (pathname === prefix || pathname.startsWith(`${prefix}/`))) {
