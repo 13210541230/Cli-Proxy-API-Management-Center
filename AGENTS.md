@@ -14,3 +14,4 @@
 
 - 2026-10-08: Added the ModelTrace quota-card workflow, typed API/state handling, scoped tests, and isolated validation tooling. Backend lives in `D:/C_projects/CLIProxyAPI`; production instances and plugin workspaces are out of scope.
 - 2026-10-08: Dual release uses manager v1.24.6 and CPA v7.3.34 with an immutable manager commit in CPA's suite workflow. Rebuild and smoke-test the embedded manager before tagging. The inherited DockerHub publishing job targets `seakee/cpa-manager` and runs only in `seakee/CPA-Manager`; fork release archives and checksums remain enabled.
+- 2026-10-08: Adjacent CPA path tests must create the platform-native executable (`cli-proxy-api.exe` only on Windows, `cli-proxy-api` otherwise). Keep the Linux custom-runtime test reaching its actual preservation branch rather than exiting for a missing adjacent fixture. This test-only correction does not change the published runtime or tags.

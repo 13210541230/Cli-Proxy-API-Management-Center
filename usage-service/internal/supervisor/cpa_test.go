@@ -6,39 +6,48 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
 )
 
 func TestNormalizeAdjacentConfigRebasesCopiedPackagePath(t *testing.T) {
+	name := "cli-proxy-api"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
 	baseDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(baseDir, "cli-proxy-api.exe"), []byte("test"), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(baseDir, name), []byte("test"), 0o755); err != nil {
 		t.Fatalf("create adjacent CPA: %v", err)
 	}
 	oldDir := filepath.Join(t.TempDir(), "old-suite")
 	cfg := Config{
 		Enabled:           true,
-		CPAExecutablePath: filepath.Join(oldDir, "cli-proxy-api.exe"),
+		CPAExecutablePath: filepath.Join(oldDir, name),
 		WorkingDirectory:  oldDir,
 		AutoStart:         true,
 	}
 
 	got := normalizeAdjacentConfig(cfg, baseDir)
-	if got.CPAExecutablePath != "cli-proxy-api.exe" || got.WorkingDirectory != "" {
+	if got.CPAExecutablePath != name || got.WorkingDirectory != "" {
 		t.Fatalf("rebased config = %#v", got)
 	}
 }
 
 func TestNormalizeAdjacentConfigPreservesExplicitCustomRuntime(t *testing.T) {
+	name := "cli-proxy-api"
+	if runtime.GOOS == "windows" {
+		name += ".exe"
+	}
 	baseDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(baseDir, "cli-proxy-api.exe"), []byte("test"), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(baseDir, name), []byte("test"), 0o755); err != nil {
 		t.Fatalf("create adjacent CPA: %v", err)
 	}
 	customDir := t.TempDir()
 	cfg := Config{
 		Enabled:           true,
-		CPAExecutablePath: filepath.Join(customDir, "cli-proxy-api.exe"),
+		CPAExecutablePath: filepath.Join(customDir, name),
 		WorkingDirectory:  filepath.Join(customDir, "work"),
 	}
 
