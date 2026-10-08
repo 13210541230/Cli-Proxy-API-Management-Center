@@ -82,6 +82,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-and-push-docker:
+    # This job publishes to the upstream maintainer's DockerHub namespace.
+    if: github.repository == 'seakee/CPA-Manager'
     runs-on: ubuntu-latest
 
     permissions:
