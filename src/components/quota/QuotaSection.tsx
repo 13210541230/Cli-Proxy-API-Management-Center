@@ -2,7 +2,7 @@
  * Generic quota section component.
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -109,6 +109,7 @@ interface QuotaSectionProps<TState extends QuotaStatusState, TData> {
   disabled: boolean;
   searchQuery?: string;
   sortMode?: QuotaSortMode;
+  renderCardStatus?: (file: AuthFileItem) => ReactNode;
 }
 
 export function QuotaSection<TState extends QuotaStatusState, TData>({
@@ -117,7 +118,8 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
   loading,
   disabled,
   searchQuery = '',
-  sortMode = 'default'
+  sortMode = 'default',
+  renderCardStatus
 }: QuotaSectionProps<TState, TData>) {
   const { t } = useTranslation();
   const resolvedTheme: ResolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -417,6 +419,7 @@ export function QuotaSection<TState extends QuotaStatusState, TData>({
                 canRefresh={!disabled && !item.disabled}
                 onRefresh={() => void refreshQuotaForFile(item)}
                 renderQuotaItems={config.renderQuotaItems}
+                statusContent={renderCardStatus?.(item)}
                 canReset={config.resetQuota ? config.canResetQuota?.(quota[item.name] as TState) ?? false : false}
                 onReset={() => void resetQuotaForFile(item)}
               />

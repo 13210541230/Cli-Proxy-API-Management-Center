@@ -9,13 +9,14 @@ import zhTW from './locales/zh-TW.json';
 import en from './locales/en.json';
 import ru from './locales/ru.json';
 import { getInitialLanguage } from '@/utils/language';
+import { modelTraceTranslations } from './modelTrace';
 
 i18n.use(initReactI18next).init({
   resources: {
-    'zh-CN': { translation: zhCN },
-    'zh-TW': { translation: zhTW },
-    en: { translation: en },
-    ru: { translation: ru }
+    'zh-CN': { translation: { ...zhCN, modeltrace: modelTraceTranslations['zh-CN'] } },
+    'zh-TW': { translation: { ...zhTW, modeltrace: modelTraceTranslations['zh-TW'] } },
+    en: { translation: { ...en, modeltrace: modelTraceTranslations.en } },
+    ru: { translation: { ...ru, modeltrace: modelTraceTranslations.ru } }
   },
   lng: getInitialLanguage(),
   fallbackLng: 'zh-CN',

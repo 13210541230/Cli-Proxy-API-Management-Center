@@ -70,6 +70,7 @@ interface QuotaCardProps<TState extends QuotaStatusState> {
   onReset?: () => void;
   renderQuotaItems: (quota: TState, t: TFunction, helpers: QuotaRenderHelpers) => ReactNode;
   renderResetAction?: () => ReactNode;
+  statusContent?: ReactNode;
 }
 
 export function QuotaCard<TState extends QuotaStatusState>({
@@ -85,7 +86,8 @@ export function QuotaCard<TState extends QuotaStatusState>({
   canReset = false,
   onReset,
   renderQuotaItems,
-  renderResetAction
+  renderResetAction,
+  statusContent
 }: QuotaCardProps<TState>) {
   const { t } = useTranslation();
 
@@ -153,6 +155,7 @@ export function QuotaCard<TState extends QuotaStatusState>({
         <span className={styles.fileName}>{item.name}</span>
       </div>
 
+      {statusContent}
       <div className={styles.quotaSection}>
         {quotaStatus === 'loading' ? (
           <div className={styles.quotaMessage}>{t(`${i18nPrefix}.loading`)}</div>

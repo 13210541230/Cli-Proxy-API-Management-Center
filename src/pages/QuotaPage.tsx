@@ -15,11 +15,11 @@ import {
   QuotaSection,
   ANTIGRAVITY_CONFIG,
   CLAUDE_CONFIG,
-  CODEX_CONFIG,
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
   XAI_CONFIG
 } from '@/components/quota';
+import { CodexModelTraceSection } from '@/components/quota/CodexModelTraceSection';
 import type { QuotaSortMode } from '@/components/quota/quotaConfigs';
 import type { AuthFileItem } from '@/types';
 import styles from './QuotaPage.module.scss';
@@ -161,8 +161,7 @@ export function QuotaPage() {
         </div>
       </div>
 
-      <QuotaSection
-        config={CODEX_CONFIG}
+      <CodexModelTraceSection
         files={files}
         loading={loading}
         disabled={disableControls}
