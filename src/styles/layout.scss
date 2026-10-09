@@ -575,6 +575,38 @@
   }
 }
 
+.suite-update-banner {
+  position: fixed;
+  top: calc(var(--header-height) + 12px);
+  left: 50%;
+  z-index: $z-notification;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $spacing-md;
+  width: min(760px, calc(100vw - 32px));
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--warning-border);
+  border-radius: 14px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  box-shadow: var(--shadow-lg);
+  transform: translateX(-50%);
+
+  .suite-update-banner-message {
+    min-width: 0;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .suite-update-banner-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $spacing-xs;
+    flex-shrink: 0;
+  }
+}
+
 .grid {
   display: grid;
   gap: $spacing-lg;

@@ -9,7 +9,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/Button';
 import { PageTransition } from '@/components/common/PageTransition';
@@ -34,6 +34,7 @@ import {
   useNotificationStore,
   useThemeStore,
   usePluginStore,
+  useUsageServiceStore,
 } from '@/stores';
 import { triggerHeaderRefresh } from '@/hooks/useHeaderRefresh';
 import { useRequestMonitoringAvailability } from '@/hooks/useRequestMonitoringAvailability';
@@ -42,6 +43,13 @@ import { isSupportedLanguage } from '@/utils/language';
 import type { Theme } from '@/types';
 import { collectPluginResourceEntries } from '@/features/plugins/pluginResources';
 import { hasApiKeyFunConfig } from '@/features/providers/sponsor';
+import { usageServiceApi, type ManagerUpdateManifest } from '@/services/api';
+import {
+  getSuiteUpdateDismissalStorageKey,
+  getSuiteUpdateIdentity,
+  isSuiteUpdateAvailable,
+  startPeriodicUpdateCheck,
+} from '@/features/updates/suiteUpdate';
 
 const sidebarIcons: Record<string, ReactNode> = {
   dashboard: <IconSidebarDashboard size={18} />,
@@ -220,8 +228,16 @@ export function MainLayout() {
   const { t } = useTranslation();
   const { showNotification } = useNotificationStore();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const logout = useAuthStore((state) => state.logout);
+  const connectionStatus = useAuthStore((state) => state.connectionStatus);
+  const apiBase = useAuthStore((state) => state.apiBase);
+  const managementKey = useAuthStore((state) => state.managementKey);
+  const serverVersion = useAuthStore((state) => state.serverVersion);
+  const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
+  const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
+  const updateCheckBase = usageServiceEnabled && usageServiceBase ? usageServiceBase : apiBase;
 
   const config = useConfigStore((state) => state.config);
   const fetchConfig = useConfigStore((state) => state.fetchConfig);
@@ -245,13 +261,50 @@ export function MainLayout() {
   const languageMenuRef = useRef<HTMLDivElement | null>(null);
   const themeMenuRef = useRef<HTMLDivElement | null>(null);
   const headerRef = useRef<HTMLElement | null>(null);
+  const dismissedSuiteUpdateIdentities = useRef(new Set<string>());
+  const [availableSuiteUpdate, setAvailableSuiteUpdate] = useState<ManagerUpdateManifest | null>(
+    null
+  );
 
   const fullBrandName = 'CLI Proxy API Management Center';
   const abbrBrandName = t('title.abbr');
   const isLogsPage = location.pathname.startsWith('/logs');
   const showSidebarLabels = !sidebarCollapsed || sidebarOpen;
 
-  // 将顶部悬浮控制区高度写入 CSS 变量，供移动端粘性元素和浮层避让。
+  useEffect(() => {
+    if (connectionStatus !== 'connected' || !updateCheckBase || !managementKey) {
+      setAvailableSuiteUpdate(null);
+      return;
+    }
+
+    let active = true;
+    const stopChecking = startPeriodicUpdateCheck(async () => {
+      const manifest = await usageServiceApi.getLatestUpdate(updateCheckBase, managementKey);
+      if (!active) return;
+
+      if (!isSuiteUpdateAvailable(manifest, __APP_VERSION__, serverVersion)) {
+        setAvailableSuiteUpdate(null);
+        return;
+      }
+
+      const identity = getSuiteUpdateIdentity(manifest);
+      let dismissed = dismissedSuiteUpdateIdentities.current.has(identity);
+      try {
+        dismissed ||=
+          window.localStorage.getItem(getSuiteUpdateDismissalStorageKey(identity)) === '1';
+      } catch {
+        // Keep the in-memory dismissal when browser storage is unavailable.
+      }
+      setAvailableSuiteUpdate(dismissed ? null : manifest);
+    });
+
+    return () => {
+      active = false;
+      stopChecking();
+    };
+  }, [connectionStatus, managementKey, serverVersion, updateCheckBase]);
+
+  // Expose the floating header height for mobile sticky content and overlays.
   useLayoutEffect(() => {
     const updateHeaderHeight = () => {
       const height = headerRef.current?.offsetHeight;
@@ -280,7 +333,7 @@ export function MainLayout() {
     };
   }, []);
 
-  // 将主内容区的中心点写入 CSS 变量，供底部浮层（配置面板操作栏、提供商导航）对齐到内容区
+  // Keep bottom floating panels aligned with the center of the main content area.
   useLayoutEffect(() => {
     const updateContentCenter = () => {
       const el = contentRef.current;
@@ -395,7 +448,7 @@ export function MainLayout() {
 
   useEffect(() => {
     fetchConfig().catch(() => {
-      // ignore initial failure; login flow会提示
+      // Ignore the initial failure; the login flow will show an error.
     });
   }, [fetchConfig]);
 
@@ -517,6 +570,25 @@ export function MainLayout() {
   const mobileSidebarToggleLabel = sidebarOpen
     ? t('sidebar.toggle_collapse', { defaultValue: 'Close navigation' })
     : t('sidebar.toggle_expand', { defaultValue: 'Open navigation' });
+
+  const dismissSuiteUpdate = () => {
+    if (!availableSuiteUpdate) return;
+    const identity = getSuiteUpdateIdentity(availableSuiteUpdate);
+    dismissedSuiteUpdateIdentities.current.add(identity);
+    try {
+      window.localStorage.setItem(getSuiteUpdateDismissalStorageKey(identity), '1');
+    } catch {
+      // The banner remains dismissed for this session if browser storage is unavailable.
+    }
+    setAvailableSuiteUpdate(null);
+  };
+
+  const reviewSuiteUpdate = () => {
+    if (!availableSuiteUpdate) return;
+    const manifest = availableSuiteUpdate;
+    dismissSuiteUpdate();
+    navigate('/system', { state: { suiteUpdateManifest: manifest } });
+  };
 
   return (
     <div className={`app-shell ${sidebarCollapsed ? 'sidebar-is-collapsed' : ''}`}>
@@ -711,6 +783,30 @@ export function MainLayout() {
 
         <div className={`content${isLogsPage ? ' content-logs' : ''}`} ref={contentRef}>
           <main className={`main-content${isLogsPage ? ' main-content-logs' : ''}`}>
+            {availableSuiteUpdate ? (
+              <section className="suite-update-banner" role="status" aria-live="polite">
+                <span className="suite-update-banner-message">
+                  {t('system_info.suite_update_available', {
+                    cpaVersion: availableSuiteUpdate.cpaVersion,
+                    managerVersion: availableSuiteUpdate.managerVersion,
+                  })}
+                </span>
+                <div className="suite-update-banner-actions">
+                  <Button variant="secondary" size="sm" onClick={reviewSuiteUpdate}>
+                    {t('system_info.suite_update_review', { defaultValue: 'Review update' })}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={dismissSuiteUpdate}
+                    title={t('common.close')}
+                    aria-label={t('common.close')}
+                  >
+                    {headerIcons.close}
+                  </Button>
+                </div>
+              </section>
+            ) : null}
             <Suspense fallback={<div className="page-loading">{t('common.loading')}</div>}>
               <PageTransition
                 render={(location) => <MainRoutes location={location} />}

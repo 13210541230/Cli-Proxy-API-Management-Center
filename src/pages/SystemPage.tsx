@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -22,6 +23,7 @@ import {
 } from '@/services/api';
 import { apiKeysApi } from '@/services/api/apiKeys';
 import { classifyModels } from '@/utils/models';
+import { compareVersions, isSuiteUpdateAvailable } from '@/features/updates/suiteUpdate';
 import { STORAGE_KEY_AUTH } from '@/utils/constants';
 import { INLINE_LOGO_JPEG } from '@/assets/logoInline';
 import iconGemini from '@/assets/icons/gemini.svg';
@@ -49,34 +51,10 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
   minimax: iconMinimax,
 };
 
-const parseVersionSegments = (version?: string | null) => {
-  if (!version) return null;
-  const cleaned = version.trim().replace(/^v/i, '');
-  if (!cleaned) return null;
-  const parts = cleaned
-    .split(/[^0-9]+/)
-    .filter(Boolean)
-    .map((segment) => Number.parseInt(segment, 10))
-    .filter(Number.isFinite);
-  return parts.length ? parts : null;
-};
-
-const compareVersions = (latest?: string | null, current?: string | null) => {
-  const latestParts = parseVersionSegments(latest);
-  const currentParts = parseVersionSegments(current);
-  if (!latestParts || !currentParts) return null;
-  const length = Math.max(latestParts.length, currentParts.length);
-  for (let i = 0; i < length; i++) {
-    const l = latestParts[i] || 0;
-    const c = currentParts[i] || 0;
-    if (l > c) return 1;
-    if (l < c) return -1;
-  }
-  return 0;
-};
-
 export function SystemPage() {
   const { t, i18n } = useTranslation();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { showNotification, showConfirmation } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const auth = useAuthStore();
@@ -106,6 +84,10 @@ export function SystemPage() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateChecking, setUpdateChecking] = useState(false);
   const [updateAction, setUpdateAction] = useState<'download' | null>(null);
+  const handledUpdateNavigationKey = useRef<string | null>(null);
+  const suiteUpdateFromNavigation = (
+    location.state as { suiteUpdateManifest?: ManagerUpdateManifest } | null
+  )?.suiteUpdateManifest;
 
   const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
   const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
@@ -361,9 +343,7 @@ export function SystemPage() {
     try {
       const manifest = await usageServiceApi.getLatestUpdate(runtimeBase, auth.managementKey);
       setLatestUpdate(manifest);
-      const managerComparison = compareVersions(manifest.managerVersion, __APP_VERSION__);
-      const cpaComparison = compareVersions(manifest.cpaVersion, auth.serverVersion);
-      const available = managerComparison === 1 || cpaComparison === 1;
+      const available = isSuiteUpdateAvailable(manifest, __APP_VERSION__, auth.serverVersion);
       setUpdateAvailable(available);
       if (available) {
         showNotification(
@@ -389,7 +369,28 @@ export function SystemPage() {
     }
   }, [auth.managementKey, auth.serverVersion, runtimeBase, showNotification, t]);
 
-    const handleUpdateNow = useCallback(async () => {
+  useEffect(() => {
+    if (!suiteUpdateFromNavigation || handledUpdateNavigationKey.current === location.key) return;
+    handledUpdateNavigationKey.current = location.key;
+    setLatestUpdate(suiteUpdateFromNavigation);
+    setUpdateAvailable(
+      isSuiteUpdateAvailable(suiteUpdateFromNavigation, __APP_VERSION__, auth.serverVersion)
+    );
+    navigate(`${location.pathname}${location.search}${location.hash}`, {
+      replace: true,
+      state: null,
+    });
+  }, [
+    auth.serverVersion,
+    location.hash,
+    location.key,
+    location.pathname,
+    location.search,
+    navigate,
+    suiteUpdateFromNavigation,
+  ]);
+
+  const handleUpdateNow = useCallback(async () => {
     if (!runtimeBase || !updateAvailable) return;
     setUpdateAction('download');
     try {
