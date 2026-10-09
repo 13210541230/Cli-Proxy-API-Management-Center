@@ -4671,19 +4671,6 @@ export function MonitoringCenterPage() {
                             TS {row.turnStateLength}
                           </small>
                         ) : null}
-                        {row.turnStateClass === 'missing' || row.turnStateClass === 'suspected' ? (
-                          <small title={row.turnStateEvidence || undefined}>
-                            <span className={styles.modelMismatchBadge}>
-                              {row.turnStateClass === 'missing'
-                                ? t('monitoring.turn_state_missing', {
-                                    defaultValue: '疑似降智·无票',
-                                  })
-                                : t('monitoring.turn_state_suspected', {
-                                    defaultValue: '疑似降智',
-                                  })}
-                            </span>
-                          </small>
-                        ) : null}
                       </div>
                     </td>
                     <td>
