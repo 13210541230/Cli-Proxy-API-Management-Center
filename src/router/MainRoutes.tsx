@@ -178,6 +178,7 @@ const mainRoutes = [
 
   { path: '/plugins', element: <PluginsPage /> },
   { path: '/plugin-pages/:pluginId/:menuIndex', element: <PluginResourcePage /> },
+  { path: '/plugin-pages/:pluginId/:menuIndex/account-pool-exemptions', element: <PluginResourcePage workspace="account-pool-exemptions" /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ];
 

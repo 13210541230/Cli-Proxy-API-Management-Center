@@ -13,6 +13,7 @@ import {
   PLUGIN_HOST_MODELS_PATH,
   PLUGIN_RESOURCES_REFRESH_EVENT,
   appendPluginHostOrigin,
+  appendPluginWorkspaceView,
   resolvePluginAssetURL,
   toPluginAPIClientPath,
 } from './pluginResources';
@@ -117,7 +118,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('message', handlePluginAPIRequest);
 }
 
-export function PluginResourcePage() {
+export function PluginResourcePage({ workspace = '' }: { workspace?: '' | 'account-pool-exemptions' } = {}) {
   const { t } = useTranslation();
   const { pluginId: rawPluginId, menuIndex: rawMenuIndex } = useParams<{ pluginId: string; menuIndex: string }>();
   const apiBase = useAuthStore((state) => state.apiBase);
@@ -137,7 +138,7 @@ export function PluginResourcePage() {
   );
   const iframeSrc = resource
     ? appendPluginHostOrigin(
-        resolvePluginAssetURL(resource.menu.path, apiBase),
+        appendPluginWorkspaceView(resolvePluginAssetURL(resource.menu.path, apiBase), pluginId, menuIndex, workspace || ''),
         typeof window === 'undefined' ? '' : window.location.origin,
       )
     : '';

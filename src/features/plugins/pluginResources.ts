@@ -85,6 +85,20 @@ export const resolvePluginAssetURL = (value: string, apiBase: string): string =>
   return base ? `${base}${trimmed}` : trimmed;
 };
 
+// This is a presentation selector, not an authentication or permission bypass.
+export const appendPluginWorkspaceView = (value: string, pluginID: string, menuIndex: number, workspace: string): string => {
+  if (pluginID !== 'enterprise-access-audit' || menuIndex !== 0 ||
+    workspace !== 'account-pool-exemptions') return value;
+  if (!value || /^(data:|blob:)/i.test(value)) return value;
+  try {
+    const url = new URL(value);
+    url.searchParams.set('cpa_plugin_view', 'account-pool-exemptions');
+    return url.toString();
+  } catch {
+    return value;
+  }
+};
+
 export const appendPluginHostOrigin = (value: string, hostOrigin: string): string => {
   const trimmed = value.trim();
   const origin = hostOrigin.trim();

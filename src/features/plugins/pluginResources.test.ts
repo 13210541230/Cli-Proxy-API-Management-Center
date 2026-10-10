@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   appendPluginHostOrigin,
+  appendPluginWorkspaceView,
   buildPluginResourceRoute,
   collectPluginResourceEntries,
   getPluginTitle,
@@ -42,6 +43,25 @@ describe('plugin resource host helpers', () => {
     expect(resolvePluginAssetURL('https://plugins.example.test/page', '')).toBe('https://plugins.example.test/page');
     expect(appendPluginHostOrigin('https://plugins.example.test/page?tab=a#top', 'http://manager.example.test'))
       .toBe('https://plugins.example.test/page?tab=a&cpa_plugin_host_origin=http%3A%2F%2Fmanager.example.test#top');
+  });
+
+  it('allows only the designated hidden workspace without replacing resources or authorization', () => {
+    const value = 'http://localhost:8317/v0/resource/plugins/enterprise-access-audit/ui?existing=1#top';
+    const search = 'account-pool-exemptions';
+    const selected = appendPluginWorkspaceView(value, 'enterprise-access-audit', 0, search);
+    const url = new URL(selected);
+    expect(url.pathname).toBe('/v0/resource/plugins/enterprise-access-audit/ui');
+    expect(url.searchParams.get('existing')).toBe('1');
+    expect(url.searchParams.get('cpa_plugin_view')).toBe('account-pool-exemptions');
+    expect(url.hash).toBe('#top');
+    expect(appendPluginWorkspaceView(value, 'other-plugin', 0, search)).toBe(value);
+    expect(appendPluginWorkspaceView(value, 'enterprise-access-audit', 1, search)).toBe(value);
+    expect(appendPluginWorkspaceView(value, 'enterprise-access-audit', 0, '')).toBe(value);
+    expect(appendPluginWorkspaceView(value, 'enterprise-access-audit', 0, 'https://evil.test')).toBe(value);
+    expect(appendPluginWorkspaceView('blob:opaque', 'enterprise-access-audit', 0, search)).toBe('blob:opaque');
+    expect(appendPluginWorkspaceView('bad-url', 'enterprise-access-audit', 0, search)).toBe('bad-url');
+    expect(isPluginAPIRequestAllowed('PUT', '/v0/management/enterprise-access-audit/account-pool/policy', 'enterprise-access-audit')).toBe(true);
+    expect(isPluginAPIRequestAllowed('PUT', '/v0/management/auth-files', 'enterprise-access-audit')).toBe(false);
   });
 
   it('restricts iframe API requests to authenticated management routes', () => {
