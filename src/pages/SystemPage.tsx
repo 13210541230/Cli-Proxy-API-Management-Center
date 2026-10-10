@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useLocation, useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Modal } from '@/components/ui/Modal';
@@ -53,8 +52,6 @@ const MODEL_CATEGORY_ICONS: Record<string, string | { light: string; dark: strin
 
 export function SystemPage() {
   const { t, i18n } = useTranslation();
-  const location = useLocation();
-  const navigate = useNavigate();
   const { showNotification, showConfirmation } = useNotificationStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const auth = useAuthStore();
@@ -84,10 +81,6 @@ export function SystemPage() {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [updateChecking, setUpdateChecking] = useState(false);
   const [updateAction, setUpdateAction] = useState<'download' | null>(null);
-  const handledUpdateNavigationKey = useRef<string | null>(null);
-  const suiteUpdateFromNavigation = (
-    location.state as { suiteUpdateManifest?: ManagerUpdateManifest } | null
-  )?.suiteUpdateManifest;
 
   const usageServiceEnabled = useUsageServiceStore((state) => state.enabled);
   const usageServiceBase = useUsageServiceStore((state) => state.serviceBase);
@@ -369,27 +362,6 @@ export function SystemPage() {
     }
   }, [auth.managementKey, auth.serverVersion, runtimeBase, showNotification, t]);
 
-  useEffect(() => {
-    if (!suiteUpdateFromNavigation || handledUpdateNavigationKey.current === location.key) return;
-    handledUpdateNavigationKey.current = location.key;
-    setLatestUpdate(suiteUpdateFromNavigation);
-    setUpdateAvailable(
-      isSuiteUpdateAvailable(suiteUpdateFromNavigation, __APP_VERSION__, auth.serverVersion)
-    );
-    navigate(`${location.pathname}${location.search}${location.hash}`, {
-      replace: true,
-      state: null,
-    });
-  }, [
-    auth.serverVersion,
-    location.hash,
-    location.key,
-    location.pathname,
-    location.search,
-    navigate,
-    suiteUpdateFromNavigation,
-  ]);
-
   const handleUpdateNow = useCallback(async () => {
     if (!runtimeBase || !updateAvailable) return;
     setUpdateAction('download');
@@ -425,11 +397,11 @@ export function SystemPage() {
       title: t('system_info.suite_update_confirm_title', { defaultValue: 'Update CPA suite' }),
       message: t('system_info.suite_update_confirm_message', {
         defaultValue:
-          'The CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} package will be downloaded to the current program directory. After the download finishes, stop the services and replace the files manually.',
+          'The CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} package will be downloaded and verified in the current program directory. Running services will not be stopped or replaced. To install automatically, run cpa-updater (cpa-updater.exe on Windows) from the suite directory.',
         cpaVersion: latestUpdate.cpaVersion,
         managerVersion: latestUpdate.managerVersion,
       }),
-      variant: 'danger',
+      variant: 'primary',
       confirmText: t('system_info.suite_update_now'),
       onConfirm: () => void handleUpdateNow(),
     });

@@ -30,7 +30,7 @@ try {
   $ldflags = "-s -w -X github.com/seakee/cpa-manager/usage-service/internal/buildinfo.Version=$version -X github.com/seakee/cpa-manager/usage-service/internal/buildinfo.Commit=$commit -X github.com/seakee/cpa-manager/usage-service/internal/buildinfo.BuildDate=$buildDate"
   & go build -trimpath -ldflags $ldflags -o $binary ./cmd/cpa-manager
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-  & go build -trimpath -ldflags '-s -w' -o $updater ./cmd/cpa-updater
+  & go build -trimpath -ldflags $ldflags -o $updater ./cmd/cpa-updater
   if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 } finally {
   Pop-Location

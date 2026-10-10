@@ -3,13 +3,16 @@ package update
 import (
 	"context"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
+	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -41,14 +44,19 @@ type ApplyOptions struct {
 	UpdaterExecutablePath   string
 	ManagerArguments        []string
 	CPAArguments            []string
+	CPAConfigPath           string
 	CPAWorkingDirectory     string
 	ManagerHealthURL        string
 	CPAHealthURL            string
 	ManagerPID              int
+	CPAPID                  int
 	PreviousCPAWasRunning   bool
 	RestoreOnFailure        bool
 	StartCPA                bool
 	ManagerStartCPA         bool
+	SuppressManagerCPAStart bool
+	RecordRuntimeOnStart    bool
+	StopRuntimeBeforeApply  bool
 	OwnsTransactionLock     bool
 }
 
@@ -92,36 +100,53 @@ func StartHelper(helperPath string, options ApplyOptions) (*exec.Cmd, error) {
 		"--updater-path", options.UpdaterExecutablePath,
 		"--manager-args", string(managerArgs),
 		"--cpa-args", string(cpaArgs),
+		"--cpa-config", options.CPAConfigPath,
 		"--cpa-working-directory", options.CPAWorkingDirectory,
 		"--manager-health-url", options.ManagerHealthURL,
 		"--cpa-health-url", options.CPAHealthURL,
 		"--manager-pid", strconv.Itoa(options.ManagerPID),
+		"--cpa-pid", strconv.Itoa(options.CPAPID),
 		"--previous-cpa-running", strconv.FormatBool(options.PreviousCPAWasRunning),
 		"--restore-on-failure", strconv.FormatBool(options.RestoreOnFailure),
 		"--start-cpa", strconv.FormatBool(options.StartCPA),
 		"--manager-start-cpa", strconv.FormatBool(options.ManagerStartCPA),
+		"--suppress-manager-cpa-start", strconv.FormatBool(options.SuppressManagerCPAStart),
+		"--record-runtime-on-start", strconv.FormatBool(options.RecordRuntimeOnStart),
+		"--stop-runtime-before-apply", strconv.FormatBool(options.StopRuntimeBeforeApply),
 		"--owns-transaction-lock", strconv.FormatBool(options.OwnsTransactionLock),
 	)
 	cmd.Dir = filepath.Dir(launchPath)
-	// Capture the detached updater's own output so the real failure reason is
-	// never lost when the manager stops: write to <result dir>/update-logs/
-	// so the sidecar and the helper log live side by side on disk.
-	logDir := filepath.Join(filepath.Dir(options.ResultPath), "update-logs")
-	if logDirErr := os.MkdirAll(logDir, 0o755); logDirErr == nil && options.TransactionID != "" {
-		shortID := options.TransactionID
-		if len(shortID) > 16 {
-			shortID = shortID[:16]
-		}
-		logFile, logFileErr := os.OpenFile(filepath.Join(logDir, "update-helper-"+shortID+".log"), os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o644)
-		if logFileErr == nil {
-			cmd.Stdout = logFile
-			cmd.Stderr = logFile
-		}
+	// Keep the detached updater log beside the suite's other runtime logs.
+	var helperLog *os.File
+	logDir := filepath.Join(filepath.Dir(options.ManagerExecutablePath), "logs", "update")
+	if err := os.MkdirAll(logDir, 0o755); err != nil {
+		return nil, fmt.Errorf("create updater helper log directory: %w", err)
 	}
+	if options.TransactionID == "" {
+		return nil, errors.New("update helper transaction ID is empty")
+	}
+	var logFileErr error
+	helperLog, logFileErr = os.OpenFile(filepath.Join(logDir, "update-helper.log"), os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if logFileErr != nil {
+		return nil, fmt.Errorf("create updater helper log: %w", logFileErr)
+	}
+	cmd.Stdout = helperLog
+	cmd.Stderr = helperLog
 	if err := cmd.Start(); err != nil {
+		if helperLog != nil {
+			if closeErr := helperLog.Close(); closeErr != nil {
+				log.Printf("close updater helper log after start failure: %v", closeErr)
+			}
+		}
 		return nil, fmt.Errorf("start update helper: %w", err)
 	}
+	if helperLog != nil {
+		if closeErr := helperLog.Close(); closeErr != nil {
+			log.Printf("close updater helper log after start: %v", closeErr)
+		}
+	}
 	if err := cmd.Process.Release(); err != nil {
+		terminateProcess(cmd)
 		return nil, fmt.Errorf("release update helper process: %w", err)
 	}
 	return cmd, nil
@@ -225,23 +250,53 @@ func Apply(options ApplyOptions) (applyErr error) {
 	log.Printf("update apply: transaction %s -> CPA %s / CPA-Manager %s", options.TransactionID, options.CPAVersion, options.ManagerVersion)
 	files, err := LocateBundle(options.StagingPath)
 	if err != nil {
-		applyErr = recoverApplyFailure(options, rollback, recordResult, err)
+		if options.StopRuntimeBeforeApply {
+			applyErr = err
+			recordResult(StageFailed, err)
+		} else {
+			applyErr = recoverApplyFailure(options, rollback, recordResult, err)
+		}
 		return
 	}
-	if options.ManagerPID > 0 {
+	if options.StopRuntimeBeforeApply {
+		if err := stopRuntimeBeforeApply(options); err != nil {
+			if options.RestoreOnFailure && runtimeProcessesStopped(options) {
+				applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("stop suite processes: %w", err))
+			} else {
+				applyErr = err
+				recordResult(StageFailed, err)
+			}
+			return
+		}
+	} else if options.ManagerPID > 0 {
 		if err := waitForProcessExit(options.ManagerPID, options.ManagerExecutablePath, managerExitGrantTimeout); err != nil {
 			applyErr = recoverApplyFailure(options, rollback, recordResult, err)
 			return
 		}
 	}
 	type replacement struct {
-		source string
-		target string
-		label  string
+		source           string
+		target           string
+		label            string
+		directory        bool
+		preserveUserData bool
 	}
+	root := filepath.Dir(options.ManagerExecutablePath)
 	replacements := []replacement{
 		{source: files.CPAPath, target: options.CPAExecutablePath, label: "CLIProxyAPI"},
 		{source: files.ManagerPath, target: options.ManagerExecutablePath, label: "CPA-Manager"},
+	}
+	if files.VersionPath != "" {
+		replacements = append(replacements, replacement{source: files.VersionPath, target: filepath.Join(root, suiteVersionFilename), label: "suite version metadata"})
+	}
+	if files.PluginsPath != "" {
+		replacements = append(replacements, replacement{source: files.PluginsPath, target: filepath.Join(root, "plugins"), label: "plugins", directory: true, preserveUserData: true})
+	}
+	if files.StaticPath != "" {
+		replacements = append(replacements, replacement{source: files.StaticPath, target: filepath.Join(root, "static"), label: "static assets", directory: true})
+	}
+	for name, source := range files.Files {
+		replacements = append(replacements, replacement{source: source, target: filepath.Join(root, name), label: name})
 	}
 	// The installed helper relays to the staged helper before Apply runs, so the
 	// staged process can replace the installed updater image safely.
@@ -261,8 +316,14 @@ func Apply(options ApplyOptions) (applyErr error) {
 		return
 	}
 	for index, item := range replacements {
-		if err := replaceFileWithBackup(item.source, &backups[index]); err != nil {
-			applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("replace %s: %w", item.label, err))
+		var replaceErr error
+		if item.directory {
+			replaceErr = replaceDirectoryWithBackup(item.source, &backups[index], item.preserveUserData)
+		} else {
+			replaceErr = replaceFileWithBackup(item.source, &backups[index])
+		}
+		if replaceErr != nil {
+			applyErr = restartAfterRollback(options, rollback, recordResult, fmt.Errorf("replace %s: %w", item.label, replaceErr))
 			return
 		}
 		if err := persistApplying(); err != nil {
@@ -367,6 +428,59 @@ func recoverApplyFailure(options ApplyOptions, rollback func() error, recordResu
 	return cause
 }
 
+func stopRuntimeBeforeApply(options ApplyOptions) error {
+	root := filepath.Dir(options.ManagerExecutablePath)
+	state, exists, err := ReadSuiteRuntimeState(root)
+	if err != nil {
+		return err
+	}
+	if !exists {
+		return errors.New("suite process state is missing; start the suite with start.bat or start.sh before automatic updates")
+	}
+	if options.ManagerPID > 0 && state.Manager.PID != options.ManagerPID {
+		return errors.New("CPA-Manager PID changed before update")
+	}
+	if options.CPAPID > 0 && state.CPA.PID != options.CPAPID {
+		return errors.New("CLIProxyAPI PID changed before update")
+	}
+	managerRunning, err := RuntimeProcessRunning(state.Manager)
+	if err != nil {
+		return err
+	}
+	cpaRunning, err := RuntimeProcessRunning(state.CPA)
+	if err != nil {
+		return err
+	}
+	if managerRunning {
+		if err := terminateProcessByPID(state.Manager.PID, options.ManagerExecutablePath); err != nil {
+			return fmt.Errorf("stop CPA-Manager: %w", err)
+		}
+	}
+	if cpaRunning {
+		if err := terminateProcessByPID(state.CPA.PID, options.CPAExecutablePath); err != nil {
+			return fmt.Errorf("stop CLIProxyAPI: %w", err)
+		}
+	}
+	state.Manager.PID = 0
+	state.CPA.PID = 0
+	state.UpdatedAtMS = time.Now().UnixMilli()
+	if err := WriteSuiteRuntimeState(root, state); err != nil {
+		return fmt.Errorf("persist stopped suite process state: %w", err)
+	}
+	return nil
+}
+
+func runtimeProcessesStopped(options ApplyOptions) bool {
+	root := filepath.Dir(options.ManagerExecutablePath)
+	state, exists, err := ReadSuiteRuntimeState(root)
+	if err != nil || !exists {
+		return false
+	}
+	managerRunning, managerErr := RuntimeProcessRunning(state.Manager)
+	cpaRunning, cpaErr := RuntimeProcessRunning(state.CPA)
+	return managerErr == nil && cpaErr == nil && !managerRunning && !cpaRunning
+}
+
 func startCPAProcess(options ApplyOptions) (*exec.Cmd, error) {
 	cmd := exec.Command(options.CPAExecutablePath, options.CPAArguments...)
 	configureProcessGroup(cmd)
@@ -394,6 +508,8 @@ func startProcesses(options ApplyOptions) (*exec.Cmd, *exec.Cmd, error) {
 	managerArguments := append([]string(nil), options.ManagerArguments...)
 	if options.ManagerStartCPA {
 		managerArguments = append(managerArguments, "--start-cpa")
+	} else if options.SuppressManagerCPAStart && !hasArgument(managerArguments, "--no-start-cpa") {
+		managerArguments = append(managerArguments, "--no-start-cpa")
 	}
 	managerCmd := exec.Command(options.ManagerExecutablePath, managerArguments...)
 	configureProcessGroup(managerCmd)
@@ -405,7 +521,54 @@ func startProcesses(options ApplyOptions) (*exec.Cmd, *exec.Cmd, error) {
 		terminateProcess(cpaCmd)
 		return nil, nil, fmt.Errorf("start CPA-Manager: %w", err)
 	}
+	if options.RecordRuntimeOnStart {
+		configPath := strings.TrimSpace(options.CPAConfigPath)
+		if configPath == "" {
+			configPath = configuredCPAPath(options.CPAArguments, filepath.Dir(options.CPAExecutablePath))
+		}
+		cpaPID := 0
+		if cpaCmd != nil && cpaCmd.Process != nil {
+			cpaPID = cpaCmd.Process.Pid
+		}
+		state, stateErr := NewSuiteRuntimeState(filepath.Dir(options.ManagerExecutablePath), configPath, cpaPID, managerCmd.Process.Pid)
+		if stateErr == nil {
+			state.CPAArguments = append([]string(nil), options.CPAArguments...)
+			state.ManagerArguments = append([]string(nil), managerArguments...)
+			state.CPAWorkingDirectory = options.CPAWorkingDirectory
+			if state.CPAWorkingDirectory == "" {
+				state.CPAWorkingDirectory = filepath.Dir(options.CPAExecutablePath)
+			}
+			state.ManagerWorkingDirectory = managerCmd.Dir
+			stateErr = WriteSuiteRuntimeState(filepath.Dir(options.ManagerExecutablePath), state)
+		}
+		if stateErr != nil {
+			terminateProcess(managerCmd)
+			terminateProcess(cpaCmd)
+			return nil, nil, fmt.Errorf("record started suite processes: %w", stateErr)
+		}
+	}
 	return cpaCmd, managerCmd, nil
+}
+
+func hasArgument(arguments []string, expected string) bool {
+	for _, argument := range arguments {
+		if argument == expected {
+			return true
+		}
+	}
+	return false
+}
+
+func configuredCPAPath(arguments []string, root string) string {
+	for index, argument := range arguments {
+		if argument == "--config" && index+1 < len(arguments) {
+			return arguments[index+1]
+		}
+		if strings.HasPrefix(argument, "--config=") {
+			return strings.TrimPrefix(argument, "--config=")
+		}
+	}
+	return filepath.Join(root, "config.yaml")
 }
 
 func restartAfterRollback(options ApplyOptions, rollback func() error, recordResult func(string, error) error, cause error) error {
@@ -463,13 +626,21 @@ func planBackup(target string) (backupFile, error) {
 	if err != nil {
 		return backupFile{}, fmt.Errorf("resolve replacement target: %w", err)
 	}
-	if _, err := os.Stat(target); os.IsNotExist(err) {
+	info, err := os.Stat(target)
+	if os.IsNotExist(err) {
 		return backupFile{target: target}, nil
 	} else if err != nil {
-		return backupFile{}, fmt.Errorf("stat current executable: %w", err)
+		return backupFile{}, fmt.Errorf("stat current update target: %w", err)
 	}
 	suffix := strconv.FormatInt(time.Now().UnixNano(), 10)
 	backup := target + ".update-backup-" + suffix
+	if info.IsDir() {
+		digest, digestErr := directorySHA256(target)
+		if digestErr != nil {
+			return backupFile{}, fmt.Errorf("hash current update directory: %w", digestErr)
+		}
+		return backupFile{target: target, backup: backup, sha256: digest}, nil
+	}
 	originalSHA256, err := fileSHA256(target)
 	if err != nil {
 		return backupFile{}, fmt.Errorf("hash current executable: %w", err)
@@ -525,6 +696,145 @@ func replaceFileWithBackup(source string, item *backupFile) error {
 		return fmt.Errorf("install updated executable: %w", err)
 	}
 	return nil
+}
+
+func replaceDirectoryWithBackup(source string, item *backupFile, preserveUserData bool) error {
+	if item == nil || item.target == "" {
+		return errors.New("replacement directory target is empty")
+	}
+	info, err := os.Stat(source)
+	if err != nil || !info.IsDir() {
+		return fmt.Errorf("staged replacement directory is unavailable: %s", source)
+	}
+	if err := os.MkdirAll(filepath.Dir(item.target), 0o755); err != nil {
+		return fmt.Errorf("create replacement directory parent: %w", err)
+	}
+	suffix := strconv.FormatInt(time.Now().UnixNano(), 10)
+	temporary := item.target + ".update-new-" + suffix
+	_ = os.RemoveAll(temporary)
+	if err := copyDirectory(source, temporary); err != nil {
+		_ = os.RemoveAll(temporary)
+		return err
+	}
+	if preserveUserData {
+		if err := preserveDirectoryUserData(item.target, temporary); err != nil {
+			_ = os.RemoveAll(temporary)
+			return err
+		}
+	}
+	if item.backup == "" {
+		if _, err := os.Stat(item.target); err == nil {
+			_ = os.RemoveAll(temporary)
+			return errors.New("replacement directory appeared after planning")
+		} else if !os.IsNotExist(err) {
+			_ = os.RemoveAll(temporary)
+			return fmt.Errorf("recheck current update directory: %w", err)
+		}
+		return waitRename(temporary, item.target)
+	}
+	if _, err := os.Stat(item.backup); err == nil {
+		_ = os.RemoveAll(temporary)
+		return errors.New("replacement directory backup path already exists")
+	} else if !os.IsNotExist(err) {
+		_ = os.RemoveAll(temporary)
+		return fmt.Errorf("check replacement directory backup: %w", err)
+	}
+	if err := waitRename(item.target, item.backup); err != nil {
+		_ = os.RemoveAll(temporary)
+		return fmt.Errorf("backup current update directory: %w", err)
+	}
+	if err := waitRename(temporary, item.target); err != nil {
+		_ = os.Rename(item.backup, item.target)
+		return fmt.Errorf("install updated directory: %w", err)
+	}
+	return nil
+}
+
+func preserveDirectoryUserData(source, target string) error {
+	if _, err := os.Stat(source); os.IsNotExist(err) {
+		return nil
+	} else if err != nil {
+		return err
+	}
+	return filepath.WalkDir(source, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		relative, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		if !isPreservedPluginDataPath(relative) {
+			return nil
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to preserve plugin symlink: %s", path)
+		}
+		destination := filepath.Join(target, relative)
+		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+			return err
+		}
+		return copyFile(path, destination)
+	})
+}
+
+func isPreservedPluginDataPath(path string) bool {
+	for _, part := range strings.Split(filepath.ToSlash(path), "/") {
+		switch strings.ToLower(part) {
+		case "data", "auths", "cache", "logs":
+			return true
+		}
+	}
+	base := strings.ToLower(filepath.Base(path))
+	if base == "settings.json" || base == "config.json" {
+		return true
+	}
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".yaml", ".yml", ".toml", ".ini", ".db", ".db-wal", ".db-shm", ".sqlite", ".sqlite-wal", ".sqlite-shm", ".sqlite3", ".sqlite3-wal", ".sqlite3-shm", ".wal", ".shm", ".log", ".key", ".pem", ".token", ".env":
+		return true
+	default:
+		return false
+	}
+}
+
+func copyDirectory(source, target string) error {
+	return filepath.WalkDir(source, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(source, path)
+		if err != nil {
+			return err
+		}
+		destination := target
+		if relative != "." {
+			destination = filepath.Join(target, relative)
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("refusing to copy symlink in update directory: %s", path)
+		}
+		if entry.IsDir() {
+			return os.MkdirAll(destination, info.Mode().Perm())
+		}
+		if !info.Mode().IsRegular() {
+			return fmt.Errorf("unsupported update directory entry: %s", path)
+		}
+		if err := os.MkdirAll(filepath.Dir(destination), 0o755); err != nil {
+			return err
+		}
+		return copyFile(path, destination)
+	})
 }
 
 func samePath(left, right string) bool {
@@ -617,6 +927,57 @@ func waitForProcessesHealthy(options ApplyOptions, commands ...*exec.Cmd) error 
 	return nil
 }
 
+func pathSHA256(path string) (string, error) {
+	info, err := os.Stat(path)
+	if err != nil {
+		return "", err
+	}
+	if info.IsDir() {
+		return directorySHA256(path)
+	}
+	return fileSHA256(path)
+}
+
+func directorySHA256(root string) (string, error) {
+	hash := sha256.New()
+	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, err := filepath.Rel(root, path)
+		if err != nil {
+			return err
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return err
+		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("cannot hash update directory symlink: %s", path)
+		}
+		if _, err := io.WriteString(hash, filepath.ToSlash(relative)+"\x00"+info.Mode().String()+"\x00"); err != nil {
+			return err
+		}
+		if entry.IsDir() {
+			return nil
+		}
+		file, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		_, copyErr := io.Copy(hash, file)
+		closeErr := file.Close()
+		if copyErr != nil {
+			return copyErr
+		}
+		return closeErr
+	})
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
 func fileSHA256(path string) (string, error) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -672,7 +1033,7 @@ func rollbackPersistedBackupsExcept(backups []PersistedBackup, skipPath string) 
 		}
 		if _, statErr := os.Stat(backup); statErr != nil {
 			if os.IsNotExist(statErr) && item.SHA256 != "" {
-				if actual, hashErr := fileSHA256(target); hashErr == nil && strings.EqualFold(actual, item.SHA256) {
+				if actual, hashErr := pathSHA256(target); hashErr == nil && strings.EqualFold(actual, item.SHA256) {
 					continue
 				}
 			}
@@ -731,6 +1092,16 @@ func cleanupPersistedBackups(backups []PersistedBackup) error {
 }
 
 func removeIfExists(path string) error {
+	info, err := os.Lstat(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	if info.IsDir() {
+		return os.RemoveAll(path)
+	}
 	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
 		return err
 	}
@@ -751,8 +1122,8 @@ func rollbackError(cause, rollbackErr error) error {
 	return fmt.Errorf("%w; rollback failed: %v", cause, rollbackErr)
 }
 
-func TerminateStartedProcess(cmd *exec.Cmd) {
-	terminateProcess(cmd)
+func TerminateProcessByPID(pid int, executablePath string) error {
+	return terminateProcessByPID(pid, executablePath)
 }
 
 func terminateProcess(cmd *exec.Cmd) {
@@ -818,13 +1189,14 @@ func waitForHealthy(endpoint string, timeout time.Duration) error {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
+	client := healthHTTPClient(endpoint)
 	var lastErr error
 	for {
 		request, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 		if err != nil {
 			return fmt.Errorf("create manager health request: %w", err)
 		}
-		response, err := http.DefaultClient.Do(request)
+		response, err := client.Do(request)
 		if err == nil {
 			lastErr = validateResponse(response)
 			_ = response.Body.Close()
@@ -843,6 +1215,30 @@ func waitForHealthy(endpoint string, timeout time.Duration) error {
 		case <-time.After(200 * time.Millisecond):
 		}
 	}
+}
+
+func healthHTTPClient(endpoint string) *http.Client {
+	parsed, err := url.Parse(strings.TrimSpace(endpoint))
+	if err != nil || !strings.EqualFold(parsed.Scheme, "https") {
+		return http.DefaultClient
+	}
+	host := strings.Trim(strings.ToLower(parsed.Hostname()), "[]")
+	ip := net.ParseIP(host)
+	if host != "localhost" && (ip == nil || !ip.IsLoopback()) {
+		return http.DefaultClient
+	}
+	transport, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return http.DefaultClient
+	}
+	transport = transport.Clone()
+	// Local CPA TLS commonly uses a self-signed certificate; the probe stays on loopback.
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	if httpTransport, ok := http.DefaultTransport.(*http.Transport); ok && httpTransport.TLSClientConfig != nil {
+		transport.TLSClientConfig = httpTransport.TLSClientConfig.Clone()
+		transport.TLSClientConfig.InsecureSkipVerify = true
+	}
+	return &http.Client{Transport: transport}
 }
 
 func waitForProcessExit(pid int, expectedPath string, timeout time.Duration) error {
@@ -900,16 +1296,20 @@ func terminateProcessByPID(pid int, expectedPath string) error {
 		return fmt.Errorf("find process %d: %w", pid, err)
 	}
 	if runtime.GOOS == "windows" {
-		if err := exec.Command("taskkill", "/PID", strconv.Itoa(pid), "/T", "/F").Run(); err != nil {
-			return fmt.Errorf("terminate process tree %d: %w", pid, err)
-		}
+		_ = exec.Command("taskkill", "/PID", strconv.Itoa(pid), "/T").Run()
 	} else if err := signalProcessGroup(process); err != nil {
 		return fmt.Errorf("terminate process group %d: %w", pid, err)
 	}
 	if err := waitForProcessExit(pid, expectedPath, 5*time.Second); err == nil {
 		return nil
 	}
-	if err := killProcessGroup(process); err != nil {
+	if runtime.GOOS == "windows" {
+		if err := exec.Command("taskkill", "/PID", strconv.Itoa(pid), "/T", "/F").Run(); err != nil {
+			if waitErr := waitForProcessExit(pid, expectedPath, 0); waitErr != nil {
+				return fmt.Errorf("force terminate process tree %d: %w", pid, err)
+			}
+		}
+	} else if err := killProcessGroup(process); err != nil {
 		return fmt.Errorf("kill process %d after graceful termination: %w", pid, err)
 	}
 	return waitForProcessExit(pid, expectedPath, 5*time.Second)

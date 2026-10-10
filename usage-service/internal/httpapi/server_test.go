@@ -92,6 +92,22 @@ func newTestHandlerWithConfig(t *testing.T, cfg config.Config) http.Handler {
 	return New(cfg, db, manager).Handler()
 }
 
+func TestUpdateApplyIsDisabledInManagementAPI(t *testing.T) {
+	handler := newTestHandler(t, "http://cpa.test", true)
+	req := httptest.NewRequest(http.MethodPost, "/updates/apply", nil)
+	req.Header.Set("Authorization", "Bearer management-key")
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusGone {
+		t.Fatalf("update apply status = %d, body = %s", rr.Code, rr.Body.String())
+	}
+	if !strings.Contains(rr.Body.String(), "cpa-updater") {
+		t.Fatalf("update apply response does not direct users to cpa-updater: %s", rr.Body.String())
+	}
+}
+
 func TestRuntimeEndpointsRequireManagementKey(t *testing.T) {
 	handler := newTestHandler(t, "", false)
 	req := httptest.NewRequest(http.MethodGet, "/runtime", nil)

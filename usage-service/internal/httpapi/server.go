@@ -8,14 +8,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,9 +43,7 @@ type Server struct {
 	managerExecutable string
 	managerArguments  []string
 	startedAt         int64
-	lifecycleMu       sync.Mutex
 	localRuntimeMu    sync.Mutex
-	updateApplying    bool
 }
 
 type setupSource string
@@ -422,180 +418,7 @@ func (s *Server) handleUpdateApply(w http.ResponseWriter, r *http.Request) {
 		methodNotAllowed(w)
 		return
 	}
-	if s.stager == nil || s.supervisor == nil || s.shutdown == nil {
-		writeError(w, http.StatusNotImplemented, errors.New("local update is unavailable"))
-		return
-	}
-	if s.managerExecutable == "" {
-		writeError(w, http.StatusNotImplemented, errors.New("manager process identity is unavailable"))
-		return
-	}
-	s.localRuntimeMu.Lock()
-	defer s.localRuntimeMu.Unlock()
-	if !s.beginUpdateApply() {
-		writeError(w, http.StatusConflict, errors.New("an update is already being applied"))
-		return
-	}
-	accepted := false
-	defer func() {
-		if !accepted {
-			s.endUpdateApply()
-		}
-	}()
-	runtimeBeforeUpdate := s.supervisor.Status()
-	if runtimeBeforeUpdate.External {
-		writeError(w, http.StatusConflict, errors.New("CLIProxyAPI is running outside CPA-Manager; stop it manually before applying an update"))
-		return
-	}
-	staged, err := s.stager.BeginApply()
-	if err != nil {
-		writeError(w, http.StatusConflict, err)
-		return
-	}
-	// Once BeginApply succeeds the transaction lock is owned by the helper
-	// process (transferred later). The handler must not release it on any
-	// subsequent failure; only release the in-process apply gate.
-	accepted = true
-	cpaConfig := s.supervisor.Config()
-	cpaPath, workingDirectory, err := supervisor.ResolveConfig(cpaConfig)
-	if err != nil {
-		s.failUpdateStatus(err)
-		writeError(w, http.StatusBadRequest, err)
-		return
-	}
-	helperName := "cpa-updater"
-	if runtime.GOOS == "windows" {
-		helperName += ".exe"
-	}
-	helperPath := filepath.Join(filepath.Dir(s.managerExecutable), helperName)
-	if _, err := os.Stat(helperPath); err != nil {
-		s.failUpdateStatus(err)
-		writeError(w, http.StatusNotImplemented, fmt.Errorf("update helper is not installed: %w", err))
-		return
-	}
-	cpaWasRunning := runtimeBeforeUpdate.Managed
-	restartCPA := func() error {
-		if !cpaWasRunning {
-			return nil
-		}
-		status := s.supervisor.Status()
-		if status.External {
-			return errors.New("CLIProxyAPI became externally managed; refusing to start another process")
-		}
-		if status.Running {
-			if waitErr := s.supervisor.WaitStopped(2 * time.Second); waitErr != nil {
-				return errors.New("CLIProxyAPI is still running; refusing to start a duplicate process")
-			}
-			status = s.supervisor.Status()
-		}
-		if status.External {
-			return errors.New("CLIProxyAPI became externally managed; refusing to start another process")
-		}
-		if _, restartErr := s.supervisor.Start(); restartErr != nil {
-			return fmt.Errorf("restore CLIProxyAPI: %w", restartErr)
-		}
-		return nil
-	}
-	if _, err := s.supervisor.Stop(); err != nil {
-		if restoreErr := restartCPA(); restoreErr != nil {
-			err = errors.Join(err, restoreErr)
-		}
-		s.failUpdateStatus(err)
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	if err := s.supervisor.WaitStopped(30 * time.Second); err != nil {
-		if restoreErr := restartCPA(); restoreErr != nil {
-			err = errors.Join(err, restoreErr)
-		}
-		s.failUpdateStatus(err)
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	managerWorkingDirectory := filepath.Dir(s.managerExecutable)
-	if strings.TrimSpace(managerWorkingDirectory) == "" {
-		managerWorkingDirectory, err = os.Getwd()
-		if err != nil {
-			wrappedErr := fmt.Errorf("resolve manager working directory: %w", err)
-			if restoreErr := restartCPA(); restoreErr != nil {
-				wrappedErr = errors.Join(wrappedErr, restoreErr)
-			}
-			s.failUpdateStatus(wrappedErr)
-			writeError(w, http.StatusInternalServerError, wrappedErr)
-			return
-		}
-	}
-	healthURL := s.cfg.HTTPAddr
-	switch {
-	case strings.HasPrefix(healthURL, ":"):
-		healthURL = "http://127.0.0.1" + healthURL
-	case strings.HasPrefix(healthURL, "0.0.0.0:"):
-		healthURL = "http://127.0.0.1:" + strings.TrimPrefix(healthURL, "0.0.0.0:")
-	case strings.HasPrefix(healthURL, "[::]:"):
-		healthURL = "http://127.0.0.1:" + strings.TrimPrefix(healthURL, "[::]:")
-	case !strings.HasPrefix(healthURL, "http://") && !strings.HasPrefix(healthURL, "https://"):
-		healthURL = "http://" + healthURL
-	}
-	healthURL = strings.TrimRight(healthURL, "/") + "/health"
-	startCPA := false
-	managerStartCPA := cpaWasRunning && !cpaConfig.AutoStart
-	expectCPA := cpaWasRunning || cpaConfig.AutoStart
-	cpaHealthURL := ""
-	if expectCPA {
-		cpaHealthURL = strings.TrimRight(cpaConfig.HealthURL, "/")
-		if cpaHealthURL != "" {
-			cpaHealthURL += "/healthz"
-		}
-	}
-	helperCmd, err := update.StartHelper(helperPath, update.ApplyOptions{
-		StagingPath:             staged.StagingPath,
-		ResultPath:              s.stager.StatusPath(),
-		OS:                      staged.OS,
-		Arch:                    staged.Arch,
-		TransactionID:           staged.TransactionID,
-		CPAVersion:              staged.Manifest.CPAVersion,
-		ManagerVersion:          staged.Manifest.ManagerVersion,
-		ManagerExecutablePath:   s.managerExecutable,
-		ManagerWorkingDirectory: managerWorkingDirectory,
-		CPAExecutablePath:       cpaPath,
-		ManagerArguments:        s.managerArguments,
-		CPAArguments:            cpaConfig.Arguments,
-		CPAWorkingDirectory:     workingDirectory,
-		ManagerHealthURL:        healthURL,
-		CPAHealthURL:            cpaHealthURL,
-		ManagerPID:              os.Getpid(),
-		PreviousCPAWasRunning:   cpaWasRunning,
-		RestoreOnFailure:        true,
-		StartCPA:                startCPA,
-		ManagerStartCPA:         managerStartCPA,
-		OwnsTransactionLock:     true,
-	})
-	if err != nil {
-		if restoreErr := restartCPA(); restoreErr != nil {
-			err = errors.Join(err, restoreErr)
-		}
-		s.failUpdateStatus(err)
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	if err := s.stager.TransferApplyLock(helperCmd.Process.Pid, staged.TransactionID, helperCmd.Path); err != nil {
-		update.TerminateStartedProcess(helperCmd)
-		if restoreErr := restartCPA(); restoreErr != nil {
-			err = errors.Join(err, restoreErr)
-		}
-		s.failUpdateStatus(err)
-		writeError(w, http.StatusInternalServerError, err)
-		return
-	}
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		s.shutdown()
-	}()
-	writeJSON(w, http.StatusAccepted, map[string]any{
-		"state":          "applying",
-		"cpaVersion":     staged.Manifest.CPAVersion,
-		"managerVersion": staged.Manifest.ManagerVersion,
-	})
+	writeError(w, http.StatusGone, errors.New("automatic suite installation is handled by cpa-updater; the management API only supports checking and downloading updates"))
 }
 
 func (s *Server) handleRuntime(w http.ResponseWriter, r *http.Request) {
@@ -2470,40 +2293,7 @@ func (s *Server) applyLocalRuntimeConfig(cfg store.ManagerConfig) error {
 	})
 }
 
-func (s *Server) failUpdateStatus(err error) {
-	if s.stager == nil {
-		return
-	}
-	if persistErr := s.stager.Fail(err); persistErr != nil {
-		log.Printf("persist update failure status: %v", persistErr)
-	}
-}
-
-func (s *Server) beginUpdateApply() bool {
-	s.lifecycleMu.Lock()
-	defer s.lifecycleMu.Unlock()
-	if s.updateApplying {
-		return false
-	}
-	if s.stager != nil && s.stager.Status().State == update.StageApplying {
-		return false
-	}
-	s.updateApplying = true
-	return true
-}
-
-func (s *Server) endUpdateApply() {
-	s.lifecycleMu.Lock()
-	s.updateApplying = false
-	s.lifecycleMu.Unlock()
-}
-
 func (s *Server) isUpdateApplying() bool {
-	s.lifecycleMu.Lock()
-	defer s.lifecycleMu.Unlock()
-	if s.updateApplying {
-		return true
-	}
 	return s.stager != nil && s.stager.Status().State == update.StageApplying
 }
 

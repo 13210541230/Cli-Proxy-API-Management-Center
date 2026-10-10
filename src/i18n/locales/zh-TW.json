@@ -2219,7 +2219,7 @@
     "suite_check_update": "檢查聯合更新",
     "suite_update_now": "下載更新包",
     "suite_update_confirm_title": "確認更新聯合程式",
-    "suite_update_confirm_message": "將下載 CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} 更新包到目前程式目錄。下載完成後請自行停止服務，解壓覆蓋檔案後重新啟動。是否繼續？",
+    "suite_update_confirm_message": "將下載並驗證 CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} 更新包至目前程式目錄，不會停止或替換執行中的服務。自動安裝請在程式目錄執行 cpa-updater（Windows 為 cpa-updater.exe）。是否繼續？",
     "version_unknown": "未知",
     "quick_links_title": "快速連結",
     "quick_links_desc": "存取專案儲存庫和文件，取得協助和更新。",
@@ -2234,7 +2234,7 @@
     "clear_login_button": "清理登入資訊",
     "clear_login_confirm": "確認清理本地登入資訊並登出？",
     "suite_update_download_success": "更新包已下載完成: ",
-    "suite_update_manual_hint": "SHA-256 已驗證。請停止 CPA 與 CPA-Manager 服務，將壓縮包解壓到程式目錄覆蓋檔案後重新啟動。"
+    "suite_update_manual_hint": "SHA-256 已驗證。面板僅負責檢查與下載；如需自動安裝，請在程式目錄執行 cpa-updater（Windows 為 cpa-updater.exe），無需手動解壓或替換檔案。"
   },
   "notification": {
     "debug_updated": "除錯設定已更新",

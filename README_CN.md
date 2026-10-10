@@ -154,7 +154,9 @@ http://<host>:18317/management.html
 - `CLIProxyAPI-Suite_<version>_darwin_<arch>.tar.gz`
 - `CLIProxyAPI-Suite_<version>_windows_<arch>.zip`
 
-解压联合包后，macOS/Linux 执行 `start.sh`，Windows 执行 `start.bat`。CPA-Manager 会自动识别同目录下的 `cli-proxy-api`，启动并监控 CPA，同时提供内嵌管理面板。之后可在「系统」页面检查 CLIProxyAPI fork 的联合 Release，并执行校验后的联合更新。
+解压联合包后，macOS/Linux 执行 `start.sh`，Windows 执行 `start.bat`。启动器先启动 CLIProxyAPI，再以禁止重复启动 CPA 的模式启动 CPA-Manager；两个 PID、程序路径、启动参数、工作目录和所选配置路径会记录在 `.suite-runtime.json`。默认配置为 `config.yaml`（首次启动时由 `config.example.yaml` 复制生成），也可用 `--config <路径>` 指定其他配置。用对应的 `stop.sh` 或 `stop.bat` 停止记录的进程。
+
+「系统」页面只提供手动检查更新和下载更新包。两个服务通过 `start.sh`/`start.bat` 启动且都在运行时，在套件目录运行 `cpa-updater`（Windows 可双击 `cpa-updater.exe`）可自动安装；`--check` 只检查版本。Updater 会校验 Release 哈希、停止记录的套件进程、替换程序文件、按保存的配置和参数重启，并在健康检查失败时回滚。用户的 `config.yaml`、认证文件、数据库、日志和本地插件设置会保留。
 
 需要自定义数据位置时，可以设置 `USAGE_DATA_DIR` 或 `USAGE_DB_PATH` 覆盖默认值。原生包首次启动时，如果没有设置这些变量，会在程序所在目录自动生成 `config.json`，并把 SQLite 数据写入同目录下的 `data/usage.sqlite`。这样解压后的目录就是完整的程序和用户数据目录。
 

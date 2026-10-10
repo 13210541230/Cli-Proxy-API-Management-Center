@@ -75,7 +75,7 @@ func TestRuntimeHealthBaseURLSupportsConfiguredLocalAliases(t *testing.T) {
 	}
 }
 
-func TestConfigureLocalCPAAdoptsHealthyExternalWhenAutoStartDisabled(t *testing.T) {
+func TestConfigureLocalCPASuppressesAutoStartAndAdoptsHealthyExternal(t *testing.T) {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/healthz" {
 			http.NotFound(w, r)
@@ -89,8 +89,8 @@ func TestConfigureLocalCPAAdoptsHealthyExternalWhenAutoStartDisabled(t *testing.
 	configureLocalCPA(controller, supervisor.Config{
 		Enabled:           true,
 		CPAExecutablePath: "cli-proxy-api",
-		AutoStart:         false,
-	}, httpServer.URL, false, "test")
+		AutoStart:         true,
+	}, httpServer.URL, false, true, "test")
 
 	status := controller.Status()
 	if !status.External || !status.Running || status.Managed {

@@ -21,9 +21,14 @@ import (
 const maxUpdateAssetSize int64 = 2 << 30
 
 type BundleFiles struct {
+	RootPath    string
 	CPAPath     string
 	ManagerPath string
 	UpdaterPath string
+	VersionPath string
+	PluginsPath string
+	StaticPath  string
+	Files       map[string]string
 }
 
 func (c *Client) DownloadAsset(ctx context.Context, asset Asset, destination string) error {
@@ -123,11 +128,8 @@ func LocateBundle(root string) (BundleFiles, error) {
 
 	var bundle BundleFiles
 	err := filepath.WalkDir(root, func(path string, entry os.DirEntry, walkErr error) error {
-		if walkErr != nil {
+		if walkErr != nil || entry.IsDir() {
 			return walkErr
-		}
-		if entry.IsDir() {
-			return nil
 		}
 		switch strings.ToLower(entry.Name()) {
 		case strings.ToLower(cpaName):
@@ -145,7 +147,51 @@ func LocateBundle(root string) (BundleFiles, error) {
 	if bundle.CPAPath == "" || bundle.ManagerPath == "" || bundle.UpdaterPath == "" {
 		return BundleFiles{}, errors.New("update bundle must contain cli-proxy-api, cpa-manager, and cpa-updater")
 	}
+	bundle.RootPath = filepath.Dir(bundle.CPAPath)
+	if !samePath(filepath.Dir(bundle.ManagerPath), bundle.RootPath) || !samePath(filepath.Dir(bundle.UpdaterPath), bundle.RootPath) {
+		return BundleFiles{}, errors.New("update bundle executables must be together in one package directory")
+	}
+	bundle.Files = make(map[string]string)
+	err = filepath.WalkDir(bundle.RootPath, func(path string, entry os.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		relative, relativeErr := filepath.Rel(bundle.RootPath, path)
+		if relativeErr != nil || filepath.Dir(relative) != "." {
+			return nil
+		}
+		if entry.IsDir() {
+			if strings.EqualFold(entry.Name(), "plugins") {
+				bundle.PluginsPath = path
+			}
+			if strings.EqualFold(entry.Name(), "static") {
+				bundle.StaticPath = path
+			}
+			return nil
+		}
+		switch strings.ToLower(entry.Name()) {
+		case suiteVersionFilename:
+			bundle.VersionPath = path
+		default:
+			if isReplaceableBundleFile(entry.Name()) {
+				bundle.Files[entry.Name()] = path
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return BundleFiles{}, fmt.Errorf("scan update package assets: %w", err)
+	}
 	return bundle, nil
+}
+
+func isReplaceableBundleFile(name string) bool {
+	switch strings.ToLower(strings.TrimSpace(name)) {
+	case "license", "readme.md", "readme_cn.md", "suite-readme.md", "suite-readme_cn.md", "config.example.yaml", "start.bat", "start.ps1", "stop.bat", "start.sh", "stop.sh":
+		return true
+	default:
+		return false
+	}
 }
 
 func extractZip(archivePath, destination string) error {

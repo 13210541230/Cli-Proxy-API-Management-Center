@@ -2190,7 +2190,7 @@
     "suite_check_update": "Проверить обновление комплекта",
     "suite_update_now": "Скачать обновление",
     "suite_update_confirm_title": "Подтвердите обновление комплекта",
-    "suite_update_confirm_message": "Пакет CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} будет скачан в текущий каталог программы. После загрузки остановите службы и замените файлы вручную.",
+    "suite_update_confirm_message": "Пакет CPA {{cpaVersion}} / CPA-Manager {{managerVersion}} будет скачан и проверен в текущем каталоге программы. Работа служб не будет остановлена и файлы не будут заменены. Для автоматической установки запустите cpa-updater (в Windows — cpa-updater.exe) из каталога комплекта.",
     "version_unknown": "Неизвестно",
     "quick_links_title": "Быстрые ссылки",
     "quick_links_desc": "Доступ к репозиториям проекта и документации для помощи и обновлений.",
@@ -2205,7 +2205,7 @@
     "clear_login_button": "Очистить данные входа",
     "clear_login_confirm": "Очистить локальные данные входа и выйти?",
     "suite_update_download_success": "Пакет обновления скачан: ",
-    "suite_update_manual_hint": "SHA-256 проверен. Остановите CPA и CPA-Manager, распакуйте архив в каталог программы, заменив файлы, и запустите заново."
+    "suite_update_manual_hint": "SHA-256 проверен. Панель только проверяет наличие обновлений и скачивает пакет. Для автоматической установки запустите cpa-updater (в Windows — cpa-updater.exe) из каталога комплекта; вручную распаковывать и заменять файлы не нужно."
   },
   "notification": {
     "debug_updated": "Настройки отладки обновлены",

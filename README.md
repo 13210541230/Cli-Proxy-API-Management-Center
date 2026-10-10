@@ -156,7 +156,9 @@ Standalone native packages do not include CPA itself. The unified packages publi
 - `CLIProxyAPI-Suite_<version>_darwin_<arch>.tar.gz`
 - `CLIProxyAPI-Suite_<version>_windows_<arch>.zip`
 
-Extract a unified package and start it through `start.sh` on macOS/Linux or `start.bat` on Windows. CPA-Manager detects the adjacent `cli-proxy-api` executable, starts it as the local runtime, and serves the embedded management panel. The System page can then check the canonical CLIProxyAPI release and apply a verified suite update.
+Extract a unified package and use `start.sh` on macOS/Linux or `start.bat` on Windows. The launcher starts CLIProxyAPI first, then CPA-Manager without starting a duplicate process; it records both PIDs, executable paths, launch arguments, working directories, and the selected config path in `.suite-runtime.json`. The default config is `config.yaml` (copied from `config.example.yaml` on first start); pass `--config <path>` to select another file. Use the matching `stop.sh` or `stop.bat` to stop only those recorded processes.
+
+The System page provides manual update check and package download only. With both services running from `start.sh`/`start.bat`, run `cpa-updater` (or double-click `cpa-updater.exe`) from the suite directory for automatic installation; `--check` only checks versions. The updater verifies the release checksum, stops the recorded suite processes, replaces packaged program assets, restarts with the saved config and arguments, and rolls back on a failed health check. It preserves `config.yaml`, auth files, databases, logs, and local plugin settings.
 
 Set `USAGE_DATA_DIR` or `USAGE_DB_PATH` only when you want to override the default data location. On first start, if these variables are not set, the native package creates `config.json` next to the binary and writes SQLite data to `data/usage.sqlite` in the same directory. The extracted package directory therefore contains both the program and its user data.
 

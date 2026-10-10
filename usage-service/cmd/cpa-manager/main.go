@@ -30,6 +30,7 @@ func main() {
 		log.Printf("isolate manager process group: %v", err)
 	}
 	startCPAOnLaunch := flag.Bool("start-cpa", false, "start CLIProxyAPI during manager startup")
+	noStartCPAOnLaunch := flag.Bool("no-start-cpa", false, "do not start CLIProxyAPI during manager startup")
 	flag.Parse()
 
 	cfg, err := config.Load()
@@ -107,14 +108,14 @@ func main() {
 			Arguments:         runtimeCfg.Arguments,
 			AutoStart:         runtimeCfg.AutoStart,
 			HealthURL:         runtimeCfg.HealthURL,
-		}, healthBaseURL, *startCPAOnLaunch, "auto-start")
+		}, healthBaseURL, *startCPAOnLaunch, *noStartCPAOnLaunch, "auto-start")
 	} else if runtimeCfg, ok := supervisor.DefaultConfig(); ok {
 		setupURL := ""
 		if setup, setupOK, setupErr := db.LoadSetup(context.Background()); setupErr == nil && setupOK {
 			setupURL = setup.CPAUpstreamURL
 		}
 		healthBaseURL := runtimeHealthBaseURL(cfg.CPAUpstreamURL, setupURL)
-		configureLocalCPA(runtimeController, runtimeCfg, healthBaseURL, false, "auto-start adjacent")
+		configureLocalCPA(runtimeController, runtimeCfg, healthBaseURL, false, *noStartCPAOnLaunch, "auto-start adjacent")
 	}
 
 	manager := collector.NewManager(cfg, db, sender, collector.AlertConfig{
@@ -320,7 +321,10 @@ func runtimeHealthBaseURL(configuredURL, setupURL string) string {
 	return "http://127.0.0.1:8317"
 }
 
-func configureLocalCPA(controller *supervisor.Controller, cfg supervisor.Config, healthBaseURL string, forceStart bool, startLabel string) {
+func configureLocalCPA(controller *supervisor.Controller, cfg supervisor.Config, healthBaseURL string, forceStart bool, suppressAutoStart bool, startLabel string) {
+	if suppressAutoStart {
+		cfg.AutoStart = false
+	}
 	if normalized, ok := supervisor.LocalHealthURL(cfg.HealthURL); ok {
 		cfg.HealthURL = normalized
 	} else if normalized, ok := supervisor.LocalHealthURL(healthBaseURL); ok {
@@ -390,7 +394,7 @@ func localRuntimeConfigDiffers(left, right store.LocalRuntimeConfig) bool {
 func persistentArguments(arguments []string) []string {
 	filtered := make([]string, 0, len(arguments))
 	for _, argument := range arguments {
-		if argument == "--start-cpa" {
+		if argument == "--start-cpa" || argument == "--no-start-cpa" {
 			continue
 		}
 		filtered = append(filtered, argument)
