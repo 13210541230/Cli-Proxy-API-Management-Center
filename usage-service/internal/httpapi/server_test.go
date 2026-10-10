@@ -690,6 +690,13 @@ func TestAPIKeyAliasesSaveLoadAndDelete(t *testing.T) {
 	}
 }
 
+func TestModelPriceSyncUsesJsDelivrMirror(t *testing.T) {
+	const want = "https://cdn.jsdelivr.net/gh/BerriAI/litellm@main/model_prices_and_context_window.json"
+	if modelPriceSyncURL != want {
+		t.Fatalf("modelPriceSyncURL = %q, want %q", modelPriceSyncURL, want)
+	}
+}
+
 func TestModelPricesSyncFromLiteLLMFormat(t *testing.T) {
 	source := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")

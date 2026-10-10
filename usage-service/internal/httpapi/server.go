@@ -60,7 +60,7 @@ const maxUsageImportBytes int64 = 64 * 1024 * 1024
 
 const modelPriceSyncSource = "litellm"
 
-var modelPriceSyncURL = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+var modelPriceSyncURL = "https://cdn.jsdelivr.net/gh/BerriAI/litellm@main/model_prices_and_context_window.json"
 
 type setupRequest struct {
 	CPAUpstreamURL               string `json:"cpaBaseUrl"`
