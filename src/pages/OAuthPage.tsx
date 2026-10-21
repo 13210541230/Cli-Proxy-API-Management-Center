@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'reac
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/Card';
+import { OpenCodeAccountsCard } from '@/features/openCode/OpenCodeAccountsCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { useNotificationStore, useThemeStore } from '@/stores';
@@ -460,6 +461,8 @@ export function OAuthPage() {
             </div>
           );
         })}
+
+        <OpenCodeAccountsCard />
 
         {/* Vertex JSON 登录 */}
         <Card

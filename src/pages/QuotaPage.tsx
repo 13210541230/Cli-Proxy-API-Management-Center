@@ -17,7 +17,8 @@ import {
   CLAUDE_CONFIG,
   GEMINI_CLI_CONFIG,
   KIMI_CONFIG,
-  XAI_CONFIG
+  XAI_CONFIG,
+  OpenCodeQuotaSection
 } from '@/components/quota';
 import { CodexModelTraceSection } from '@/components/quota/CodexModelTraceSection';
 import type { QuotaSortMode } from '@/components/quota/quotaConfigs';
@@ -168,6 +169,7 @@ export function QuotaPage() {
         searchQuery={searchQuery}
         sortMode={sortMode}
       />
+      <OpenCodeQuotaSection searchQuery={searchQuery} />
       <QuotaSection
         config={CLAUDE_CONFIG}
         files={files}
