@@ -2664,6 +2664,13 @@
     "models_saved": "模型暴露設定已儲存",
     "models_failed": "儲存模型暴露設定失敗",
     "quota_subtitle": "各帳戶 5 小時 / 本週 / 本月額度，額度耗盡時該帳戶會被自動跳過。",
-    "quota_moved_hint": "額度查看已統一至「額度管理」頁面。"
+    "quota_moved_hint": "額度查看已統一至「額度管理」頁面。",
+    "models_search": "搜尋模型",
+    "models_reload": "重新載入",
+    "models_select_all": "全選",
+    "models_close": "關閉",
+    "models_apply": "套用（{{count}}）",
+    "models_open": "模型清單",
+    "models_open_hint": "用清單批次選擇對外暴露的模型"
   }
 }

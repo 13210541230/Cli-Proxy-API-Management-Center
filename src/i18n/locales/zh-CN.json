@@ -2906,6 +2906,13 @@
     "models_saved": "模型暴露配置已保存",
     "models_failed": "保存模型暴露配置失败",
     "quota_subtitle": "各账户 5 小时 / 本周 / 本月额度，额度耗尽时该账户会被自动跳过。",
-    "quota_moved_hint": "额度查看已统一到「配额管理」页面。"
+    "quota_moved_hint": "额度查看已统一到「配额管理」页面。",
+    "models_search": "搜索模型",
+    "models_reload": "重新加载",
+    "models_select_all": "全选",
+    "models_close": "关闭",
+    "models_apply": "应用（{{count}}）",
+    "models_open": "模型列表",
+    "models_open_hint": "用列表批量选择对外暴露的模型"
   }
 }

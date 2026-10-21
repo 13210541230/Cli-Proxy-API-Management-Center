@@ -2857,6 +2857,13 @@
     "models_saved": "Model exposure saved",
     "models_failed": "Failed to save model exposure",
     "quota_subtitle": "5-hour, weekly and monthly quota per account. Exhausted accounts are skipped automatically.",
-    "quota_moved_hint": "Quota details now live on the Quota Management page."
+    "quota_moved_hint": "Quota details now live on the Quota Management page.",
+    "models_search": "Search models",
+    "models_reload": "Reload",
+    "models_select_all": "Select all",
+    "models_close": "Close",
+    "models_apply": "Apply ({{count}})",
+    "models_open": "Model list",
+    "models_open_hint": "Pick the exposed models from a list instead of one by one"
   }
 }

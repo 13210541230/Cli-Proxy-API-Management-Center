@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import styles from './OpenCodeAccountsCard.module.scss';
+import { OpenCodeModelPicker } from './OpenCodeModelPicker';
 
 type FormState = {
   label: string;
@@ -41,6 +42,7 @@ export function OpenCodeAccountsCard() {
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState('');
   const [savingModels, setSavingModels] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -80,11 +82,12 @@ export function OpenCodeAccountsCard() {
     }
   };
 
-  const toggleModel = (id: string, expose: boolean) => {
-    const key = id.toLowerCase();
-    const next = expose
-      ? excluded.filter((item) => item !== key)
-      : Array.from(new Set([...excluded, key]));
+  const applySelection = (enabledNames: string[]) => {
+    const enabled = new Set(enabledNames.map((name) => name.toLowerCase()));
+    const next = models
+      .map((model) => model.id.toLowerCase())
+      .filter((id) => !enabled.has(id));
+    setPickerOpen(false);
     void persistExcluded(next);
   };
 
@@ -251,23 +254,21 @@ export function OpenCodeAccountsCard() {
 
           {models.length === 0 ? (
             <div className={styles.emptyBox}>{t('opencode.models_empty')}</div>
+          ) : pickerOpen ? (
+            <OpenCodeModelPicker
+              models={models}
+              enabled={new Set(models.filter((model) => isExposed(model.id)).map((model) => model.id))}
+              saving={savingModels}
+              onReload={() => void load()}
+              onApply={applySelection}
+              onClose={() => setPickerOpen(false)}
+            />
           ) : (
-            <div className={styles.modelGrid}>
-              {models.map((model) => {
-                const exposed = isExposed(model.id);
-                return (
-                  <label key={model.id} className={styles.modelItem}>
-                    <input
-                      type="checkbox"
-                      checked={exposed}
-                      disabled={savingModels}
-                      onChange={(event) => toggleModel(model.id, event.target.checked)}
-                    />
-                    <span className={styles.modelName}>{model.id}</span>
-                    <span className={styles.modelProtocol}>{model.protocol}</span>
-                  </label>
-                );
-              })}
+            <div className={styles.formActions}>
+              <Button variant="secondary" size="sm" onClick={() => setPickerOpen(true)} disabled={savingModels}>
+                {t('opencode.models_open')}
+              </Button>
+              <span className={styles.hint}>{t('opencode.models_open_hint')}</span>
             </div>
           )}
         </section>
