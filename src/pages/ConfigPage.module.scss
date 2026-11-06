@@ -119,6 +119,25 @@
   }
 }
 
+.configMigrationNotice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  font-size: 13px;
+  line-height: 1.5;
+
+  @include mobile {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 .statusBadge {
   display: inline-flex;
   align-items: center;

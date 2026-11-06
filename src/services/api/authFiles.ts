@@ -19,6 +19,7 @@ export type AuthFileFieldsPatch = {
   priority?: number;
   note?: string;
   websockets?: boolean;
+  use_siwc?: boolean;
 };
 type AuthFileBatchFailure = { name: string; error: string };
 type AuthFileBatchUploadResponse = {

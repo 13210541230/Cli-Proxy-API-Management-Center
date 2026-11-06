@@ -41,7 +41,7 @@ import type {
   VisualConfigValidationErrors,
   VisualConfigValues,
 } from '@/types/visualConfig';
-import { makeClientId } from '@/types/visualConfig';
+import { DEFAULT_VISUAL_VALUES, makeClientId } from '@/types/visualConfig';
 import { PayloadFilterRulesEditor, PayloadRulesEditor } from './VisualConfigEditorBlocks';
 import styles from './VisualConfigEditor.module.scss';
 
@@ -55,7 +55,8 @@ type VisualSectionId =
   | 'advanced'
   | 'quota'
   | 'streaming'
-  | 'payload';
+  | 'payload'
+  | 'upstream';
 
 type VisualSection = {
   id: VisualSectionId;
@@ -70,6 +71,7 @@ interface VisualConfigEditorProps {
   validationErrors?: VisualConfigValidationErrors;
   hasPayloadValidationErrors?: boolean;
   disabled?: boolean;
+  supportsV8Settings?: boolean;
   onChange: (values: Partial<VisualConfigValues>) => void;
 }
 
@@ -79,6 +81,163 @@ function getValidationMessage(
 ) {
   if (!errorCode) return undefined;
   return t(`config_management.visual.validation.${errorCode}`);
+}
+
+const V8_ADDITION_FIELD_YAML_PATHS: Record<string, string> = {
+  githubToken: 'server.github-token',
+  trustedProxies: 'server.trusted-proxies',
+  discoveryEnabled: 'server.discovery.enabled',
+  discoveryServiceName: 'server.discovery.service-name',
+  discoveryServiceType: 'server.discovery.service-type',
+  discoverySubtypes: 'server.discovery.subtypes',
+  discoveryInterfacesInclude: 'server.discovery.interfaces.include',
+  discoveryInterfacesExclude: 'server.discovery.interfaces.exclude',
+  discoveryAuthRequired: 'server.discovery.auth-required',
+  discoveryAdvertiseManagement: 'server.discovery.advertise-management',
+  routingSessionAffinitySubagents: 'routing.session-affinity-subagents',
+  saveCooldownStatus: 'routing.cooldown.save-cooldown-status',
+  transientErrorCooldownSeconds: 'routing.cooldown.transient-error-cooldown-seconds',
+  videoResultAuthCacheTTL: 'multimedia.video-result-auth-cache-ttl',
+  claudeHeaderTimezone: 'upstream.claude.header-defaults.timezone',
+  claudeModelLevelCooling: 'upstream.claude.model-level-cooling',
+  claudeDisableCloakMode: 'upstream.claude.disable-claude-cloak-mode',
+  claudeCodeDisableCloakingModelList: 'upstream.claude.disable-cloaking-model-list',
+  codexDisableCloaking: 'upstream.codex.disable-codex-cloaking',
+  codexModelLevelCooling: 'upstream.codex.model-level-cooling',
+  codexStreamBootstrapBuffering: 'upstream.codex.stream-bootstrap-buffering',
+  codexStreamBootstrapTimeout: 'upstream.codex.stream-bootstrap-timeout',
+  codexOptimizeMultiAgentV2: 'client.codex.optimize-multi-agent-v2',
+  codexOrphanDelegationCompatibility: 'upstream.codex.orphan-delegation-compatibility',
+  codexResponseSteering: 'upstream.codex.response-steering',
+  antigravityConnectionPoolEnabled: 'oauth.providers.antigravity.connection-pool.enabled',
+  antigravityConnectionPoolIdleTimeout: 'oauth.providers.antigravity.connection-pool.idle-conn-timeout',
+  antigravityConnectionPoolMaxIdleConnsPerHost: 'oauth.providers.antigravity.connection-pool.max-idle-conns-per-host',
+  xaiInjectXSearch: 'upstream.xai.inject-x-search',
+  codexLiveMediaRelayEnabled: 'oauth.providers.codex.live-media-relay.enabled',
+  codexLiveMediaRelayMaxSessions: 'oauth.providers.codex.live-media-relay.max-sessions',
+  codexLiveMediaRelayDisablePrivateRemoteIPs: 'oauth.providers.codex.live-media-relay.disable-private-remote-ips',
+  codexLiveMediaRelayPublicIP: 'oauth.providers.codex.live-media-relay.public-ip',
+  codexLiveMediaRelayUDPPortMin: 'oauth.providers.codex.live-media-relay.udp-port-min',
+  codexLiveMediaRelayUDPPortMax: 'oauth.providers.codex.live-media-relay.udp-port-max',
+  codexLiveMediaRelayICEServers: 'oauth.providers.codex.live-media-relay.ice-servers',
+};
+
+const V8_ONLY_FIELD_KEYS = new Set(Object.keys(V8_ADDITION_FIELD_YAML_PATHS));
+const VISUAL_FIELD_LABEL_KEYS: Record<string, string> = {
+  host: 'config_management.visual.sections.server.host',
+  port: 'config_management.visual.sections.server.port',
+  tlsEnable: 'config_management.visual.sections.tls.enable',
+  tlsCert: 'config_management.visual.sections.tls.cert',
+  tlsKey: 'config_management.visual.sections.tls.key',
+  rmAllowRemote: 'config_management.visual.sections.remote.allow_remote',
+  rmSecretKey: 'config_management.visual.sections.remote.secret_key',
+  rmDisableControlPanel: 'config_management.visual.sections.remote.disable_panel',
+  rmDisableAutoUpdatePanel: 'config_management.visual.sections.remote.disable_auto_update_panel',
+  rmPanelRepo: 'config_management.visual.sections.remote.panel_repo',
+  authDir: 'config_management.visual.sections.auth.auth_dir',
+  debug: 'config_management.visual.sections.system.debug',
+  commercialMode: 'config_management.visual.sections.system.commercial_mode',
+  usageStatisticsEnabled: 'config_management.visual.sections.system.usage_statistics_enabled',
+  requestRetry: 'config_management.visual.sections.network.request_retry',
+  maxRetryCredentials: 'config_management.visual.sections.network.max_retry_credentials',
+  maxRetryInterval: 'config_management.visual.sections.network.max_retry_interval',
+  proxyUrl: 'config_management.visual.sections.network.proxy_url',
+  forceModelPrefix: 'config_management.visual.sections.network.force_model_prefix',
+  passthroughHeaders: 'config_management.visual.sections.network.passthrough_headers',
+  disableCooling: 'config_management.visual.sections.network.disable_cooling',
+  routingStrategy: 'config_management.visual.sections.network.routing_strategy',
+  routingSessionAffinity: 'config_management.visual.sections.network.session_affinity',
+};
+const V8_DEPRECATED_FIELD_KEYS = new Set(['quotaSwitchProject', 'quotaSwitchPreviewModel']);
+
+const VISUAL_FIELD_YAML_PATHS: Record<string, string> = {
+  ...V8_ADDITION_FIELD_YAML_PATHS,
+  host: 'server.host',
+  port: 'server.port',
+  tlsEnable: 'server.tls.enable',
+  tlsCert: 'server.tls.cert',
+  tlsKey: 'server.tls.key',
+  rmAllowRemote: 'management.allow-remote',
+  rmSecretKey: 'management.secret-key',
+  rmDisableControlPanel: 'management.disable-control-panel',
+  rmDisableAutoUpdatePanel: 'management.disable-auto-update-panel',
+  rmPanelRepo: 'management.panel-github-repository',
+  authDir: 'oauth.auth-dir',
+  apiKeysText: 'access.api-keys',
+  pluginsEnabled: 'plugins.enabled',
+  pluginStoreSources: 'plugins.store-sources',
+  pluginStoreAuth: 'plugins.store-auth',
+  debug: 'observability.logs.debug',
+  commercialMode: 'server.commercial-mode',
+  usageStatisticsEnabled: 'observability.usage.usage-statistics-enabled',
+  loggingToFile: 'observability.logs.logging-to-file',
+  logsMaxTotalSizeMb: 'observability.logs.logs-max-total-size-mb',
+  errorLogsMaxFiles: 'observability.logs.error-logs-max-files',
+  redisUsageQueueRetentionSeconds: 'observability.usage.redis-usage-queue-retention-seconds',
+  proxyUrl: 'requests.proxy-url',
+  forceModelPrefix: 'routing.force-model-prefix',
+  requestRetry: 'routing.retry.request-retry',
+  maxRetryCredentials: 'routing.retry.max-retry-credentials',
+  maxRetryInterval: 'routing.retry.max-retry-interval',
+  authAutoRefreshWorkers: 'oauth.auth-auto-refresh-workers',
+  passthroughHeaders: 'requests.passthrough-headers',
+  disableCooling: 'routing.cooldown.disable-cooling',
+  disableImageGeneration: 'multimedia.disable-image-generation',
+  gptImage2BaseModel: 'multimedia.gpt-image-2-base-model',
+  wsAuth: 'oauth.providers.aistudio.ws-auth',
+  quotaSwitchProject: 'quota-exceeded.switch-project',
+  quotaSwitchPreviewModel: 'quota-exceeded.switch-preview-model',
+  quotaAntigravityCredits: 'oauth.providers.antigravity.antigravity-credits',
+  antigravitySensitiveWords: 'oauth.providers.antigravity.sensitive-words',
+  devinSensitiveWords: 'oauth.providers.devin.sensitive-words',
+  antigravitySignatureCacheEnabled: 'oauth.providers.antigravity.signature-cache-enabled',
+  antigravitySignatureBypassStrict: 'oauth.providers.antigravity.signature-bypass-strict',
+  claudeHeaderUserAgent: 'upstream.claude.header-defaults.user-agent',
+  claudeHeaderPackageVersion: 'upstream.claude.header-defaults.package-version',
+  claudeHeaderRuntimeVersion: 'upstream.claude.header-defaults.runtime-version',
+  claudeHeaderOs: 'upstream.claude.header-defaults.os',
+  claudeHeaderArch: 'upstream.claude.header-defaults.arch',
+  claudeHeaderTimeout: 'upstream.claude.header-defaults.timeout',
+  claudeHeaderStabilizeDeviceProfile: 'upstream.claude.header-defaults.stabilize-device-profile',
+  codexHeaderUserAgent: 'oauth.providers.codex.header-defaults.user-agent',
+  codexHeaderBetaFeatures: 'oauth.providers.codex.header-defaults.beta-features',
+  routingStrategy: 'routing.strategy',
+  routingSessionAffinity: 'routing.session-affinity',
+  routingSessionAffinityTTL: 'routing.session-affinity-ttl',
+  'streaming.keepaliveSeconds': 'requests.streaming.keepalive-seconds',
+  'streaming.bootstrapRetries': 'requests.streaming.bootstrap-retries',
+  'streaming.nonstreamKeepaliveInterval': 'requests.nonstream-keepalive-interval',
+  payloadDefaultRules: 'requests.payload.default',
+  payloadDefaultRawRules: 'requests.payload.default-raw',
+  payloadOverrideRules: 'requests.payload.override',
+  payloadOverrideRawRules: 'requests.payload.override-raw',
+  payloadFilterRules: 'requests.payload.filter',
+};
+
+function visualFieldSection(field: string): VisualSectionId {
+  if (V8_ONLY_FIELD_KEYS.has(field)) return 'upstream';
+  if (field === 'host' || field === 'port') return 'server';
+  if (field.startsWith('tls')) return 'tls';
+  if (field.startsWith('rm')) return 'remote';
+  if (field === 'authDir' || field === 'apiKeysText') return 'auth';
+  if (field.startsWith('plugin') || ['debug', 'commercialMode', 'usageStatisticsEnabled', 'loggingToFile', 'logsMaxTotalSizeMb', 'errorLogsMaxFiles', 'redisUsageQueueRetentionSeconds'].includes(field)) return 'system';
+  if (field.startsWith('streaming.')) return 'streaming';
+  if (field.startsWith('payload')) return 'payload';
+  if (field.startsWith('quota')) return 'quota';
+  if (['proxyUrl', 'forceModelPrefix', 'passthroughHeaders', 'requestRetry', 'maxRetryCredentials', 'maxRetryInterval', 'authAutoRefreshWorkers'].includes(field)) return 'network';
+  return 'advanced';
+}
+
+function humanizeVisualField(field: string): string {
+  return field.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/\./g, ' · ');
+}
+
+function FieldAnchor({ field, children }: { field: string; children: ReactNode }) {
+  return (
+    <div id={`cfg-field-${field}`} className={styles.fieldAnchor}>
+      {children}
+    </div>
+  );
 }
 
 type ToggleRowProps = {
@@ -205,6 +364,544 @@ function StringListInput({
         }
       />
     </FieldShell>
+  );
+}
+
+function V8TextField({
+  field,
+  label,
+  hint,
+  value,
+  disabled,
+  type = 'text',
+  error,
+  onChange,
+}: {
+  field: string;
+  label: string;
+  hint?: string;
+  value: string;
+  disabled: boolean;
+  type?: string;
+  error?: string;
+  onChange: (value: string) => void;
+}) {
+  const inputId = `cfg-input-${field}`;
+  return (
+    <FieldAnchor field={field}>
+      <Input
+        id={inputId}
+        label={label}
+        hint={hint}
+        error={error}
+        type={type}
+        value={value}
+        disabled={disabled}
+        onChange={(event) => onChange(event.target.value)}
+      />
+    </FieldAnchor>
+  );
+}
+
+function V8ListField({
+  field,
+  label,
+  hint,
+  value,
+  disabled,
+  error,
+  onChange,
+}: {
+  field: string;
+  label: string;
+  hint?: string;
+  value: string[];
+  disabled: boolean;
+  error?: string;
+  onChange: (value: string[]) => void;
+}) {
+  return (
+    <FieldAnchor field={field}>
+      <div>
+        <StringListInput label={label} hint={hint} value={value} disabled={disabled} onChange={onChange} />
+        {error ? <div className="error-box">{error}</div> : null}
+      </div>
+    </FieldAnchor>
+  );
+}
+
+function V8ToggleField({
+  field,
+  label,
+  hint,
+  checked,
+  disabled,
+  onChange,
+}: {
+  field: string;
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled: boolean;
+  onChange: (value: boolean) => void;
+}) {
+  return (
+    <FieldAnchor field={field}>
+      <ToggleRow title={label} description={hint} checked={checked} disabled={disabled} onChange={onChange} />
+    </FieldAnchor>
+  );
+}
+
+function V8SettingsFields({
+  values,
+  disabled,
+  validationErrors,
+  onChange,
+}: {
+  values: VisualConfigValues;
+  disabled: boolean;
+  validationErrors: VisualConfigValidationErrors;
+  onChange: (values: Partial<VisualConfigValues>) => void;
+}) {
+  const { t } = useTranslation();
+  const serverLabel = (key: string) => t(`config_management.visual.serverExtras.${key}.label`);
+  const serverHint = (key: string) => t(`config_management.visual.serverExtras.${key}.hint`);
+  const additionLabel = (key: string) => t(`config_management.visual.additions.${key}.label`);
+  const additionHint = (key: string) => t(`config_management.visual.additions.${key}.hint`);
+
+  return (
+    <SectionStack>
+      <SectionSubsection
+        title={t('config_management.visual.sections.server.title')}
+        description={t('config_management.visual.sections.server.description')}
+      >
+        <SectionGrid>
+          <V8TextField
+            field="githubToken"
+            label={t('config_management.visual.sections.server.github_token')}
+            hint={t('config_management.visual.sections.server.github_token_hint')}
+            value={values.githubToken}
+            disabled={disabled}
+            type="password"
+            onChange={(githubToken) => onChange({ githubToken })}
+          />
+          <V8ListField
+            field="trustedProxies"
+            label={serverLabel('trustedProxies')}
+            hint={serverHint('trustedProxies')}
+            error={getValidationMessage(t, validationErrors.trustedProxies)}
+            value={values.trustedProxies}
+            disabled={disabled}
+            onChange={(trustedProxies) => onChange({ trustedProxies })}
+          />
+        </SectionGrid>
+        <SectionSubsection
+          title={t('config_management.visual.serverExtras.discoveryTitle')}
+          description={t('config_management.visual.serverExtras.discoveryHint')}
+        >
+          <SectionStack>
+            <V8ToggleField
+              field="discoveryEnabled"
+              label={serverLabel('discoveryEnabled')}
+              hint={serverHint('discoveryEnabled')}
+              checked={values.discoveryEnabled}
+              disabled={disabled}
+              onChange={(discoveryEnabled) => onChange({ discoveryEnabled })}
+            />
+            {values.discoveryEnabled ? (
+              <>
+                <SectionGrid>
+                  <V8TextField
+                    field="discoveryServiceName"
+                    label={serverLabel('discoveryServiceName')}
+                    hint={serverHint('discoveryServiceName')}
+                    value={values.discoveryServiceName}
+                    disabled={disabled}
+                    onChange={(discoveryServiceName) => onChange({ discoveryServiceName })}
+                  />
+                  <V8TextField
+                    field="discoveryServiceType"
+                    label={serverLabel('discoveryServiceType')}
+                    hint={serverHint('discoveryServiceType')}
+                    error={getValidationMessage(t, validationErrors.discoveryServiceType)}
+                    value={values.discoveryServiceType}
+                    disabled={disabled}
+                    onChange={(discoveryServiceType) => onChange({ discoveryServiceType })}
+                  />
+                  <V8ListField
+                    field="discoverySubtypes"
+                    label={serverLabel('discoverySubtypes')}
+                    hint={serverHint('discoverySubtypes')}
+                    value={values.discoverySubtypes}
+                    disabled={disabled}
+                    onChange={(discoverySubtypes) => onChange({ discoverySubtypes })}
+                  />
+                  <V8ListField
+                    field="discoveryInterfacesInclude"
+                    label={serverLabel('discoveryInterfacesInclude')}
+                    hint={serverHint('discoveryInterfacesInclude')}
+                    value={values.discoveryInterfacesInclude}
+                    disabled={disabled}
+                    onChange={(discoveryInterfacesInclude) => onChange({ discoveryInterfacesInclude })}
+                  />
+                  <V8ListField
+                    field="discoveryInterfacesExclude"
+                    label={serverLabel('discoveryInterfacesExclude')}
+                    hint={serverHint('discoveryInterfacesExclude')}
+                    value={values.discoveryInterfacesExclude}
+                    disabled={disabled}
+                    onChange={(discoveryInterfacesExclude) => onChange({ discoveryInterfacesExclude })}
+                  />
+                </SectionGrid>
+                <V8ToggleField
+                  field="discoveryAuthRequired"
+                  label={serverLabel('discoveryAuthRequired')}
+                  hint={serverHint('discoveryAuthRequired')}
+                  checked={values.discoveryAuthRequired}
+                  disabled={disabled}
+                  onChange={(discoveryAuthRequired) => onChange({ discoveryAuthRequired })}
+                />
+                <V8ToggleField
+                  field="discoveryAdvertiseManagement"
+                  label={serverLabel('discoveryAdvertiseManagement')}
+                  hint={serverHint('discoveryAdvertiseManagement')}
+                  checked={values.discoveryAdvertiseManagement}
+                  disabled={disabled}
+                  onChange={(discoveryAdvertiseManagement) => onChange({ discoveryAdvertiseManagement })}
+                />
+              </>
+            ) : null}
+          </SectionStack>
+        </SectionSubsection>
+      </SectionSubsection>
+
+      <SectionSubsection
+        title={t('config_management.visual.sections.network.title')}
+        description={t('config_management.visual.sections.network.description')}
+      >
+        <SectionGrid>
+          <V8ToggleField
+            field="routingSessionAffinitySubagents"
+            label={additionLabel('routingSessionAffinitySubagents')}
+            hint={additionHint('routingSessionAffinitySubagents')}
+            checked={values.routingSessionAffinitySubagents}
+            disabled={disabled}
+            onChange={(routingSessionAffinitySubagents) => onChange({ routingSessionAffinitySubagents })}
+          />
+          <V8ToggleField
+            field="saveCooldownStatus"
+            label={additionLabel('saveCooldownStatus')}
+            hint={additionHint('saveCooldownStatus')}
+            checked={values.saveCooldownStatus}
+            disabled={disabled}
+            onChange={(saveCooldownStatus) => onChange({ saveCooldownStatus })}
+          />
+          <V8TextField
+            field="transientErrorCooldownSeconds"
+            label={additionLabel('transientErrorCooldownSeconds')}
+            hint={additionHint('transientErrorCooldownSeconds')}
+            value={values.transientErrorCooldownSeconds}
+            disabled={disabled}
+            type="number"
+            onChange={(transientErrorCooldownSeconds) => onChange({ transientErrorCooldownSeconds })}
+          />
+          <V8TextField
+            field="videoResultAuthCacheTTL"
+            label={additionLabel('videoResultAuthCacheTTL')}
+            hint={additionHint('videoResultAuthCacheTTL')}
+            value={values.videoResultAuthCacheTTL}
+            disabled={disabled}
+            onChange={(videoResultAuthCacheTTL) => onChange({ videoResultAuthCacheTTL })}
+          />
+        </SectionGrid>
+      </SectionSubsection>
+
+      <SectionSubsection title={t('config_management.visual.additions.claudeTitle')}>
+        <SectionGrid>
+          <V8TextField
+            field="claudeHeaderTimezone"
+            label={additionLabel('claudeHeaderTimezone')}
+            hint={additionHint('claudeHeaderTimezone')}
+            value={values.claudeHeaderTimezone}
+            disabled={disabled}
+            onChange={(claudeHeaderTimezone) => onChange({ claudeHeaderTimezone })}
+          />
+          <V8ToggleField
+            field="claudeModelLevelCooling"
+            label={additionLabel('claudeModelLevelCooling')}
+            hint={additionHint('claudeModelLevelCooling')}
+            checked={values.claudeModelLevelCooling}
+            disabled={disabled}
+            onChange={(claudeModelLevelCooling) => onChange({ claudeModelLevelCooling })}
+          />
+          <V8ToggleField
+            field="claudeDisableCloakMode"
+            label={additionLabel('claudeDisableCloakMode')}
+            hint={additionHint('claudeDisableCloakMode')}
+            checked={values.claudeDisableCloakMode}
+            disabled={disabled}
+            onChange={(claudeDisableCloakMode) => onChange({ claudeDisableCloakMode })}
+          />
+          <V8ToggleField
+            field="claudeCodeDisableCloakingModelList"
+            label={additionLabel('claudeCodeDisableCloakingModelList')}
+            hint={additionHint('claudeCodeDisableCloakingModelList')}
+            checked={values.claudeCodeDisableCloakingModelList}
+            disabled={disabled}
+            onChange={(claudeCodeDisableCloakingModelList) => onChange({ claudeCodeDisableCloakingModelList })}
+          />
+        </SectionGrid>
+      </SectionSubsection>
+
+      <SectionSubsection title={t('config_management.visual.additions.codexTitle')}>
+        <SectionGrid>
+          <V8ToggleField
+            field="codexDisableCloaking"
+            label={additionLabel('codexDisableCloaking')}
+            hint={additionHint('codexDisableCloaking')}
+            checked={values.codexDisableCloaking}
+            disabled={disabled}
+            onChange={(codexDisableCloaking) => onChange({ codexDisableCloaking })}
+          />
+          <V8ToggleField
+            field="codexModelLevelCooling"
+            label={additionLabel('codexModelLevelCooling')}
+            hint={additionHint('codexModelLevelCooling')}
+            checked={values.codexModelLevelCooling}
+            disabled={disabled}
+            onChange={(codexModelLevelCooling) => onChange({ codexModelLevelCooling })}
+          />
+          <V8ToggleField
+            field="codexStreamBootstrapBuffering"
+            label={additionLabel('codexStreamBootstrapBuffering')}
+            hint={additionHint('codexStreamBootstrapBuffering')}
+            checked={values.codexStreamBootstrapBuffering}
+            disabled={disabled}
+            onChange={(codexStreamBootstrapBuffering) => onChange({ codexStreamBootstrapBuffering })}
+          />
+          <V8TextField
+            field="codexStreamBootstrapTimeout"
+            label={additionLabel('codexStreamBootstrapTimeout')}
+            hint={additionHint('codexStreamBootstrapTimeout')}
+            value={values.codexStreamBootstrapTimeout}
+            disabled={disabled}
+            onChange={(codexStreamBootstrapTimeout) => onChange({ codexStreamBootstrapTimeout })}
+          />
+          <V8ToggleField
+            field="codexOptimizeMultiAgentV2"
+            label={additionLabel('codexOptimizeMultiAgentV2')}
+            hint={additionHint('codexOptimizeMultiAgentV2')}
+            checked={values.codexOptimizeMultiAgentV2}
+            disabled={disabled}
+            onChange={(codexOptimizeMultiAgentV2) => onChange({ codexOptimizeMultiAgentV2 })}
+          />
+          <V8ToggleField
+            field="codexOrphanDelegationCompatibility"
+            label={additionLabel('codexOrphanDelegationCompatibility')}
+            hint={additionHint('codexOrphanDelegationCompatibility')}
+            checked={values.codexOrphanDelegationCompatibility}
+            disabled={disabled}
+            onChange={(codexOrphanDelegationCompatibility) => onChange({ codexOrphanDelegationCompatibility })}
+          />
+          <V8ToggleField
+            field="codexResponseSteering"
+            label={additionLabel('codexResponseSteering')}
+            hint={additionHint('codexResponseSteering')}
+            checked={values.codexResponseSteering}
+            disabled={disabled}
+            onChange={(codexResponseSteering) => onChange({ codexResponseSteering })}
+          />
+        </SectionGrid>
+      </SectionSubsection>
+
+      <SectionSubsection title={t('config_management.visual.additions.antigravityTitle')}>
+        <SectionGrid>
+          <V8ToggleField
+            field="antigravityConnectionPoolEnabled"
+            label={additionLabel('antigravityConnectionPoolEnabled')}
+            hint={additionHint('antigravityConnectionPoolEnabled')}
+            checked={values.antigravityConnectionPoolEnabled}
+            disabled={disabled}
+            onChange={(antigravityConnectionPoolEnabled) => onChange({ antigravityConnectionPoolEnabled })}
+          />
+          <V8TextField
+            field="antigravityConnectionPoolIdleTimeout"
+            label={additionLabel('antigravityConnectionPoolIdleTimeout')}
+            hint={additionHint('antigravityConnectionPoolIdleTimeout')}
+            value={values.antigravityConnectionPoolIdleTimeout}
+            disabled={disabled}
+            onChange={(antigravityConnectionPoolIdleTimeout) => onChange({ antigravityConnectionPoolIdleTimeout })}
+          />
+          <V8TextField
+            field="antigravityConnectionPoolMaxIdleConnsPerHost"
+            label={additionLabel('antigravityConnectionPoolMaxIdleConnsPerHost')}
+            hint={additionHint('antigravityConnectionPoolMaxIdleConnsPerHost')}
+            value={values.antigravityConnectionPoolMaxIdleConnsPerHost}
+            disabled={disabled}
+            type="number"
+            onChange={(antigravityConnectionPoolMaxIdleConnsPerHost) => onChange({ antigravityConnectionPoolMaxIdleConnsPerHost })}
+          />
+        </SectionGrid>
+      </SectionSubsection>
+
+      <SectionSubsection title={t('config_management.visual.additions.xaiTitle')}>
+        <V8ToggleField
+          field="xaiInjectXSearch"
+          label={additionLabel('xaiInjectXSearch')}
+          hint={additionHint('xaiInjectXSearch')}
+          checked={values.xaiInjectXSearch}
+          disabled={disabled}
+          onChange={(xaiInjectXSearch) => onChange({ xaiInjectXSearch })}
+        />
+      </SectionSubsection>
+
+      <SectionSubsection
+        title={t('config_management.visual.additions.liveRelayTitle')}
+        description={t('config_management.visual.additions.liveRelayHint')}
+      >
+        <SectionStack>
+          <SectionGrid>
+            <V8ToggleField
+              field="codexLiveMediaRelayEnabled"
+              label={additionLabel('codexLiveMediaRelayEnabled')}
+              hint={additionHint('codexLiveMediaRelayEnabled')}
+              checked={values.codexLiveMediaRelayEnabled}
+              disabled={disabled}
+              onChange={(codexLiveMediaRelayEnabled) => onChange({ codexLiveMediaRelayEnabled })}
+            />
+            <V8TextField
+              field="codexLiveMediaRelayMaxSessions"
+              label={additionLabel('codexLiveMediaRelayMaxSessions')}
+              hint={additionHint('codexLiveMediaRelayMaxSessions')}
+              value={values.codexLiveMediaRelayMaxSessions}
+              disabled={disabled}
+              type="number"
+              onChange={(codexLiveMediaRelayMaxSessions) => onChange({ codexLiveMediaRelayMaxSessions })}
+            />
+            <V8ToggleField
+              field="codexLiveMediaRelayDisablePrivateRemoteIPs"
+              label={additionLabel('codexLiveMediaRelayDisablePrivateRemoteIPs')}
+              hint={additionHint('codexLiveMediaRelayDisablePrivateRemoteIPs')}
+              checked={values.codexLiveMediaRelayDisablePrivateRemoteIPs}
+              disabled={disabled}
+              onChange={(codexLiveMediaRelayDisablePrivateRemoteIPs) => onChange({ codexLiveMediaRelayDisablePrivateRemoteIPs })}
+            />
+            <V8TextField
+              field="codexLiveMediaRelayPublicIP"
+              label={additionLabel('codexLiveMediaRelayPublicIP')}
+              hint={additionHint('codexLiveMediaRelayPublicIP')}
+              value={values.codexLiveMediaRelayPublicIP}
+              disabled={disabled}
+              onChange={(codexLiveMediaRelayPublicIP) => onChange({ codexLiveMediaRelayPublicIP })}
+            />
+            <V8TextField
+              field="codexLiveMediaRelayUDPPortMin"
+              label={additionLabel('codexLiveMediaRelayUDPPortMin')}
+              hint={additionHint('codexLiveMediaRelayUDPPortMin')}
+              value={values.codexLiveMediaRelayUDPPortMin}
+              disabled={disabled}
+              type="number"
+              onChange={(codexLiveMediaRelayUDPPortMin) => onChange({ codexLiveMediaRelayUDPPortMin })}
+            />
+            <V8TextField
+              field="codexLiveMediaRelayUDPPortMax"
+              label={additionLabel('codexLiveMediaRelayUDPPortMax')}
+              hint={additionHint('codexLiveMediaRelayUDPPortMax')}
+              value={values.codexLiveMediaRelayUDPPortMax}
+              disabled={disabled}
+              type="number"
+              onChange={(codexLiveMediaRelayUDPPortMax) => onChange({ codexLiveMediaRelayUDPPortMax })}
+            />
+          </SectionGrid>
+          <FieldAnchor field="codexLiveMediaRelayICEServers">
+            <div className={styles.fieldShell}>
+              <div className={styles.fieldLabel}>{additionLabel('codexLiveMediaRelayICEServers')}</div>
+              <div className={styles.fieldHint}>{additionHint('codexLiveMediaRelayICEServers')}</div>
+              {values.codexLiveMediaRelayICEServers.map((server, index) => (
+                <div key={server.id} className={styles.iceServerCard}>
+                  <div className={styles.iceServerHeader}>
+                    <strong>
+                      {t('config_management.visual.additions.iceServer', { index: index + 1 })}
+                    </strong>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      disabled={disabled}
+                      onClick={() =>
+                        onChange({
+                          codexLiveMediaRelayICEServers: values.codexLiveMediaRelayICEServers.filter(
+                            (item) => item.id !== server.id
+                          ),
+                        })
+                      }
+                    >
+                      {t('config_management.visual.additions.iceRemove', { index: index + 1 })}
+                    </Button>
+                  </div>
+                  <FieldShell label={t('config_management.visual.additions.iceURLs')}>
+                    <textarea
+                      className={`input ${styles.stringListInput}`}
+                      rows={2}
+                      value={server.urlsText}
+                      disabled={disabled}
+                      onChange={(event) =>
+                        onChange({
+                          codexLiveMediaRelayICEServers: values.codexLiveMediaRelayICEServers.map(
+                            (item) => item.id === server.id ? { ...item, urlsText: event.target.value } : item
+                          ),
+                        })
+                      }
+                    />
+                  </FieldShell>
+                  <SectionGrid>
+                    <Input
+                      label={t('config_management.visual.additions.iceUsername')}
+                      value={server.username}
+                      disabled={disabled}
+                      onChange={(event) =>
+                        onChange({
+                          codexLiveMediaRelayICEServers: values.codexLiveMediaRelayICEServers.map(
+                            (item) => item.id === server.id ? { ...item, username: event.target.value } : item
+                          ),
+                        })
+                      }
+                    />
+                    <Input
+                      label={t('config_management.visual.additions.iceCredential')}
+                      type="password"
+                      value={server.credential}
+                      disabled={disabled}
+                      onChange={(event) =>
+                        onChange({
+                          codexLiveMediaRelayICEServers: values.codexLiveMediaRelayICEServers.map(
+                            (item) => item.id === server.id ? { ...item, credential: event.target.value } : item
+                          ),
+                        })
+                      }
+                    />
+                  </SectionGrid>
+                </div>
+              ))}
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={disabled}
+                onClick={() =>
+                  onChange({
+                    codexLiveMediaRelayICEServers: [
+                      ...values.codexLiveMediaRelayICEServers,
+                      { id: makeClientId(), urlsText: '', username: '', credential: '' },
+                    ],
+                  })
+                }
+              >
+                {t('config_management.visual.additions.iceAdd')}
+              </Button>
+            </div>
+          </FieldAnchor>
+        </SectionStack>
+      </SectionSubsection>
+    </SectionStack>
   );
 }
 
@@ -381,6 +1078,7 @@ export function VisualConfigEditor({
   validationErrors,
   hasPayloadValidationErrors = false,
   disabled = false,
+  supportsV8Settings = false,
   onChange,
 }: VisualConfigEditorProps) {
   const { t } = useTranslation();
@@ -399,6 +1097,7 @@ export function VisualConfigEditor({
   const nonstreamKeepaliveHintId = `${nonstreamKeepaliveInputId}-hint`;
   const nonstreamKeepaliveErrorId = `${nonstreamKeepaliveInputId}-error`;
   const [activeSectionId, setActiveSectionId] = useState<VisualSectionId>('server');
+  const [fieldSearch, setFieldSearch] = useState('');
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const sidebarAnchorRef = useRef<HTMLElement | null>(null);
   const floatingSidebarRef = useRef<HTMLDivElement | null>(null);
@@ -550,8 +1249,19 @@ export function VisualConfigEditor({
         icon: IconCode,
         errorCount: hasPayloadValidationErrors ? 1 : 0,
       },
+      ...(supportsV8Settings
+        ? [
+            {
+              id: 'upstream' as const,
+              title: t('config_management.visual.additions.oauthTitle'),
+              description: t('config_management.visual.additions.oauthHint'),
+              icon: IconSettings,
+              errorCount: countErrors(['trustedProxies', 'discoveryServiceType']),
+            },
+          ]
+        : []),
     ],
-    [countErrors, hasPayloadValidationErrors, t]
+    [countErrors, hasPayloadValidationErrors, supportsV8Settings, t]
   );
 
   useEffect(() => {
@@ -606,6 +1316,49 @@ export function VisualConfigEditor({
     setActiveSectionId(sectionId);
     sectionRefs.current[sectionId]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  const searchResults = useMemo(() => {
+    const query = fieldSearch.trim().toLowerCase();
+    if (!query) return [];
+    const keys = Object.keys(DEFAULT_VISUAL_VALUES).flatMap((key) =>
+      key === 'streaming'
+        ? ['streaming.keepaliveSeconds', 'streaming.bootstrapRetries', 'streaming.nonstreamKeepaliveInterval']
+        : [key]
+    );
+    return keys
+      .filter(
+        (field) =>
+          (supportsV8Settings || !V8_ONLY_FIELD_KEYS.has(field)) &&
+          (!supportsV8Settings || !V8_DEPRECATED_FIELD_KEYS.has(field))
+      )
+      .map((field) => {
+        let labelKey = VISUAL_FIELD_LABEL_KEYS[field] ?? '';
+        if (field === 'githubToken') labelKey = 'config_management.visual.sections.server.github_token';
+        else if (field === 'trustedProxies' || field.startsWith('discovery')) {
+          labelKey = `config_management.visual.serverExtras.${field}.label`;
+        } else if (V8_ONLY_FIELD_KEYS.has(field)) {
+          labelKey = `config_management.visual.additions.${field}.label`;
+        }
+        const label = labelKey ? t(labelKey) : humanizeVisualField(field);
+        const yamlPath = VISUAL_FIELD_YAML_PATHS[field] ?? field;
+        return { field, label, yamlPath, section: visualFieldSection(field) };
+      })
+      .filter(({ field, label, yamlPath }) =>
+        `${label} ${field} ${yamlPath}`.toLowerCase().includes(query)
+      )
+      .slice(0, 8);
+  }, [fieldSearch, supportsV8Settings, t]);
+
+  const handleFieldSearchJump = (field: string, section: VisualSectionId) => {
+    setFieldSearch('');
+    handleSectionJump(section);
+    requestAnimationFrame(() => {
+      document.getElementById(`cfg-field-${field}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    });
+  };
 
   useLayoutEffect(() => {
     const floatingElement = floatingSidebarRef.current;
@@ -742,6 +1495,38 @@ export function VisualConfigEditor({
   return (
     <div className={styles.visualEditor}>
       <div ref={workspaceRef} className={styles.workspace}>
+        <div className={styles.fieldSearch}>
+          <input
+            type="search"
+            className="input"
+            value={fieldSearch}
+            placeholder={t('config_management.visual.search.placeholder')}
+            aria-label={t('config_management.visual.search.placeholder')}
+            onChange={(event) => setFieldSearch(event.target.value)}
+            disabled={disabled}
+          />
+          {fieldSearch.trim() ? (
+            <div className={styles.fieldSearchResults} role="listbox">
+              {searchResults.length ? (
+                searchResults.map((result) => (
+                  <button
+                    key={result.field}
+                    type="button"
+                    className={styles.fieldSearchResult}
+                    onClick={() => handleFieldSearchJump(result.field, result.section)}
+                  >
+                    <span>{result.label}</span>
+                    <code>{result.yamlPath}</code>
+                  </button>
+                ))
+              ) : (
+                <div className={styles.fieldSearchEmpty}>
+                  {t('config_management.visual.search.no_results')}
+                </div>
+              )}
+            </div>
+          ) : null}
+        </div>
         {shouldRenderCompactSectionNav ? (
           <div className={styles.mobileSectionNav}>
             <div
@@ -1393,20 +2178,24 @@ export function VisualConfigEditor({
             description={t('config_management.visual.sections.quota.description')}
           >
             <SectionGrid>
-              <ToggleRow
-                title={t('config_management.visual.sections.quota.switch_project')}
-                description={t('config_management.visual.sections.quota.switch_project_desc')}
-                checked={values.quotaSwitchProject}
-                disabled={disabled}
-                onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
-              />
-              <ToggleRow
-                title={t('config_management.visual.sections.quota.switch_preview_model')}
-                description={t('config_management.visual.sections.quota.switch_preview_model_desc')}
-                checked={values.quotaSwitchPreviewModel}
-                disabled={disabled}
-                onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
-              />
+              {!supportsV8Settings ? (
+                <>
+                  <ToggleRow
+                    title={t('config_management.visual.sections.quota.switch_project')}
+                    description={t('config_management.visual.sections.quota.switch_project_desc')}
+                    checked={values.quotaSwitchProject}
+                    disabled={disabled}
+                    onChange={(quotaSwitchProject) => onChange({ quotaSwitchProject })}
+                  />
+                  <ToggleRow
+                    title={t('config_management.visual.sections.quota.switch_preview_model')}
+                    description={t('config_management.visual.sections.quota.switch_preview_model_desc')}
+                    checked={values.quotaSwitchPreviewModel}
+                    disabled={disabled}
+                    onChange={(quotaSwitchPreviewModel) => onChange({ quotaSwitchPreviewModel })}
+                  />
+                </>
+              ) : null}
               <ToggleRow
                 title={t('config_management.visual.sections.quota.antigravity_credits')}
                 description={t('config_management.visual.sections.quota.antigravity_credits_desc')}
@@ -1587,6 +2376,25 @@ export function VisualConfigEditor({
               </SectionSubsection>
             </SectionStack>
           </ConfigSection>
+
+          {supportsV8Settings ? (
+            <ConfigSection
+              id="upstream"
+              ref={(node) => {
+                sectionRefs.current.upstream = node;
+              }}
+              icon={<IconSettings size={16} />}
+              title={t('config_management.visual.additions.oauthTitle')}
+              description={t('config_management.visual.additions.oauthHint')}
+            >
+              <V8SettingsFields
+                values={values}
+                disabled={disabled}
+                validationErrors={validationErrors ?? {}}
+                onChange={onChange}
+              />
+            </ConfigSection>
+          ) : null}
         </div>
       </div>
 

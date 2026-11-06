@@ -3,7 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { authFilesApi, type AuthFileFieldsPatch } from '@/services/api';
 import type { AuthFileItem } from '@/types';
 import { useNotificationStore } from '@/stores';
-import { parsePriorityValue } from '@/features/authFiles/constants';
+import {
+  parsePriorityValue,
+  readAuthFileUseSiwc,
+  supportsAuthFileSiwc,
+} from '@/features/authFiles/constants';
 
 type AuthFileHeaders = Record<string, string>;
 type AuthFileHeadersErrorKey =
@@ -11,9 +15,16 @@ type AuthFileHeadersErrorKey =
   | 'auth_files.headers_invalid_object'
   | 'auth_files.headers_invalid_value';
 
-export type PrefixProxyEditorField = 'prefix' | 'proxyUrl' | 'baseUrl' | 'priority' | 'note' | 'headersText';
+export type PrefixProxyEditorField =
+  | 'prefix'
+  | 'proxyUrl'
+  | 'baseUrl'
+  | 'priority'
+  | 'note'
+  | 'headersText'
+  | 'useSiwc';
 
-export type PrefixProxyEditorFieldValue = string;
+export type PrefixProxyEditorFieldValue = string | boolean;
 
 export type PrefixProxyEditorState = {
   fileName: string;
@@ -33,6 +44,9 @@ export type PrefixProxyEditorState = {
   headersText: string;
   headersTouched: boolean;
   headersError: string | null;
+  providerKey: string;
+  useSiwc: boolean;
+  useSiwcTouched: boolean;
 };
 
 export type UseAuthFilesPrefixProxyEditorOptions = {
@@ -154,7 +168,7 @@ const applyHeadersPatch = (
   }
 };
 
-const buildAuthFileFieldsPatch = (
+export const buildAuthFileFieldsPatch = (
   editor: PrefixProxyEditorState,
   resolveHeadersError: (key: AuthFileHeadersErrorKey) => string
 ): AuthFileFieldsPatch => {
@@ -218,6 +232,14 @@ const buildAuthFileFieldsPatch = (
     }
   }
 
+  if (
+    editor.useSiwcTouched &&
+    supportsAuthFileSiwc(editor.providerKey) &&
+    editor.useSiwc !== readAuthFileUseSiwc(original)
+  ) {
+    patch.use_siwc = editor.useSiwc;
+  }
+
   return patch;
 };
 
@@ -260,6 +282,9 @@ const buildPrefixProxyUpdatedText = (
   }
 
   applyHeadersPatch(next, patch.headers);
+  if (patch.use_siwc !== undefined) {
+    next.use_siwc = patch.use_siwc;
+  }
 
   return JSON.stringify(next);
 };
@@ -304,6 +329,7 @@ export function useAuthFilesPrefixProxyEditor(
     setPrefixProxyEditor({
       fileName: name,
       fileInfoText: JSON.stringify(file, null, 2),
+      providerKey: String(file.type ?? file.provider ?? ''),
       loading: true,
       saving: false,
       error: null,
@@ -314,6 +340,8 @@ export function useAuthFilesPrefixProxyEditor(
       proxyUrl: '',
       baseUrl: '',
       priority: '',
+      useSiwc: false,
+      useSiwcTouched: false,
       note: '',
       noteTouched: false,
       headersText: '',
@@ -362,6 +390,7 @@ export function useAuthFilesPrefixProxyEditor(
       const proxyUrl = typeof json.proxy_url === 'string' ? json.proxy_url : '';
       const baseUrl = typeof json.base_url === 'string' ? json.base_url : '';
       const priority = parsePriorityValue(json.priority);
+      const useSiwc = readAuthFileUseSiwc(json);
       const note = typeof json.note === 'string' ? json.note : '';
       const headers = json.headers;
       let headersText = '';
@@ -384,6 +413,8 @@ export function useAuthFilesPrefixProxyEditor(
           proxyUrl,
           baseUrl,
           priority: priority !== undefined ? String(priority) : '',
+          useSiwc,
+          useSiwcTouched: false,
           note,
           noteTouched: false,
           headersText,
@@ -412,6 +443,9 @@ export function useAuthFilesPrefixProxyEditor(
       if (field === 'proxyUrl') return { ...prev, proxyUrl: String(value) };
       if (field === 'baseUrl') return { ...prev, baseUrl: String(value) };
       if (field === 'priority') return { ...prev, priority: String(value) };
+      if (field === 'useSiwc') {
+        return { ...prev, useSiwc: value === true, useSiwcTouched: true };
+      }
       if (field === 'note') return { ...prev, note: String(value), noteTouched: true };
       if (field === 'headersText') {
         const headersText = String(value);

@@ -27,6 +27,7 @@ import {
   useUsageServiceStore,
 } from '@/stores';
 import { configFileApi } from '@/services/api/configFile';
+import { configV8Api } from '@/services/api/configV8';
 import {
   getUsageServiceErrorCode,
   isUsageServiceId,
@@ -69,10 +70,38 @@ function readCommercialModeFromYaml(yamlContent: string): boolean {
   try {
     const parsed = parseYaml(yamlContent);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
-    return Boolean((parsed as Record<string, unknown>)['commercial-mode']);
+    const config = parsed as Record<string, unknown>;
+    const server = config.server;
+    if (server && typeof server === 'object' && !Array.isArray(server)) {
+      return Boolean((server as Record<string, unknown>)['commercial-mode']);
+    }
+    return Boolean(config['commercial-mode']);
   } catch {
     return false;
   }
+}
+
+function isV8ConfigYaml(yamlContent: string): boolean {
+  try {
+    const parsed = parseYaml(yamlContent);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return false;
+    const config = parsed as Record<string, unknown>;
+    return Number(config['config-version']) === 8 || Boolean(config.server);
+  } catch {
+    return false;
+  }
+}
+
+function isNotFoundApiError(error: unknown): boolean {
+  return Boolean(
+    error && typeof error === 'object' && 'status' in error && error.status === 404
+  );
+}
+
+function isPreconditionFailedApiError(error: unknown): boolean {
+  return Boolean(
+    error && typeof error === 'object' && 'status' in error && error.status === 412
+  );
 }
 
 export function ConfigPage() {
@@ -115,6 +144,11 @@ export function ConfigPage() {
   const [diffModalOpen, setDiffModalOpen] = useState(false);
   const [serverYaml, setServerYaml] = useState('');
   const [mergedYaml, setMergedYaml] = useState('');
+  const [configApiVersion, setConfigApiVersion] = useState<'v0' | 'v8'>('v0');
+  const [configETag, setConfigETag] = useState('');
+  const [previewETag, setPreviewETag] = useState('');
+  const [rawConfigYaml, setRawConfigYaml] = useState('');
+  const [migrationRequired, setMigrationRequired] = useState(false);
   const [managerConfig, setManagerConfig] = useState<ManagerConfig | null>(null);
   const [managerConfigSource, setManagerConfigSource] = useState('');
   const [managerCPAUsage, setManagerCPAUsage] = useState<CPAUsageConfig | null>(null);
@@ -215,11 +249,45 @@ export function ConfigPage() {
     }
   }, [managerConfigSource, t]);
 
+  const readConfigDocument = useCallback(async () => {
+    try {
+      const snapshot = await configV8Api.fetchConfigYaml(apiBase);
+      let rawYaml = snapshot.yaml;
+      try {
+        rawYaml = await configFileApi.fetchConfigYaml();
+      } catch (error: unknown) {
+        if (!isNotFoundApiError(error)) throw error;
+      }
+      return {
+        yaml: snapshot.yaml,
+        etag: snapshot.etag,
+        rawYaml,
+        apiVersion: 'v8' as const,
+        migrationRequired: !isV8ConfigYaml(rawYaml),
+      };
+    } catch (error: unknown) {
+      if (!isNotFoundApiError(error)) throw error;
+      const yaml = await configFileApi.fetchConfigYaml();
+      return {
+        yaml,
+        etag: '',
+        rawYaml: yaml,
+        apiVersion: 'v0' as const,
+        migrationRequired: false,
+      };
+    }
+  }, [apiBase]);
+
   const loadConfig = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await configFileApi.fetchConfigYaml();
+      const document = await readConfigDocument();
+      const data = document.yaml;
+      setConfigApiVersion(document.apiVersion);
+      setConfigETag(document.etag);
+      setRawConfigYaml(document.rawYaml);
+      setMigrationRequired(document.migrationRequired);
       setContent(data);
       setDirty(false);
       setDiffModalOpen(false);
@@ -232,7 +300,7 @@ export function ConfigPage() {
     } finally {
       setLoading(false);
     }
-  }, [loadVisualValuesFromYaml, t]);
+  }, [loadVisualValuesFromYaml, readConfigDocument, t]);
 
   useEffect(() => {
     loadConfig();
@@ -384,12 +452,32 @@ export function ConfigPage() {
   const handleConfirmSave = async () => {
     setSaving(true);
     try {
+      const latestDocument = await readConfigDocument();
+      if (latestDocument.apiVersion !== configApiVersion) {
+        throw new Error(t('config_management.config_api_changed'));
+      }
+      if (latestDocument.apiVersion === 'v8' && latestDocument.etag !== previewETag) {
+        setDiffModalOpen(false);
+        setError(t('config_management.config_changed_reload'));
+        showNotification(t('config_management.config_changed_reload'), 'warning');
+        return;
+      }
+
       const previousCommercialMode = readCommercialModeFromYaml(serverYaml);
       const nextCommercialMode = readCommercialModeFromYaml(mergedYaml);
       const commercialModeChanged = previousCommercialMode !== nextCommercialMode;
 
-      await configFileApi.saveConfigYaml(mergedYaml);
-      const latestContent = await configFileApi.fetchConfigYaml();
+      if (configApiVersion === 'v8') {
+        await configV8Api.replaceConfigYaml(apiBase, mergedYaml, previewETag);
+      } else {
+        await configFileApi.saveConfigYaml(mergedYaml);
+      }
+      const savedDocument = await readConfigDocument();
+      const latestContent = savedDocument.yaml;
+      setConfigApiVersion(savedDocument.apiVersion);
+      setConfigETag(savedDocument.etag);
+      setRawConfigYaml(savedDocument.rawYaml);
+      setMigrationRequired(savedDocument.migrationRequired);
       setDirty(false);
       setDiffModalOpen(false);
       setContent(latestContent);
@@ -419,8 +507,14 @@ export function ConfigPage() {
         showNotification(t('notification.commercial_mode_restart_required'), 'warning');
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : '';
-      showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
+      if (isPreconditionFailedApiError(err)) {
+        setDiffModalOpen(false);
+        setError(t('config_management.config_changed_reload'));
+        showNotification(t('config_management.config_changed_reload'), 'warning');
+      } else {
+        const message = err instanceof Error ? err.message : '';
+        showNotification(`${t('notification.save_failed')}: ${message}`, 'error');
+      }
     } finally {
       setSaving(false);
     }
@@ -535,7 +629,21 @@ export function ConfigPage() {
 
     setSaving(true);
     try {
-      const latestServerYaml = await configFileApi.fetchConfigYaml();
+      const latestDocument = await readConfigDocument();
+      if (latestDocument.apiVersion !== configApiVersion) {
+        setError(t('config_management.config_api_changed'));
+        showNotification(t('config_management.config_api_changed'), 'warning');
+        return;
+      }
+      if (latestDocument.apiVersion === 'v8' && latestDocument.etag !== configETag) {
+        setError(t('config_management.config_changed_reload'));
+        showNotification(t('config_management.config_changed_reload'), 'warning');
+        return;
+      }
+      setRawConfigYaml(latestDocument.rawYaml);
+      setMigrationRequired(latestDocument.migrationRequired);
+      setPreviewETag(latestDocument.etag);
+      const latestServerYaml = latestDocument.yaml;
 
       if (activeTab !== 'source') {
         const latestDocument = parseDocument(latestServerYaml);
@@ -588,6 +696,14 @@ export function ConfigPage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handlePreviewMigration = () => {
+    if (configApiVersion !== 'v8' || !migrationRequired || isDirty || loading || saving) return;
+    setServerYaml(rawConfigYaml);
+    setMergedYaml(content);
+    setPreviewETag(configETag);
+    setDiffModalOpen(true);
   };
 
   const handleChange = useCallback((value: string) => {
@@ -943,6 +1059,18 @@ export function ConfigPage() {
       </header>
 
       <div className={styles.workspaceShell}>
+        {migrationRequired && configApiVersion === 'v8' && (
+          <div className={styles.configMigrationNotice} role="status">
+            <span>{t('config_management.v8_migration_notice')}</span>
+            <Button
+              variant="secondary"
+              onClick={handlePreviewMigration}
+              disabled={isDirty || loading || saving}
+            >
+              {t('config_management.v8_migration_preview')}
+            </Button>
+          </div>
+        )}
         <div className={styles.pageMeta}>
           <div className={styles.tabBar}>
             <button
@@ -1391,6 +1519,7 @@ export function ConfigPage() {
               values={visualValues}
               validationErrors={visualValidationErrors}
               hasPayloadValidationErrors={visualHasPayloadValidationErrors}
+              supportsV8Settings={configApiVersion === 'v8'}
               disabled={disableControls || loading}
               onChange={setVisualValues}
             />

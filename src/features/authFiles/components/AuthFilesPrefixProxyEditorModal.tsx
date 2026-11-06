@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { supportsAuthFileSiwc } from '@/features/authFiles/constants';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
@@ -196,6 +197,27 @@ export function AuthFilesPrefixProxyEditorModal(props: AuthFilesPrefixProxyEdito
                       </span>
                     </div>
                     <div className="hint">{t('auth_files.codex_websockets_hint')}</div>
+                  </div>
+                </div>
+              )}
+              {supportsAuthFileSiwc(editor.providerKey) && editor.json && (
+                <div className={styles.prefixProxyFields}>
+                  <div className="form-group">
+                    <label className={styles.prefixProxyLabel}>
+                      {t('auth_files.use_siwc_label')}
+                    </label>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <ToggleSwitch
+                        checked={editor.useSiwc}
+                        disabled={disableControls || editor.saving}
+                        onChange={(enabled) => onChange('useSiwc', enabled)}
+                        ariaLabel={t('auth_files.use_siwc_label')}
+                      />
+                      <span style={{ fontSize: 13 }}>
+                        {editor.useSiwc ? t('common.enabled') : t('common.disabled')}
+                      </span>
+                    </div>
+                    <div className="hint">{t('auth_files.use_siwc_hint')}</div>
                   </div>
                 </div>
               )}

@@ -886,3 +886,80 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.fieldSearch {
+  position: relative;
+  z-index: 20;
+  grid-column: 1 / -1;
+}
+
+.fieldSearchResults {
+  position: absolute;
+  z-index: 21;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  max-height: 320px;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-secondary);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+}
+
+.fieldSearchResult {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 70%, transparent);
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+
+  &:hover,
+  &:focus-visible {
+    background: color-mix(in srgb, var(--primary-color) 10%, transparent);
+    outline: none;
+  }
+
+  code {
+    color: var(--text-secondary);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+  }
+}
+
+.fieldSearchEmpty {
+  padding: 12px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.fieldAnchor {
+  min-width: 0;
+  scroll-margin-top: 120px;
+}
+
+.iceServerCard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px;
+  margin: 10px 0;
+  border: 1px solid color-mix(in srgb, var(--border-color) 82%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--bg-primary) 84%, transparent);
+}
+
+.iceServerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}

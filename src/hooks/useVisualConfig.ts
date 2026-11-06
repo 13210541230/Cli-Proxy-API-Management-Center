@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useReducer } from 'react';
 import { isMap, parse as parseYaml, parseDocument } from 'yaml';
 import type {
+  CodexLiveICEServerDraft,
   PayloadFilterRule,
   PayloadHeaderEntry,
   PayloadModelEntry,
@@ -200,10 +201,46 @@ function getRedisUsageQueueRetentionError(value: string): 'retention_seconds_ran
   return parsed >= 0 && parsed <= 3600 ? undefined : 'retention_seconds_range';
 }
 
+function validIPv4(raw: string): boolean {
+  return (
+    /^(?:0|[1-9]\d{0,2})(?:\.(?:0|[1-9]\d{0,2})){3}$/.test(raw) &&
+    raw.split('.').every((part) => Number(part) <= 255)
+  );
+}
+
+function validIPv6(raw: string): boolean {
+  if (!raw.includes(':') || !/^[\da-fA-F:.]+$/.test(raw)) return false;
+  if (raw.includes('.') && !validIPv4(raw.slice(raw.lastIndexOf(':') + 1))) return false;
+  try {
+    return new URL(`http://[${raw}]/`).hostname.startsWith('[');
+  } catch {
+    return false;
+  }
+}
+
+function validTrustedProxy(raw: string): boolean {
+  const parts = raw.trim().split('/');
+  if (parts.length > 2) return false;
+  const [ip, prefix] = parts;
+  const ipv6 = ip.includes(':');
+  if (!(ipv6 ? validIPv6(ip) : validIPv4(ip))) return false;
+  return prefix === undefined || (/^\d+$/.test(prefix) && Number(prefix) <= (ipv6 ? 128 : 32));
+}
+
 export function getVisualConfigValidationErrors(
   values: VisualConfigValues
 ): VisualConfigValidationErrors {
+  const discoveryServiceType = values.discoveryServiceType.trim();
   return {
+    trustedProxies: values.trustedProxies.filter(Boolean).every(validTrustedProxy)
+      ? undefined
+      : 'invalid_trusted_proxies',
+    discoveryServiceType:
+      !values.discoveryEnabled ||
+      !discoveryServiceType ||
+      /^_[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,13}[a-zA-Z0-9])?\._tcp$/.test(discoveryServiceType)
+        ? undefined
+        : 'invalid_discovery_service_type',
     port: getPortError(values.port),
     errorLogsMaxFiles: getNonNegativeIntegerError(values.errorLogsMaxFiles),
     logsMaxTotalSizeMb: getNonNegativeIntegerError(values.logsMaxTotalSizeMb),
@@ -428,6 +465,19 @@ function parsePayloadProtocol(raw: unknown): string | undefined {
 
 function parseStringList(raw: unknown): string[] {
   return Array.isArray(raw) ? raw.map((item) => String(item ?? '').trim()).filter(Boolean) : [];
+}
+
+function parseCodexLiveICEServers(raw: unknown): CodexLiveICEServerDraft[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((item, index) => {
+    const row = asRecord(item) ?? {};
+    return {
+      id: `ice-${index}`,
+      urlsText: Array.isArray(row.urls) ? row.urls.join('\n') : '',
+      username: typeof row.username === 'string' ? row.username : '',
+      credential: typeof row.credential === 'string' ? row.credential : '',
+    };
+  });
 }
 
 function parsePayloadHeaders(raw: unknown, idPrefix: string): PayloadHeaderEntry[] {
@@ -1023,17 +1073,61 @@ function getNextDirtyFields(
         baselineValues.claudeHeaderStabilizeDeviceProfile
     );
   }
-  if (Object.prototype.hasOwnProperty.call(patch, 'quotaSwitchProject')) {
-    updateDirty(
-      'quotaSwitchProject',
-      nextValues.quotaSwitchProject === baselineValues.quotaSwitchProject
-    );
+  for (const key of [
+    'githubToken',
+    'trustedProxies',
+    'discoveryEnabled',
+    'discoveryServiceName',
+    'discoveryServiceType',
+    'discoverySubtypes',
+    'discoveryInterfacesInclude',
+    'discoveryInterfacesExclude',
+    'discoveryAuthRequired',
+    'discoveryAdvertiseManagement',
+    'routingSessionAffinitySubagents',
+    'saveCooldownStatus',
+    'transientErrorCooldownSeconds',
+    'videoResultAuthCacheTTL',
+    'claudeHeaderTimezone',
+    'claudeModelLevelCooling',
+    'claudeDisableCloakMode',
+    'claudeCodeDisableCloakingModelList',
+    'codexDisableCloaking',
+    'codexModelLevelCooling',
+    'codexStreamBootstrapBuffering',
+    'codexStreamBootstrapTimeout',
+    'codexOptimizeMultiAgentV2',
+    'codexOrphanDelegationCompatibility',
+    'codexResponseSteering',
+    'antigravityConnectionPoolEnabled',
+    'antigravityConnectionPoolIdleTimeout',
+    'antigravityConnectionPoolMaxIdleConnsPerHost',
+    'xaiInjectXSearch',
+    'codexLiveMediaRelayEnabled',
+    'codexLiveMediaRelayMaxSessions',
+    'codexLiveMediaRelayDisablePrivateRemoteIPs',
+    'codexLiveMediaRelayPublicIP',
+    'codexLiveMediaRelayUDPPortMin',
+    'codexLiveMediaRelayUDPPortMax',
+    'codexLiveMediaRelayICEServers',
+  ] as const) {
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
+    const nextValue = nextValues[key];
+    const baselineValue = baselineValues[key];
+    const equal =
+      key === 'trustedProxies' ||
+      key === 'discoverySubtypes' ||
+      key === 'discoveryInterfacesInclude' ||
+      key === 'discoveryInterfacesExclude'
+        ? areStringArraysEqual(nextValue as string[], baselineValue as string[])
+        : key === 'codexLiveMediaRelayICEServers'
+          ? JSON.stringify(nextValue) === JSON.stringify(baselineValue)
+          : nextValue === baselineValue;
+    updateDirty(key, equal);
   }
-  if (Object.prototype.hasOwnProperty.call(patch, 'quotaSwitchPreviewModel')) {
-    updateDirty(
-      'quotaSwitchPreviewModel',
-      nextValues.quotaSwitchPreviewModel === baselineValues.quotaSwitchPreviewModel
-    );
+  for (const key of ['quotaSwitchProject', 'quotaSwitchPreviewModel'] as const) {
+    if (!Object.prototype.hasOwnProperty.call(patch, key)) continue;
+    updateDirty(key, nextValues[key] === baselineValues[key]);
   }
   if (Object.prototype.hasOwnProperty.call(patch, 'quotaAntigravityCredits')) {
     updateDirty(
@@ -1152,6 +1246,217 @@ function visualConfigReducer(
   }
 }
 
+function applyV8VisualChanges(
+  doc: YamlDocument,
+  values: VisualConfigValues,
+  dirtyFields: Set<string>
+): string {
+  const ensureParents = (path: YamlPath) => {
+    for (let length = 1; length < path.length; length += 1) {
+      ensureMapInDoc(doc, path.slice(0, length));
+    }
+  };
+  const write = (
+    key: string,
+    path: YamlPath,
+    value: unknown,
+    kind: 'string' | 'integer' | 'boolean' | 'list'
+  ) => {
+    if (!dirtyFields.has(key)) return;
+    if (kind === 'boolean') {
+      ensureParents(path);
+      doc.setIn(path, value === true);
+      return;
+    }
+    if (kind === 'list') {
+      if (!Array.isArray(value) || (!value.length && !docHas(doc, path))) return;
+      ensureParents(path);
+      doc.setIn(path, value.map((item) => String(item).trim()).filter(Boolean));
+      return;
+    }
+    const text = typeof value === 'string' ? value : String(value ?? '');
+    if (!text.trim() && !docHas(doc, path)) return;
+    ensureParents(path);
+    if (kind === 'integer') setIntFromStringInDoc(doc, path, text);
+    else setStringInDoc(doc, path, text);
+  };
+
+  const fields: Array<
+    [string, YamlPath, unknown, 'string' | 'integer' | 'boolean' | 'list']
+  > = [
+    ['githubToken', ['server', 'github-token'], values.githubToken, 'string'],
+    ['trustedProxies', ['server', 'trusted-proxies'], values.trustedProxies, 'list'],
+    ['discoveryEnabled', ['server', 'discovery', 'enabled'], values.discoveryEnabled, 'boolean'],
+    ['discoveryServiceName', ['server', 'discovery', 'service-name'], values.discoveryServiceName, 'string'],
+    ['discoveryServiceType', ['server', 'discovery', 'service-type'], values.discoveryServiceType, 'string'],
+    ['discoverySubtypes', ['server', 'discovery', 'subtypes'], values.discoverySubtypes, 'list'],
+    ['discoveryInterfacesInclude', ['server', 'discovery', 'interfaces', 'include'], values.discoveryInterfacesInclude, 'list'],
+    ['discoveryInterfacesExclude', ['server', 'discovery', 'interfaces', 'exclude'], values.discoveryInterfacesExclude, 'list'],
+    ['discoveryAuthRequired', ['server', 'discovery', 'auth-required'], values.discoveryAuthRequired, 'boolean'],
+    ['discoveryAdvertiseManagement', ['server', 'discovery', 'advertise-management'], values.discoveryAdvertiseManagement, 'boolean'],
+    ['routingSessionAffinitySubagents', ['routing', 'session-affinity-subagents'], values.routingSessionAffinitySubagents, 'boolean'],
+    ['saveCooldownStatus', ['routing', 'cooldown', 'save-cooldown-status'], values.saveCooldownStatus, 'boolean'],
+    ['transientErrorCooldownSeconds', ['routing', 'cooldown', 'transient-error-cooldown-seconds'], values.transientErrorCooldownSeconds, 'integer'],
+    ['videoResultAuthCacheTTL', ['multimedia', 'video-result-auth-cache-ttl'], values.videoResultAuthCacheTTL, 'string'],
+    ['claudeHeaderTimezone', ['upstream', 'claude', 'header-defaults', 'timezone'], values.claudeHeaderTimezone, 'string'],
+    ['claudeModelLevelCooling', ['upstream', 'claude', 'model-level-cooling'], values.claudeModelLevelCooling, 'boolean'],
+    ['claudeDisableCloakMode', ['upstream', 'claude', 'disable-claude-cloak-mode'], values.claudeDisableCloakMode, 'boolean'],
+    ['claudeCodeDisableCloakingModelList', ['upstream', 'claude', 'disable-cloaking-model-list'], values.claudeCodeDisableCloakingModelList, 'boolean'],
+    ['codexDisableCloaking', ['upstream', 'codex', 'disable-codex-cloaking'], values.codexDisableCloaking, 'boolean'],
+    ['codexModelLevelCooling', ['upstream', 'codex', 'model-level-cooling'], values.codexModelLevelCooling, 'boolean'],
+    ['codexStreamBootstrapBuffering', ['upstream', 'codex', 'stream-bootstrap-buffering'], values.codexStreamBootstrapBuffering, 'boolean'],
+    ['codexStreamBootstrapTimeout', ['upstream', 'codex', 'stream-bootstrap-timeout'], values.codexStreamBootstrapTimeout, 'string'],
+    ['codexOptimizeMultiAgentV2', ['client', 'codex', 'optimize-multi-agent-v2'], values.codexOptimizeMultiAgentV2, 'boolean'],
+    ['codexOrphanDelegationCompatibility', ['upstream', 'codex', 'orphan-delegation-compatibility'], values.codexOrphanDelegationCompatibility, 'boolean'],
+    ['codexResponseSteering', ['upstream', 'codex', 'response-steering'], values.codexResponseSteering, 'boolean'],
+    ['antigravityConnectionPoolEnabled', ['oauth', 'providers', 'antigravity', 'connection-pool', 'enabled'], values.antigravityConnectionPoolEnabled, 'boolean'],
+    ['antigravityConnectionPoolIdleTimeout', ['oauth', 'providers', 'antigravity', 'connection-pool', 'idle-conn-timeout'], values.antigravityConnectionPoolIdleTimeout, 'string'],
+    ['antigravityConnectionPoolMaxIdleConnsPerHost', ['oauth', 'providers', 'antigravity', 'connection-pool', 'max-idle-conns-per-host'], values.antigravityConnectionPoolMaxIdleConnsPerHost, 'integer'],
+    ['xaiInjectXSearch', ['upstream', 'xai', 'inject-x-search'], values.xaiInjectXSearch, 'boolean'],
+    ['codexLiveMediaRelayEnabled', ['oauth', 'providers', 'codex', 'live-media-relay', 'enabled'], values.codexLiveMediaRelayEnabled, 'boolean'],
+    ['codexLiveMediaRelayMaxSessions', ['oauth', 'providers', 'codex', 'live-media-relay', 'max-sessions'], values.codexLiveMediaRelayMaxSessions, 'integer'],
+    ['codexLiveMediaRelayDisablePrivateRemoteIPs', ['oauth', 'providers', 'codex', 'live-media-relay', 'disable-private-remote-ips'], values.codexLiveMediaRelayDisablePrivateRemoteIPs, 'boolean'],
+    ['codexLiveMediaRelayPublicIP', ['oauth', 'providers', 'codex', 'live-media-relay', 'public-ip'], values.codexLiveMediaRelayPublicIP, 'string'],
+    ['codexLiveMediaRelayUDPPortMin', ['oauth', 'providers', 'codex', 'live-media-relay', 'udp-port-min'], values.codexLiveMediaRelayUDPPortMin, 'integer'],
+    ['codexLiveMediaRelayUDPPortMax', ['oauth', 'providers', 'codex', 'live-media-relay', 'udp-port-max'], values.codexLiveMediaRelayUDPPortMax, 'integer'],
+    ['host', ['server', 'host'], values.host, 'string'],
+    ['port', ['server', 'port'], values.port, 'integer'],
+    ['tlsEnable', ['server', 'tls', 'enable'], values.tlsEnable, 'boolean'],
+    ['tlsCert', ['server', 'tls', 'cert'], values.tlsCert, 'string'],
+    ['tlsKey', ['server', 'tls', 'key'], values.tlsKey, 'string'],
+    ['rmAllowRemote', ['management', 'allow-remote'], values.rmAllowRemote, 'boolean'],
+    ['rmSecretKey', ['management', 'secret-key'], values.rmSecretKey, 'string'],
+    ['rmDisableControlPanel', ['management', 'disable-control-panel'], values.rmDisableControlPanel, 'boolean'],
+    ['rmDisableAutoUpdatePanel', ['management', 'disable-auto-update-panel'], values.rmDisableAutoUpdatePanel, 'boolean'],
+    ['rmPanelRepo', ['management', 'panel-github-repository'], values.rmPanelRepo, 'string'],
+    ['authDir', ['oauth', 'auth-dir'], values.authDir, 'string'],
+    ['debug', ['observability', 'logs', 'debug'], values.debug, 'boolean'],
+    ['commercialMode', ['server', 'commercial-mode'], values.commercialMode, 'boolean'],
+    ['usageStatisticsEnabled', ['observability', 'usage', 'usage-statistics-enabled'], values.usageStatisticsEnabled, 'boolean'],
+    ['loggingToFile', ['observability', 'logs', 'logging-to-file'], values.loggingToFile, 'boolean'],
+    ['logsMaxTotalSizeMb', ['observability', 'logs', 'logs-max-total-size-mb'], values.logsMaxTotalSizeMb, 'integer'],
+    ['errorLogsMaxFiles', ['observability', 'logs', 'error-logs-max-files'], values.errorLogsMaxFiles, 'integer'],
+    ['redisUsageQueueRetentionSeconds', ['observability', 'usage', 'redis-usage-queue-retention-seconds'], values.redisUsageQueueRetentionSeconds, 'integer'],
+    ['proxyUrl', ['requests', 'proxy-url'], values.proxyUrl, 'string'],
+    ['forceModelPrefix', ['routing', 'force-model-prefix'], values.forceModelPrefix, 'boolean'],
+    ['requestRetry', ['routing', 'retry', 'request-retry'], values.requestRetry, 'integer'],
+    ['maxRetryCredentials', ['routing', 'retry', 'max-retry-credentials'], values.maxRetryCredentials, 'integer'],
+    ['maxRetryInterval', ['routing', 'retry', 'max-retry-interval'], values.maxRetryInterval, 'integer'],
+    ['authAutoRefreshWorkers', ['oauth', 'auth-auto-refresh-workers'], values.authAutoRefreshWorkers, 'integer'],
+    ['passthroughHeaders', ['requests', 'passthrough-headers'], values.passthroughHeaders, 'boolean'],
+    ['disableCooling', ['routing', 'cooldown', 'disable-cooling'], values.disableCooling, 'boolean'],
+    ['gptImage2BaseModel', ['multimedia', 'gpt-image-2-base-model'], values.gptImage2BaseModel, 'string'],
+    ['wsAuth', ['oauth', 'providers', 'aistudio', 'ws-auth'], values.wsAuth, 'boolean'],
+    ['antigravitySignatureBypassStrict', ['oauth', 'providers', 'antigravity', 'signature-bypass-strict'], values.antigravitySignatureBypassStrict, 'boolean'],
+    ['claudeHeaderUserAgent', ['upstream', 'claude', 'header-defaults', 'user-agent'], values.claudeHeaderUserAgent, 'string'],
+    ['claudeHeaderPackageVersion', ['upstream', 'claude', 'header-defaults', 'package-version'], values.claudeHeaderPackageVersion, 'string'],
+    ['claudeHeaderRuntimeVersion', ['upstream', 'claude', 'header-defaults', 'runtime-version'], values.claudeHeaderRuntimeVersion, 'string'],
+    ['claudeHeaderOs', ['upstream', 'claude', 'header-defaults', 'os'], values.claudeHeaderOs, 'string'],
+    ['claudeHeaderArch', ['upstream', 'claude', 'header-defaults', 'arch'], values.claudeHeaderArch, 'string'],
+    ['claudeHeaderTimeout', ['upstream', 'claude', 'header-defaults', 'timeout'], values.claudeHeaderTimeout, 'string'],
+    ['claudeHeaderStabilizeDeviceProfile', ['upstream', 'claude', 'header-defaults', 'stabilize-device-profile'], values.claudeHeaderStabilizeDeviceProfile, 'boolean'],
+    ['codexHeaderUserAgent', ['oauth', 'providers', 'codex', 'header-defaults', 'user-agent'], values.codexHeaderUserAgent, 'string'],
+    ['codexHeaderBetaFeatures', ['oauth', 'providers', 'codex', 'header-defaults', 'beta-features'], values.codexHeaderBetaFeatures, 'string'],
+    ['routingStrategy', ['routing', 'strategy'], values.routingStrategy, 'string'],
+    ['routingSessionAffinity', ['routing', 'session-affinity'], values.routingSessionAffinity, 'boolean'],
+    ['routingSessionAffinityTTL', ['routing', 'session-affinity-ttl'], values.routingSessionAffinityTTL, 'string'],
+    ['streaming.keepaliveSeconds', ['requests', 'streaming', 'keepalive-seconds'], values.streaming.keepaliveSeconds, 'integer'],
+    ['streaming.bootstrapRetries', ['requests', 'streaming', 'bootstrap-retries'], values.streaming.bootstrapRetries, 'integer'],
+    ['streaming.nonstreamKeepaliveInterval', ['requests', 'nonstream-keepalive-interval'], values.streaming.nonstreamKeepaliveInterval, 'integer'],
+  ];
+  for (const [key, path, value, kind] of fields) write(key, path, value, kind);
+
+  if (dirtyFields.has('codexLiveMediaRelayICEServers')) {
+    const path = ['oauth', 'providers', 'codex', 'live-media-relay', 'ice-servers'];
+    ensureParents(path);
+    doc.setIn(
+      path,
+      values.codexLiveMediaRelayICEServers.map((server) => ({
+        urls: server.urlsText.split('\n').map((url) => url.trim()).filter(Boolean),
+        ...(server.username ? { username: server.username } : {}),
+        ...(server.credential ? { credential: server.credential } : {}),
+      }))
+    );
+  }
+
+  if (dirtyFields.has('disableImageGeneration')) {
+    const path = ['multimedia', 'disable-image-generation'];
+    ensureParents(path);
+    setDisableImageGenerationInDoc(doc, path, values.disableImageGeneration);
+  }
+  if (dirtyFields.has('antigravitySignatureCacheEnabled')) {
+    const path = ['oauth', 'providers', 'antigravity', 'signature-cache-enabled'];
+    if (docHas(doc, path) || !values.antigravitySignatureCacheEnabled) {
+      ensureParents(path);
+      doc.setIn(path, values.antigravitySignatureCacheEnabled);
+    }
+  }
+  if (dirtyFields.has('apiKeysText')) {
+    const path = ['access', 'api-keys'];
+    const apiKeys = values.apiKeysText.split('\n').map((key) => key.trim()).filter(Boolean);
+    if (apiKeys.length) {
+      ensureParents(path);
+      doc.setIn(path, apiKeys);
+    } else if (docHas(doc, path)) doc.deleteIn(path);
+  }
+
+  if (dirtyFields.has('pluginsEnabled') || dirtyFields.has('pluginStoreSources') || dirtyFields.has('pluginStoreAuth')) {
+    ensureMapInDoc(doc, ['plugins']);
+    if (dirtyFields.has('pluginsEnabled')) write('pluginsEnabled', ['plugins', 'enabled'], values.pluginsEnabled, 'boolean');
+    if (dirtyFields.has('pluginStoreSources')) {
+      const path = ['plugins', 'store-sources'];
+      if (values.pluginStoreSources.length) {
+        ensureParents(path);
+        doc.setIn(path, values.pluginStoreSources);
+      } else if (docHas(doc, path)) doc.deleteIn(path);
+    }
+    if (dirtyFields.has('pluginStoreAuth')) {
+      const path = ['plugins', 'store-auth'];
+      const rules = serializePluginStoreAuthForYaml(values.pluginStoreAuth);
+      if (rules.length) {
+        ensureParents(path);
+        doc.setIn(path, rules);
+      } else if (docHas(doc, path)) doc.deleteIn(path);
+    }
+    deleteIfMapEmpty(doc, ['plugins']);
+  }
+
+  for (const [key, path, value] of [
+    ['antigravitySensitiveWords', ['oauth', 'providers', 'antigravity', 'sensitive-words'], values.antigravitySensitiveWords],
+    ['devinSensitiveWords', ['oauth', 'providers', 'devin', 'sensitive-words'], values.devinSensitiveWords],
+  ] as Array<[string, YamlPath, string[]]>) {
+    if (!dirtyFields.has(key)) continue;
+    if (value.length) {
+      ensureParents(path);
+      doc.setIn(path, value);
+    } else if (docHas(doc, path)) doc.deleteIn(path);
+  }
+
+  if (dirtyFields.has('quotaAntigravityCredits')) {
+    const path = ['oauth', 'providers', 'antigravity', 'antigravity-credits'];
+    ensureParents(path);
+    doc.setIn(path, values.quotaAntigravityCredits);
+  }
+
+  const payloadFields: Array<[string, string, unknown[]]> = [
+    ['payloadDefaultRules', 'default', serializePayloadRulesForYaml(values.payloadDefaultRules)],
+    ['payloadDefaultRawRules', 'default-raw', serializeRawPayloadRulesForYaml(values.payloadDefaultRawRules)],
+    ['payloadOverrideRules', 'override', serializePayloadRulesForYaml(values.payloadOverrideRules)],
+    ['payloadOverrideRawRules', 'override-raw', serializeRawPayloadRulesForYaml(values.payloadOverrideRawRules)],
+    ['payloadFilterRules', 'filter', serializePayloadFilterRulesForYaml(values.payloadFilterRules)],
+  ];
+  for (const [key, name, serialized] of payloadFields) {
+    if (!dirtyFields.has(key)) continue;
+    const path = ['requests', 'payload', name];
+    if (serialized.length) {
+      ensureParents(path);
+      doc.setIn(path, serialized);
+    } else if (docHas(doc, path)) doc.deleteIn(path);
+  }
+
+  return doc.toString({ indent: 2, lineWidth: 120, minContentWidth: 0 });
+}
+
 export function useVisualConfig() {
   const [state, dispatch] = useReducer(
     visualConfigReducer,
@@ -1187,21 +1492,85 @@ export function useVisualConfig() {
 
       const parsedRaw: unknown = parseYaml(yamlContent) || {};
       const parsed = asRecord(parsedRaw) ?? {};
-      const tls = asRecord(parsed.tls);
-      const remoteManagement = asRecord(parsed['remote-management']);
+      const server = asRecord(parsed.server);
+      const access = asRecord(parsed.access);
+      const oauth = asRecord(parsed.oauth);
+      const oauthProviders = asRecord(oauth?.providers);
+      const upstream = asRecord(parsed.upstream);
+      const requests = asRecord(parsed.requests);
+      const multimedia = asRecord(parsed.multimedia);
+      const observability = asRecord(parsed.observability);
+      const logs = asRecord(observability?.logs);
+      const usage = asRecord(observability?.usage);
+      const v8Retry = asRecord(asRecord(parsed.routing)?.retry);
+      const v8Cooldown = asRecord(asRecord(parsed.routing)?.cooldown);
+      const tls = asRecord(server?.tls) ?? asRecord(parsed.tls);
+      const remoteManagement = asRecord(parsed.management) ?? asRecord(parsed['remote-management']);
       const plugins = asRecord(parsed.plugins);
       const quotaExceeded = asRecord(parsed['quota-exceeded']);
       const routing = asRecord(parsed.routing);
-      const payload = asRecord(parsed.payload);
-      const streaming = asRecord(parsed.streaming);
-      const antigravity = asRecord(parsed.antigravity);
-      const devin = asRecord(parsed.devin);
-      const claudeHeaders = asRecord(parsed['claude-header-defaults']);
-      const codexHeaders = asRecord(parsed['codex-header-defaults']);
+      const payload = asRecord(requests?.payload) ?? asRecord(parsed.payload);
+      const streaming = asRecord(requests?.streaming) ?? asRecord(parsed.streaming);
+      const antigravity =
+        asRecord(oauthProviders?.antigravity) ?? asRecord(parsed.antigravity);
+      const devin = asRecord(oauthProviders?.devin) ?? asRecord(parsed.devin);
+      const claudeHeaders =
+        asRecord(asRecord(upstream?.claude)?.['header-defaults']) ??
+        asRecord(parsed['claude-header-defaults']);
+      const codexHeaders =
+        asRecord(asRecord(oauthProviders?.codex)?.['header-defaults']) ??
+        asRecord(parsed['codex-header-defaults']);
+      const apiKeysText =
+        access && Object.prototype.hasOwnProperty.call(access, 'api-keys')
+          ? parseApiKeysText(access['api-keys'])
+          : resolveApiKeysText(parsed);
+      const discovery = asRecord(server?.discovery);
+      const upstreamClaude = asRecord(upstream?.claude);
+      const upstreamCodex = asRecord(upstream?.codex);
+      const upstreamXai = asRecord(upstream?.xai);
+      const clientCodex = asRecord(asRecord(parsed.client)?.codex);
+      const antigravityConnectionPool = asRecord(antigravity?.['connection-pool']);
+      const liveMediaRelay = asRecord(asRecord(oauthProviders?.codex)?.['live-media-relay']);
 
       const newValues: VisualConfigValues = {
-        host: typeof parsed.host === 'string' ? parsed.host : '',
-        port: String(parsed.port ?? ''),
+        githubToken: String(server?.['github-token'] ?? parsed['github-token'] ?? ''),
+        trustedProxies: parseStringList(server?.['trusted-proxies']),
+        discoveryEnabled: Boolean(discovery?.enabled),
+        discoveryServiceName: String(discovery?.['service-name'] ?? ''),
+        discoveryServiceType: String(discovery?.['service-type'] ?? ''),
+        discoverySubtypes: parseStringList(discovery?.subtypes),
+        discoveryInterfacesInclude: parseStringList(asRecord(discovery?.interfaces)?.include),
+        discoveryInterfacesExclude: parseStringList(asRecord(discovery?.interfaces)?.exclude),
+        discoveryAuthRequired: Boolean(discovery?.['auth-required'] ?? true),
+        discoveryAdvertiseManagement: Boolean(discovery?.['advertise-management']),
+        routingSessionAffinitySubagents: Boolean(routing?.['session-affinity-subagents'] ?? true),
+        saveCooldownStatus: Boolean(v8Cooldown?.['save-cooldown-status']),
+        transientErrorCooldownSeconds: String(v8Cooldown?.['transient-error-cooldown-seconds'] ?? ''),
+        videoResultAuthCacheTTL: String(multimedia?.['video-result-auth-cache-ttl'] ?? ''),
+        claudeHeaderTimezone: String(claudeHeaders?.timezone ?? ''),
+        claudeModelLevelCooling: Boolean(upstreamClaude?.['model-level-cooling']),
+        claudeDisableCloakMode: Boolean(upstreamClaude?.['disable-claude-cloak-mode']),
+        claudeCodeDisableCloakingModelList: Boolean(upstreamClaude?.['disable-cloaking-model-list']),
+        codexDisableCloaking: Boolean(upstreamCodex?.['disable-codex-cloaking']),
+        codexModelLevelCooling: Boolean(upstreamCodex?.['model-level-cooling']),
+        codexStreamBootstrapBuffering: Boolean(upstreamCodex?.['stream-bootstrap-buffering']),
+        codexStreamBootstrapTimeout: String(upstreamCodex?.['stream-bootstrap-timeout'] ?? ''),
+        codexOptimizeMultiAgentV2: Boolean(clientCodex?.['optimize-multi-agent-v2']),
+        codexOrphanDelegationCompatibility: Boolean(upstreamCodex?.['orphan-delegation-compatibility']),
+        codexResponseSteering: Boolean(upstreamCodex?.['response-steering']),
+        antigravityConnectionPoolEnabled: Boolean(antigravityConnectionPool?.enabled),
+        antigravityConnectionPoolIdleTimeout: String(antigravityConnectionPool?.['idle-conn-timeout'] ?? ''),
+        antigravityConnectionPoolMaxIdleConnsPerHost: String(antigravityConnectionPool?.['max-idle-conns-per-host'] ?? ''),
+        xaiInjectXSearch: Boolean(upstreamXai?.['inject-x-search']),
+        codexLiveMediaRelayEnabled: Boolean(liveMediaRelay?.enabled),
+        codexLiveMediaRelayMaxSessions: String(liveMediaRelay?.['max-sessions'] ?? ''),
+        codexLiveMediaRelayDisablePrivateRemoteIPs: Boolean(liveMediaRelay?.['disable-private-remote-ips']),
+        codexLiveMediaRelayPublicIP: String(liveMediaRelay?.['public-ip'] ?? ''),
+        codexLiveMediaRelayUDPPortMin: String(liveMediaRelay?.['udp-port-min'] ?? ''),
+        codexLiveMediaRelayUDPPortMax: String(liveMediaRelay?.['udp-port-max'] ?? ''),
+        codexLiveMediaRelayICEServers: parseCodexLiveICEServers(liveMediaRelay?.['ice-servers']),
+        host: typeof (server?.host ?? parsed.host) === 'string' ? String(server?.host ?? parsed.host) : '',
+        port: String(server?.port ?? parsed.port ?? ''),
 
         tlsEnable: Boolean(tls?.enable),
         tlsCert: typeof tls?.cert === 'string' ? tls.cert : '',
@@ -1221,44 +1590,69 @@ export function useVisualConfig() {
               ? remoteManagement['panel-repo']
               : '',
 
-        authDir: typeof parsed['auth-dir'] === 'string' ? parsed['auth-dir'] : '',
-        apiKeysText: resolveApiKeysText(parsed),
+        authDir:
+          typeof (oauth?.['auth-dir'] ?? parsed['auth-dir']) === 'string'
+            ? String(oauth?.['auth-dir'] ?? parsed['auth-dir'])
+            : '',
+        apiKeysText,
         pluginsEnabled: Boolean(plugins?.enabled),
         pluginStoreSources: parseStringList(plugins?.['store-sources']),
         pluginStoreAuth: parsePluginStoreAuthRules(plugins?.['store-auth']),
 
-        debug: Boolean(parsed.debug),
-        commercialMode: Boolean(parsed['commercial-mode']),
+        debug: Boolean(logs?.debug ?? parsed.debug),
+        commercialMode: Boolean(server?.['commercial-mode'] ?? parsed['commercial-mode']),
         usageStatisticsEnabled: Boolean(
-          parsed['usage-statistics-enabled'] ?? parsed.usageStatisticsEnabled
+          usage?.['usage-statistics-enabled'] ??
+            parsed['usage-statistics-enabled'] ??
+            parsed.usageStatisticsEnabled
         ),
-        loggingToFile: Boolean(parsed['logging-to-file']),
-        logsMaxTotalSizeMb: String(parsed['logs-max-total-size-mb'] ?? ''),
-        errorLogsMaxFiles: String(parsed['error-logs-max-files'] ?? ''),
+        loggingToFile: Boolean(logs?.['logging-to-file'] ?? parsed['logging-to-file']),
+        logsMaxTotalSizeMb: String(
+          logs?.['logs-max-total-size-mb'] ?? parsed['logs-max-total-size-mb'] ?? ''
+        ),
+        errorLogsMaxFiles: String(
+          logs?.['error-logs-max-files'] ?? parsed['error-logs-max-files'] ?? ''
+        ),
         redisUsageQueueRetentionSeconds: String(
-          parsed['redis-usage-queue-retention-seconds'] ??
+          usage?.['redis-usage-queue-retention-seconds'] ??
+            parsed['redis-usage-queue-retention-seconds'] ??
             parsed.redisUsageQueueRetentionSeconds ??
             ''
         ),
 
-        proxyUrl: typeof parsed['proxy-url'] === 'string' ? parsed['proxy-url'] : '',
-        forceModelPrefix: Boolean(parsed['force-model-prefix']),
-        requestRetry: String(parsed['request-retry'] ?? ''),
-        maxRetryCredentials: String(parsed['max-retry-credentials'] ?? ''),
-        maxRetryInterval: String(parsed['max-retry-interval'] ?? ''),
-        authAutoRefreshWorkers: String(parsed['auth-auto-refresh-workers'] ?? ''),
-        passthroughHeaders: Boolean(parsed['passthrough-headers']),
-        disableCooling: Boolean(parsed['disable-cooling']),
-        disableImageGeneration: parseDisableImageGenerationMode(parsed['disable-image-generation']),
-        gptImage2BaseModel:
-          typeof parsed['gpt-image-2-base-model'] === 'string'
-            ? parsed['gpt-image-2-base-model']
+        proxyUrl:
+          typeof (requests?.['proxy-url'] ?? parsed['proxy-url']) === 'string'
+            ? String(requests?.['proxy-url'] ?? parsed['proxy-url'])
             : '',
-        wsAuth: Boolean(parsed['ws-auth']),
+        forceModelPrefix: Boolean(routing?.['force-model-prefix'] ?? parsed['force-model-prefix']),
+        requestRetry: String(v8Retry?.['request-retry'] ?? parsed['request-retry'] ?? ''),
+        maxRetryCredentials: String(
+          v8Retry?.['max-retry-credentials'] ?? parsed['max-retry-credentials'] ?? ''
+        ),
+        maxRetryInterval: String(
+          v8Retry?.['max-retry-interval'] ?? parsed['max-retry-interval'] ?? ''
+        ),
+        authAutoRefreshWorkers: String(oauth?.['auth-auto-refresh-workers'] ?? parsed['auth-auto-refresh-workers'] ?? ''),
+        passthroughHeaders: Boolean(requests?.['passthrough-headers'] ?? parsed['passthrough-headers']),
+        disableCooling: Boolean(
+          v8Cooldown?.['disable-cooling'] ?? parsed['disable-cooling']
+        ),
+        disableImageGeneration: parseDisableImageGenerationMode(
+          multimedia?.['disable-image-generation'] ?? parsed['disable-image-generation']
+        ),
+        gptImage2BaseModel:
+          typeof (multimedia?.['gpt-image-2-base-model'] ?? parsed['gpt-image-2-base-model']) === 'string'
+            ? String(multimedia?.['gpt-image-2-base-model'] ?? parsed['gpt-image-2-base-model'])
+            : '',
+        wsAuth: Boolean(
+          asRecord(oauthProviders?.aistudio)?.['ws-auth'] ?? parsed['ws-auth']
+        ),
 
         quotaSwitchProject: Boolean(quotaExceeded?.['switch-project'] ?? true),
         quotaSwitchPreviewModel: Boolean(quotaExceeded?.['switch-preview-model'] ?? true),
-        quotaAntigravityCredits: Boolean(quotaExceeded?.['antigravity-credits'] ?? false),
+        quotaAntigravityCredits: Boolean(
+          antigravity?.['antigravity-credits'] ?? quotaExceeded?.['antigravity-credits'] ?? false
+        ),
 
         routingStrategy: parseRoutingStrategy(routing?.strategy),
         routingSessionAffinity: Boolean(
@@ -1281,9 +1675,13 @@ export function useVisualConfig() {
         antigravitySensitiveWords: parseStringList(antigravity?.['sensitive-words']),
         devinSensitiveWords: parseStringList(devin?.['sensitive-words']),
         antigravitySignatureCacheEnabled: Boolean(
-          parsed['antigravity-signature-cache-enabled'] ?? true
+          antigravity?.['signature-cache-enabled'] ??
+            parsed['antigravity-signature-cache-enabled'] ??
+            true
         ),
-        antigravitySignatureBypassStrict: Boolean(parsed['antigravity-signature-bypass-strict']),
+        antigravitySignatureBypassStrict: Boolean(
+          antigravity?.['signature-bypass-strict'] ?? parsed['antigravity-signature-bypass-strict']
+        ),
         claudeHeaderUserAgent:
           typeof claudeHeaders?.['user-agent'] === 'string' ? claudeHeaders['user-agent'] : '',
         claudeHeaderPackageVersion:
@@ -1306,7 +1704,9 @@ export function useVisualConfig() {
         streaming: {
           keepaliveSeconds: String(streaming?.['keepalive-seconds'] ?? ''),
           bootstrapRetries: String(streaming?.['bootstrap-retries'] ?? ''),
-          nonstreamKeepaliveInterval: String(parsed['nonstream-keepalive-interval'] ?? ''),
+          nonstreamKeepaliveInterval: String(
+            requests?.['nonstream-keepalive-interval'] ?? parsed['nonstream-keepalive-interval'] ?? ''
+          ),
         },
       };
 
@@ -1326,6 +1726,10 @@ export function useVisualConfig() {
         if (doc.errors.length > 0) return currentYaml;
         if (!isMap(doc.contents)) {
           doc.contents = doc.createNode({}) as unknown as typeof doc.contents;
+        }
+        const parsedRoot = asRecord(parseYaml(currentYaml));
+        if (parsedRoot && (Number(parsedRoot['config-version']) === 8 || asRecord(parsedRoot.server))) {
+          return applyV8VisualChanges(doc, visualValues, dirtyFields);
         }
         const values = visualValues;
 

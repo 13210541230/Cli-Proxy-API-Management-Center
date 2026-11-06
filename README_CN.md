@@ -283,6 +283,9 @@ docker compose -f docker-compose.usage.yml up --build
 - **CPA 配置**：`usage-statistics-enabled`、`redis-usage-queue-retention-seconds`、代理、日志、路由、认证文件等仍属于 CPA，由 `/config` / `/config.yaml` 管理。
 - **CPA-Manager 配置**：CPA 连接地址、Management Key、请求监控开关、Usage Service 采集模式、`pollIntervalMs`、`batchSize`、`queryLimit`、CPA 控制面板模式下的 Usage Service 引导地址等保存到 Usage Service SQLite。
 - 配置面板会分开展示 CPA 与 CPA-Manager 配置。保存 CPAM 配置不会写入 CPA `config.yaml`；启用请求监控时会按要求调用 CPA Management API 启用用量统计，关闭请求监控时只停止 CPAM 采集器。
+- CPA v8 可视化配置按配置项路径读取和保存，并可搜索字段标签或 YAML 键名。旧版根字段配置先显示 v8 迁移差异；只有检查并确认预览后才写入迁移结果。迁移保存受 ETag 保护，服务端配置在预览后变化时，本次保存会取消，需重新加载并确认。
+- v8 转换会保留项目专有 quota/plugins 配置；无法由 v8 配置模型表示的旧字段会保留为注释。v8 页面不再显示已淘汰的配额切换项；仅仍使用 legacy v0 配置 API 的实例保留这些旧字段编辑入口。
+- Codex 认证文件的 SIWC 开关只控制 `use_siwc`；需先在 CPA 完成 SIWC 绑定。关闭开关不会删除已有绑定数据。
 
 ### 迁移指引
 

@@ -285,6 +285,9 @@ Joint updates first fetch `manifest.json` directly from the user-maintained GitH
 - **CPA configuration**: `usage-statistics-enabled`, `redis-usage-queue-retention-seconds`, proxy, logging, routing, auth files, and related fields still belong to CPA and are managed by `/config` / `/config.yaml`.
 - **CPA-Manager configuration**: CPA URL, Management Key, request monitoring enablement, Usage Service collection mode, `pollIntervalMs`, `batchSize`, `queryLimit`, and the CPA panel mode Usage Service bootstrap URL are persisted in Usage Service SQLite.
 - The configuration panel shows CPA and CPA-Manager settings separately. Saving CPAM settings does not write to CPA `config.yaml`; enabling request monitoring calls CPA Management API to enable usage publishing, while disabling request monitoring only stops the CPAM collector.
+- CPA v8 visual configuration reads and saves canonical field paths and supports searching by setting label or YAML key. Legacy root-level configuration first shows a v8 migration diff; migration is written only after the user reviews and confirms it. Saves use ETags; if the server configuration changes after preview, the save is canceled and must be reviewed again.
+- v8 conversion preserves project-specific quota/plugins sections. Legacy fields that cannot be represented by the v8 config model are retained as comments. Deprecated quota-switch controls remain available only when using the legacy v0 config API.
+- The Codex auth-file SIWC toggle controls only `use_siwc`; complete SIWC binding in CPA first. Turning the toggle off does not delete existing binding data.
 
 ### Migration Guide
 

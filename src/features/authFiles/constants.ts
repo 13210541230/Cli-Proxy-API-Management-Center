@@ -213,6 +213,12 @@ export const parseDisableCoolingValue = (value: unknown): boolean | undefined =>
 export const readCodexAuthFileWebsockets = (value: Record<string, unknown>): boolean =>
   parseDisableCoolingValue(value.websockets) ?? false;
 
+export const supportsAuthFileSiwc = (providerKey: string): boolean =>
+  normalizeProviderKey(providerKey) === 'codex';
+
+export const readAuthFileUseSiwc = (value: Record<string, unknown>): boolean =>
+  parseDisableCoolingValue(value.use_siwc) ?? false;
+
 export const applyCodexAuthFileWebsockets = (
   value: Record<string, unknown>,
   websockets: boolean
